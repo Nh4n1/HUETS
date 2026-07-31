@@ -11,6 +11,9 @@ interface EnvConfig {
         password: string;
         user: string;
     };
+    mongo: {
+        uri: string;
+    };
 }
 
 interface Config {
@@ -28,6 +31,9 @@ const dev ={
         name: process.env.DEV_DB_NAME || 'mydatabase',
         password: process.env.DEV_DB_PASSWORD || 'mydbpassword',
         user: process.env.DEV_DB_USER || 'postgres',
+    },
+    mongo: {
+        uri: process.env.DEV_MONGO_URI || 'mongodb://localhost:27017/mydatabase',
     }
 }
 
@@ -41,6 +47,9 @@ const prod={
         name: process.env.PROD_DB_NAME || 'mydatabase',
         password: process.env.PROD_DB_PASSWORD || 'password',
         user: process.env.PROD_DB_USER || 'postgres',
+    },
+    mongo: {
+        uri: process.env.PROD_MONGO_URI || 'mongodb://localhost:27017/mydatabase',
     }
 }
 
