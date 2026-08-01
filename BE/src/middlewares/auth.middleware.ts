@@ -10,7 +10,7 @@ declare module 'express-serve-static-core' {
 
 export const authenticate = (req: Request, _res: Response, next: NextFunction) => {
     const header = req.headers.authorization;
-    const token = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : undefined;
+    const token = header?.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : undefined;
 
     if (!token) {
         return next(new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.'));

@@ -18,7 +18,10 @@ const authSessionSchema = new Schema<IAuthSession>(
         ipAddress: { type: String },
         expiresAt: { type: Date, required: true },
     },
-    { timestamps: { createdAt: true, updatedAt: false }, collection: 'auth_sessions' },
+    {
+        timestamps: { createdAt: true, updatedAt: false },
+        collection: 'auth_sessions',
+    },
 );
 
 authSessionSchema.index({ userId: 1 });

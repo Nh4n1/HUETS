@@ -19,10 +19,10 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>(
     {
-        email: { type: String, required: true },
-        normalizedEmail: { type: String, required: true },
+        email: { type: String, required: true, trim: true },
+        normalizedEmail: { type: String, required: true, trim: true },
         passwordHash: { type: String, required: true },
-        displayName: { type: String, required: true },
+        displayName: { type: String, required: true, trim: true },
         avatarUrl: { type: String },
         bio: { type: String },
         role: { type: String, enum: ['user', 'admin'], default: 'user' },
