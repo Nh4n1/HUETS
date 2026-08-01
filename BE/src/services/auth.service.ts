@@ -1,13 +1,12 @@
 import User from '../models/user.model.ts';
 import AuthSession from '../models/authSession.model.ts';
-import PasswordResetToken from '../models/passwordResetToken.model.ts';
 import { ApiError } from '../utils/apiError.ts';
-import { hashPassword, comparePassword, hashToken, generateOpaqueToken } from '../helpers/password.helper.ts';
+import { comparePassword, hashPassword, hashToken } from '../helpers/password.helper.ts';
 import {
+    durationFromNow,
     signAccessToken,
     signRefreshToken,
     verifyRefreshToken,
-    durationFromNow,
 } from '../helpers/jwt.helper.ts';
 import authConfig from '../config/config.auth.ts';
 
@@ -52,10 +51,10 @@ export const register = async (input: RegisterInput) => {
 
     const passwordHash = await hashPassword(password);
     const user = await User.create({
-        email,
+        email: email.trim(),
         normalizedEmail,
         passwordHash,
-        displayName,
+        displayName: displayName.trim(),
     });
 
     return toPublicUser(user);
@@ -114,8 +113,11 @@ export const refresh = async (refreshToken: string) => {
         throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token không hợp lệ hoặc đã hết hạn.');
     }
 
-    const tokenHash = hashToken(refreshToken);
-    const session = await AuthSession.findOne({ userId: payload.sub, refreshTokenHash: tokenHash });
+    const session = await AuthSession.findOne({
+        userId: payload.sub,
+        refreshTokenHash: hashToken(refreshToken),
+        expiresAt: { $gt: new Date() },
+    });
     if (!session) {
         throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token không hợp lệ hoặc đã hết hạn.');
     }
@@ -138,64 +140,4 @@ export const refresh = async (refreshToken: string) => {
 export const logout = async (refreshToken: string) => {
     if (!refreshToken) return;
     await AuthSession.deleteOne({ refreshTokenHash: hashToken(refreshToken) });
-};
-
-export const forgotPassword = async (email: string) => {
-    if (!email) {
-        throw new ApiError(400, 'VALIDATION_ERROR', 'Thiếu email.');
-    }
-
-    const user = await User.findOne({ normalizedEmail: normalizeEmail(email) });
-    // always resolve neutrally to avoid account enumeration
-    if (!user) {
-        return;
-    }
-
-    const rawToken = generateOpaqueToken();
-    await PasswordResetToken.create({
-        userId: user._id,
-        tokenHash: hashToken(rawToken),
-        expiresAt: new Date(Date.now() + authConfig.passwordResetTokenExpiresInMs),
-    });
-
-    // TODO: send rawToken to user via email once mailer service exists
-};
-
-interface ResetPasswordInput {
-    token: string;
-    newPassword: string;
-    confirmPassword: string;
-}
-
-export const resetPassword = async (input: ResetPasswordInput) => {
-    const { token, newPassword, confirmPassword } = input;
-
-    if (!token || !newPassword || !confirmPassword) {
-        throw new ApiError(400, 'VALIDATION_ERROR', 'Thiếu thông tin bắt buộc.');
-    }
-    if (newPassword !== confirmPassword) {
-        throw new ApiError(400, 'PASSWORD_CONFIRMATION_MISMATCH', 'Mật khẩu xác nhận không khớp.');
-    }
-
-    const resetToken = await PasswordResetToken.findOne({
-        tokenHash: hashToken(token),
-        usedAt: null,
-        expiresAt: { $gt: new Date() },
-    });
-    if (!resetToken) {
-        throw new ApiError(400, 'INVALID_RESET_TOKEN', 'Token không hợp lệ hoặc đã hết hạn.');
-    }
-
-    const user = await User.findById(resetToken.userId);
-    if (!user) {
-        throw new ApiError(400, 'INVALID_RESET_TOKEN', 'Token không hợp lệ hoặc đã hết hạn.');
-    }
-
-    user.passwordHash = await hashPassword(newPassword);
-    await user.save();
-
-    resetToken.usedAt = new Date();
-    await resetToken.save();
-
-    await AuthSession.deleteMany({ userId: user._id });
 };
