@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import accessRouter from './access/index.ts';
+import locationRouter from './location/index.ts';
 import profileRouter from './profile/index.ts';
 import referenceRouter from './reference/index.ts';
 
@@ -13,6 +14,7 @@ router.get('/', (req, res, next) => {
 });
 
 router.use('/api/auth', accessRouter);
+router.use('/api/locations', locationRouter);
 router.use('/api/me', profileRouter);
 router.use('/api/reference', referenceRouter);
 

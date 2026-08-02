@@ -7,6 +7,7 @@
     "dev": "node --watch server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "dev:location-image-token": "node src/database/dev/generateLocationImageToken.ts",
     "seed:references": "node src/database/seed/reference.seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

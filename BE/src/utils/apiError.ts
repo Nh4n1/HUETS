@@ -7,7 +7,16 @@ export type ApiErrorCode =
     | 'ACCOUNT_LOCKED'
     | 'INVALID_REFRESH_TOKEN'
     | 'INVALID_RESET_TOKEN'
+    | 'INVALID_CATEGORY_TAG_COMBINATION'
+    | 'TOO_MANY_TAGS'
+    | 'INVALID_OPENING_HOURS'
+    | 'INVALID_WARD'
+    | 'INVALID_IMAGE_COUNT'
+    | 'INVALID_IMAGE_ASSET_TOKEN'
+    | 'INVALID_COORDINATES'
+    | 'INVALID_ALIAS'
     | 'UNAUTHORIZED'
+    | 'FORBIDDEN'
     | 'NOT_FOUND';
 
 export class ApiError extends Error {

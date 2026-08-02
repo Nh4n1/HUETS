@@ -1,0 +1,534 @@
+import mongoose from 'mongoose';
+import { categoryTagWhitelist } from '../config/category-tag-whitelist.ts';
+import { verifyLocationImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
+import { normalizeSearchText } from '../helpers/text.helper.ts';
+import Category from '../models/category.model.ts';
+import Location from '../models/location.model.ts';
+import type { ILocation, ILocationOpeningHours, IOpeningPeriod, IOpeningRange } from '../models/location.model.ts';
+import TagGroup from '../models/tagGroup.model.ts';
+import User from '../models/user.model.ts';
+import { getWardByCode } from './reference.service.ts';
+import { ApiError } from '../utils/apiError.ts';
+
+const MAX_TAGS = 10;
+const MAX_IMAGES = 5;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_TOTAL_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
+const DUPLICATE_RADIUS_METERS = 150;
+const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+interface Actor {
+    id: string;
+    role: 'user' | 'admin';
+}
+
+interface OpeningRangeInput {
+    open?: unknown;
+    close?: unknown;
+}
+
+interface OpeningPeriodInput {
+    dayOfWeek?: unknown;
+    ranges?: unknown;
+}
+
+interface OpeningHoursInput {
+    status?: unknown;
+    periods?: unknown;
+}
+
+interface ImageInput {
+    assetToken?: unknown;
+    position?: unknown;
+}
+
+export interface CreateLocationInput {
+    name?: unknown;
+    description?: unknown;
+    categoryCode?: unknown;
+    tagCodes?: unknown;
+    aliases?: unknown;
+    wardCode?: unknown;
+    addressLine?: unknown;
+    locationNote?: unknown;
+    latitude?: unknown;
+    longitude?: unknown;
+    openingHours?: unknown;
+    images?: unknown;
+}
+
+export interface PublicLocationQuery {
+    page?: string;
+    pageSize?: string;
+    categoryCode?: string;
+    wardCode?: string;
+}
+
+const requiredString = (value: unknown, field: string, maxLength: number) => {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new ApiError(400, 'VALIDATION_ERROR', `${field} là thông tin bắt buộc.`);
+    }
+    const trimmed = value.trim();
+    if (trimmed.length > maxLength) {
+        throw new ApiError(400, 'VALIDATION_ERROR', `${field} không được vượt quá ${maxLength} ký tự.`);
+    }
+    return trimmed;
+};
+
+const optionalString = (value: unknown, field: string, maxLength: number) => {
+    if (value === undefined || value === null || value === '') return null;
+    if (typeof value !== 'string') {
+        throw new ApiError(400, 'VALIDATION_ERROR', `${field} phải là chuỗi.`);
+    }
+    const trimmed = value.trim();
+    if (trimmed.length > maxLength) {
+        throw new ApiError(400, 'VALIDATION_ERROR', `${field} không được vượt quá ${maxLength} ký tự.`);
+    }
+    return trimmed || null;
+};
+
+const parseCoordinate = (value: unknown, type: 'latitude' | 'longitude') => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+        throw new ApiError(422, 'INVALID_COORDINATES', 'Tọa độ không hợp lệ.');
+    }
+    const [minimum, maximum] = type === 'latitude' ? [-90, 90] : [-180, 180];
+    if (value < minimum || value > maximum) {
+        throw new ApiError(422, 'INVALID_COORDINATES', 'Tọa độ nằm ngoài phạm vi cho phép.');
+    }
+    return value;
+};
+
+const parseAliases = (value: unknown, normalizedName: string) => {
+    if (value === undefined) return [];
+    if (!Array.isArray(value)) {
+        throw new ApiError(422, 'INVALID_ALIAS', 'Danh sách tên gọi khác không hợp lệ.');
+    }
+
+    const aliases = value.map((alias) => {
+        const text = requiredString(alias, 'Alias', 200);
+        return { value: text, normalizedValue: normalizeSearchText(text) };
+    });
+    const normalizedAliases = aliases.map(({ normalizedValue }) => normalizedValue);
+
+    if (normalizedAliases.includes(normalizedName)) {
+        throw new ApiError(422, 'INVALID_ALIAS', 'Tên gọi khác không được trùng với tên chính.');
+    }
+    if (new Set(normalizedAliases).size !== normalizedAliases.length) {
+        throw new ApiError(422, 'INVALID_ALIAS', 'Tên gọi khác không được trùng nhau.');
+    }
+    return aliases;
+};
+
+const minutesFromTime = (time: string) => {
+    const match = TIME_PATTERN.exec(time);
+    if (!match) return undefined;
+    return Number(match[1]) * 60 + Number(match[2]);
+};
+
+const parseOpeningRanges = (rangesValue: unknown): IOpeningRange[] => {
+    if (!Array.isArray(rangesValue) || rangesValue.length === 0) {
+        throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Mỗi ngày mở cửa phải có ít nhất một khoảng giờ.');
+    }
+
+    const ranges = rangesValue.map((rawRange) => {
+        if (!rawRange || typeof rawRange !== 'object') {
+            throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Khoảng giờ hoạt động không hợp lệ.');
+        }
+        const range = rawRange as OpeningRangeInput;
+        if (typeof range.open !== 'string' || typeof range.close !== 'string') {
+            throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Giờ mở và đóng phải có định dạng HH:mm.');
+        }
+        const openMinutes = minutesFromTime(range.open);
+        const closeMinutes = minutesFromTime(range.close);
+        if (openMinutes === undefined || closeMinutes === undefined || closeMinutes <= openMinutes) {
+            throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Khoảng giờ phải hợp lệ và không được đi qua nửa đêm.');
+        }
+        return { open: range.open, close: range.close, openMinutes, closeMinutes };
+    }).sort((left, right) => left.openMinutes - right.openMinutes);
+
+    for (let index = 1; index < ranges.length; index += 1) {
+        const previous = ranges[index - 1];
+        const current = ranges[index];
+        if (previous && current && current.openMinutes < previous.closeMinutes) {
+            throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Các khoảng giờ trong cùng ngày không được chồng lấn.');
+        }
+    }
+
+    return ranges.map(({ open, close }) => ({ open, close }));
+};
+
+const parseOpeningHours = (value: unknown): ILocationOpeningHours => {
+    if (value === undefined) return { status: 'unknown', periods: [] };
+    if (!value || typeof value !== 'object') {
+        throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Giờ hoạt động không hợp lệ.');
+    }
+
+    const input = value as OpeningHoursInput;
+    if (!['unknown', 'always_open', 'scheduled'].includes(String(input.status))) {
+        throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Trạng thái giờ hoạt động không hợp lệ.');
+    }
+    const status = input.status as ILocationOpeningHours['status'];
+    const rawPeriods = input.periods ?? [];
+    if (!Array.isArray(rawPeriods)) {
+        throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Danh sách giờ hoạt động không hợp lệ.');
+    }
+    if (status !== 'scheduled') {
+        if (rawPeriods.length > 0) {
+            throw new ApiError(422, 'INVALID_OPENING_HOURS', `${status} không được chứa khoảng giờ.`);
+        }
+        return { status, periods: [] };
+    }
+    if (rawPeriods.length === 0) {
+        throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Lịch hoạt động phải có ít nhất một ngày mở cửa.');
+    }
+
+    const periods: IOpeningPeriod[] = rawPeriods.map((rawPeriod) => {
+        if (!rawPeriod || typeof rawPeriod !== 'object') {
+            throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Ngày hoạt động không hợp lệ.');
+        }
+        const period = rawPeriod as OpeningPeriodInput;
+        if (!Number.isInteger(period.dayOfWeek) || Number(period.dayOfWeek) < 1 || Number(period.dayOfWeek) > 7) {
+            throw new ApiError(422, 'INVALID_OPENING_HOURS', 'dayOfWeek phải nằm trong khoảng từ 1 đến 7.');
+        }
+        return {
+            dayOfWeek: Number(period.dayOfWeek),
+            ranges: parseOpeningRanges(period.ranges),
+        };
+    });
+
+    const days = periods.map(({ dayOfWeek }) => dayOfWeek);
+    if (new Set(days).size !== days.length) {
+        throw new ApiError(422, 'INVALID_OPENING_HOURS', 'Mỗi ngày trong tuần chỉ được xuất hiện một lần.');
+    }
+    return { status, periods: periods.sort((left, right) => left.dayOfWeek - right.dayOfWeek) };
+};
+
+const parseImages = (value: unknown, userId: string) => {
+    if (!Array.isArray(value) || value.length < 1 || value.length > MAX_IMAGES) {
+        throw new ApiError(422, 'INVALID_IMAGE_COUNT', 'Location phải có từ 1 đến 5 ảnh.');
+    }
+
+    let totalSize = 0;
+    const images = value.map((rawImage) => {
+        const image = rawImage as ImageInput;
+        if (typeof image.assetToken !== 'string' || !Number.isInteger(image.position)) {
+            throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Ảnh phải có assetToken và position hợp lệ.');
+        }
+        if (!rawImage || typeof rawImage !== 'object') {
+            throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Thông tin ảnh không hợp lệ.');
+        }
+      
+
+        try {
+            const asset = verifyLocationImageAssetToken(image.assetToken);
+            if (asset.sub !== userId || asset.sizeBytes <= 0 || asset.sizeBytes > MAX_IMAGE_SIZE_BYTES) {
+                throw new Error('Asset owner or size is invalid.');
+            }
+            const url = new URL(asset.url);
+            if (!['http:', 'https:'].includes(url.protocol)) {
+                throw new Error('Asset URL protocol is invalid.');
+            }
+            totalSize += asset.sizeBytes;
+            return {
+                url: asset.url,
+                publicId: asset.publicId ?? null,
+                position: Number(image.position),
+            };
+        } catch {
+            throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Asset token của ảnh không hợp lệ hoặc đã hết hạn.');
+        }
+    }).sort((left, right) => left.position - right.position);
+
+    const positions = images.map(({ position }) => position);
+    if (positions.some((position, index) => position !== index)) {
+        throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Vị trí ảnh phải liên tục từ 0.');
+    }
+    if (totalSize > MAX_TOTAL_IMAGE_SIZE_BYTES) {
+        throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Tổng dung lượng ảnh không được vượt quá 20 MB.');
+    }
+    return images;
+};
+
+const validateTags = async (categoryCode: string, value: unknown) => {
+    if (value === undefined) return [];
+    if (!Array.isArray(value) || value.some((tag) => typeof tag !== 'string')) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'tagCodes phải là một mảng mã Tag.');
+    }
+
+    const tagCodes = value.map((tag) => String(tag).trim()).filter(Boolean);
+    if (tagCodes.length > MAX_TAGS) {
+        throw new ApiError(422, 'TOO_MANY_TAGS', 'Location chỉ được chọn tối đa 10 Tag.');
+    }
+    if (new Set(tagCodes).size !== tagCodes.length) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'tagCodes không được chứa mã trùng nhau.');
+    }
+
+    const rule = categoryTagWhitelist[categoryCode];
+    const allowedCodes = new Set(rule?.allowedTagCodes ?? []);
+    const groups = await TagGroup.find({ isActive: true, 'tags.code': { $in: tagCodes } })
+        .select({ _id: 0, code: 1, selectionMode: 1, tags: 1 })
+        .lean();
+    const activeTags = new Set(
+        groups.flatMap((group) => group.tags.filter(({ isActive }) => isActive).map(({ code }) => code)),
+    );
+    const invalidTagCodes = tagCodes.filter((code) => !activeTags.has(code) || !allowedCodes.has(code));
+    if (invalidTagCodes.length > 0) {
+        throw new ApiError(
+            422,
+            'INVALID_CATEGORY_TAG_COMBINATION',
+            'Một số đặc điểm không phù hợp với loại địa điểm đã chọn.',
+            { invalidTagCodes },
+        );
+    }
+
+    for (const group of groups.filter(({ selectionMode }) => selectionMode === 'single')) {
+        const selectedCodes = group.tags.map(({ code }) => code).filter((code) => tagCodes.includes(code));
+        if (selectedCodes.length > 1) {
+            throw new ApiError(
+                422,
+                'INVALID_CATEGORY_TAG_COMBINATION',
+                'Một nhóm đặc điểm chỉ cho phép chọn một giá trị.',
+                { groupCode: group.code, selectedTagCodes: selectedCodes },
+            );
+        }
+    }
+    return tagCodes;
+};
+
+const findDuplicateCandidates = async (normalizedName: string, longitude: number, latitude: number) => {
+    await Location.init();
+    const [sameName, nearby] = await Promise.all([
+        Location.find({
+            status: { $ne: 'withdrawn' },
+            $or: [{ normalizedName }, { 'aliases.normalizedValue': normalizedName }],
+        }).select({ _id: 1, name: 1, categoryCode: 1, status: 1 }).limit(5).lean(),
+        Location.aggregate<{
+            _id: mongoose.Types.ObjectId;
+            name: string;
+            categoryCode: string;
+            status: string;
+            distanceMeters: number;
+        }>([
+            {
+                $geoNear: {
+                    near: { type: 'Point', coordinates: [longitude, latitude] },
+                    distanceField: 'distanceMeters',
+                    maxDistance: DUPLICATE_RADIUS_METERS,
+                    query: { status: { $ne: 'withdrawn' } },
+                    spherical: true,
+                },
+            },
+            { $limit: 5 },
+            { $project: { name: 1, categoryCode: 1, status: 1, distanceMeters: 1 } },
+        ]),
+    ]);
+
+    const candidates = new Map<string, {
+        locationId: string;
+        name: string;
+        categoryCode: string;
+        status: string;
+        distanceMeters?: number;
+    }>();
+
+    for (const location of sameName) {
+        candidates.set(location._id.toString(), {
+            locationId: location._id.toString(),
+            name: location.name,
+            categoryCode: location.categoryCode,
+            status: location.status,
+        });
+    }
+    for (const location of nearby) {
+        candidates.set(location._id.toString(), {
+            locationId: location._id.toString(),
+            name: location.name,
+            categoryCode: location.categoryCode,
+            status: location.status,
+            distanceMeters: Math.round(location.distanceMeters),
+        });
+    }
+    return [...candidates.values()].slice(0, 5);
+};
+
+const formatAddress = (location: ILocation) => [
+    location.address.addressLine,
+    location.address.wardNameSnapshot,
+    'Thành phố Huế',
+].filter(Boolean).join(', ');
+
+const categoryMapFor = async (locations: ILocation[]) => {
+    const categoryCodes = [...new Set(locations.map(({ categoryCode }) => categoryCode))];
+    const categories = await Category.find({ code: { $in: categoryCodes } })
+        .select({ _id: 0, code: 1, name: 1 })
+        .lean();
+    return new Map(categories.map((category) => [category.code, category.name]));
+};
+
+const toLocationSummary = (location: ILocation, categoryNames: Map<string, string>) => ({
+    id: location._id.toString(),
+    name: location.name,
+    category: {
+        code: location.categoryCode,
+        name: categoryNames.get(location.categoryCode) ?? location.categoryCode,
+    },
+    formattedAddress: formatAddress(location),
+    coverImageUrl: [...location.images].sort((left, right) => left.position - right.position)[0]?.url ?? null,
+    averageRating: location.ratingSummary.average,
+    reviewCount: location.ratingSummary.count,
+    tagCodes: location.tagCodes,
+});
+
+const toLocationDetail = (location: ILocation, categoryName: string) => ({
+    ...toLocationSummary(location, new Map([[location.categoryCode, categoryName]])),
+    description: location.description,
+    aliases: location.aliases.map(({ value }) => value),
+    address: {
+        wardCode: location.address.wardCode,
+        wardName: location.address.wardNameSnapshot,
+        addressLine: location.address.addressLine,
+        locationNote: location.address.locationNote,
+    },
+    latitude: location.geo.coordinates[1],
+    longitude: location.geo.coordinates[0],
+    images: [...location.images]
+        .sort((left, right) => left.position - right.position)
+        .map((image) => ({ id: image._id.toString(), url: image.url, position: image.position })),
+    openingHours: location.openingHours,
+    status: location.status,
+    createdAt: location.createdAt,
+    updatedAt: location.updatedAt,
+});
+
+export const createLocation = async (input: CreateLocationInput, actor: Actor) => {
+    if (!mongoose.isValidObjectId(actor.id)) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Tài khoản không hợp lệ.');
+    }
+    const user = await User.findById(actor.id).select({ role: 1, status: 1 });
+    if (!user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Tài khoản không còn tồn tại.');
+    }
+    if (user.status === 'locked') {
+        throw new ApiError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa.');
+    }
+
+    const name = requiredString(input.name, 'Tên địa điểm', 200);
+    const normalizedName = normalizeSearchText(name);
+    const description = requiredString(input.description, 'Mô tả', 5000);
+    const categoryCode = requiredString(input.categoryCode, 'Category', 100).toLowerCase();
+    const category = await Category.findOne({ code: categoryCode, isActive: true })
+        .select({ code: 1, name: 1 });
+    if (!category || !categoryTagWhitelist[categoryCode]) {
+        throw new ApiError(422, 'INVALID_CATEGORY_TAG_COMBINATION', 'Category không tồn tại hoặc đã ngừng hoạt động.');
+    }
+
+    const tagCodes = await validateTags(categoryCode, input.tagCodes);
+    const aliases = parseAliases(input.aliases, normalizedName);
+    const wardCode = requiredString(input.wardCode, 'Phường/xã', 20);
+    const ward = getWardByCode(wardCode);
+    if (!ward) {
+        throw new ApiError(422, 'INVALID_WARD', 'Mã phường/xã không hợp lệ hoặc đã ngừng hoạt động.');
+    }
+    const addressLine = requiredString(input.addressLine, 'Địa chỉ', 500);
+    const locationNote = optionalString(input.locationNote, 'Ghi chú vị trí', 1000);
+    const latitude = parseCoordinate(input.latitude, 'latitude');
+    const longitude = parseCoordinate(input.longitude, 'longitude');
+    const openingHours = parseOpeningHours(input.openingHours);
+    const images = parseImages(input.images, user._id.toString());
+    const duplicateCandidates = await findDuplicateCandidates(normalizedName, longitude, latitude);
+    const now = new Date();
+    const status = user.role === 'admin' ? 'approved' : 'pending';
+    const searchText = normalizeSearchText([
+        name,
+        ...aliases.map(({ value }) => value),
+        category.name,
+        ...tagCodes,
+        addressLine,
+        ward.name,
+        description,
+    ].join(' '));
+
+    const location = await Location.create({
+        createdBy: user._id,
+        name,
+        normalizedName,
+        description,
+        categoryCode,
+        tagCodes,
+        aliases,
+        address: {
+            wardCode,
+            wardNameSnapshot: ward.name,
+            addressLine,
+            locationNote,
+        },
+        geo: { type: 'Point', coordinates: [longitude, latitude] },
+        images,
+        openingHours,
+        ratingSummary: { average: 0, count: 0 },
+        status,
+        moderation: {
+            reviewedBy: status === 'approved' ? user._id : null,
+            reviewedAt: status === 'approved' ? now : null,
+            rejectionReason: null,
+            submittedAt: now,
+            withdrawnAt: null,
+            hiddenBy: null,
+            hiddenAt: null,
+            hiddenReason: null,
+        },
+        searchText,
+    });
+
+    return {
+        ...toLocationDetail(location, category.name),
+        duplicateWarning: duplicateCandidates.length > 0,
+        duplicateCandidates,
+    };
+};
+
+const positiveInteger = (value: string | undefined, fallback: number, maximum?: number) => {
+    if (value === undefined) return fallback;
+    const number = Number(value);
+    if (!Number.isInteger(number) || number < 1) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'Thông tin phân trang không hợp lệ.');
+    }
+    return maximum ? Math.min(number, maximum) : number;
+};
+
+export const getPublicLocations = async (query: PublicLocationQuery) => {
+    const page = positiveInteger(query.page, 1);
+    const pageSize = positiveInteger(query.pageSize, 12, 100);
+    const filter: Record<string, unknown> = { status: 'approved' };
+
+    if (query.categoryCode) filter.categoryCode = query.categoryCode.trim().toLowerCase();
+    if (query.wardCode) filter['address.wardCode'] = query.wardCode.trim();
+
+    const [locations, total] = await Promise.all([
+        Location.find(filter).sort({ createdAt: -1 }).skip((page - 1) * pageSize).limit(pageSize),
+        Location.countDocuments(filter),
+    ]);
+    const categoryNames = await categoryMapFor(locations);
+
+    return {
+        data: locations.map((location) => toLocationSummary(location, categoryNames)),
+        meta: {
+            page,
+            pageSize,
+            total,
+            totalPages: total === 0 ? 0 : Math.ceil(total / pageSize),
+        },
+    };
+};
+
+export const getPublicLocationById = async (locationId: string) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    const location = await Location.findOne({ _id: locationId, status: 'approved' });
+    if (!location) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    const category = await Category.findOne({ code: location.categoryCode }).select({ name: 1 });
+    return toLocationDetail(location, category?.name ?? location.categoryCode);
+};

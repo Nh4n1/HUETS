@@ -126,3 +126,6 @@ export const getTagsByCategory = async (rawCategoryCode: string) => {
 export const getWards = () => loadWards()
     .filter(({ isActive }) => isActive)
     .sort((left, right) => left.name.localeCompare(right.name, 'vi'));
+
+export const getWardByCode = (wardCode: string) => loadWards()
+    .find((ward) => ward.code === wardCode && ward.isActive);
