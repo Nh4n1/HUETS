@@ -18,11 +18,11 @@ export interface LocationImageAssetPayload {
 
 export const signLocationImageAssetToken = (
     payload: Omit<LocationImageAssetPayload, 'type'>,
-    expiresIn = '30m',
+    expiresIn: SignOptions['expiresIn'] = '30m',
 ) => jwt.sign(
     { ...payload, type: LOCATION_IMAGE_TYPE },
     locationAssetTokenSecret,
-    { expiresIn } as SignOptions,
+    { expiresIn },
 );
 
 export const verifyLocationImageAssetToken = (token: string): LocationImageAssetPayload => {

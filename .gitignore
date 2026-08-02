@@ -3,6 +3,7 @@ docs/
 node_modules/
 dist/
 build/
+BE/storage/
 .env
 .env.*
 *.log

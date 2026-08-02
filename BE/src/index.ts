@@ -4,6 +4,7 @@ import express from "express";
 import morgan from "morgan";
 import helmet from "helmet";
 import compression from "compression";
+import { locationImageUploadConfig } from "./config/config.upload.ts";
 import router from "./routers/index.ts";
 import { ApiError } from "./utils/apiError.ts";
 import type { NextFunction, Request, Response } from "express";
@@ -14,6 +15,16 @@ app.use(helmet());
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  locationImageUploadConfig.publicPath,
+  express.static(locationImageUploadConfig.storageDirectory, {
+    dotfiles: "deny",
+    index: false,
+    setHeaders: (res) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    },
+  }),
+);
 
 //init db
 const db = await import("./dbs/init.db.ts");

@@ -4,7 +4,7 @@ import { authenticate, authorize } from '../../middlewares/auth.middleware.ts';
 
 const router = Router();
 
-router.post('/', authenticate, authorize('admin'), locationController.createLocation);
+router.post('/', authenticate, authorize('user', 'admin'), locationController.createLocation);
 router.get('/', locationController.getPublicLocations);
 router.get('/:locationId', locationController.getPublicLocationById);
 
