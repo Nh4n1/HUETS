@@ -7,6 +7,8 @@
     "dev": "node --watch server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "dev:location-image-token": "node src/database/dev/generateLocationImageToken.ts",
+    "seed:references": "node src/database/seed/reference.seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,6 +17,7 @@
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.3.0",
     "compression": "^1.8.1",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "helmet": "^8.3.0",
@@ -28,9 +31,11 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.2.0",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.20.0",
     "typescript": "^7.0.2"

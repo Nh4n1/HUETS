@@ -24,3 +24,17 @@ export const authenticate = (req: Request, _res: Response, next: NextFunction) =
         return next(new ApiError(401, 'UNAUTHORIZED', 'Access token không hợp lệ hoặc đã hết hạn.'));
     }
 };
+
+export const authorize = (...allowedRoles: Array<'user' | 'admin'>) => (
+    req: Request,
+    _res: Response,
+    next: NextFunction,
+) => {
+    if (!req.user) {
+        return next(new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.'));
+    }
+    if (!allowedRoles.includes(req.user.role)) {
+        return next(new ApiError(403, 'FORBIDDEN', 'Bạn không có quyền thực hiện thao tác này.'));
+    }
+    return next();
+};
