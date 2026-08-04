@@ -1,0 +1,13 @@
+:root {
+  --color-primary: #7c3f20;
+  --color-primary-dark: #5f2f17;
+  --color-text: #1f2937;
+  --color-text-muted: #6b7280;
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --shadow-card: 0 1rem 3rem rgb(15 23 42 / 10%);
+  --container-width: 72rem;
+}

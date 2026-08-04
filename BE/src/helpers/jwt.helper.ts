@@ -30,8 +30,7 @@ const DURATION_UNIT_MS: Record<string, number> = {
     d: 24 * 60 * 60 * 1000,
 };
 
-// converts jwt-style durations like "15m" / "7d" into an absolute expiry Date
-export const durationFromNow = (duration: string): Date => {
+export const durationToMilliseconds = (duration: string): number => {
     const match = /^(\d+)([smhd])$/.exec(duration.trim());
     if (!match) {
         throw new Error(`Invalid duration format: ${duration}`);
@@ -41,5 +40,9 @@ export const durationFromNow = (duration: string): Date => {
     if (!amount || !unitMs) {
         throw new Error(`Invalid duration format: ${duration}`);
     }
-    return new Date(Date.now() + Number(amount) * unitMs);
+    return Number(amount) * unitMs;
 };
+
+// converts jwt-style durations like "15m" / "7d" into an absolute expiry Date
+export const durationFromNow = (duration: string): Date =>
+    new Date(Date.now() + durationToMilliseconds(duration));

@@ -1,0 +1,33 @@
+@import './tokens.css';
+@import './reset.css';
+
+body {
+  min-height: 100svh;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-family:
+    Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+.page-container {
+  width: min(100% - 2rem, var(--container-width));
+  margin-inline: auto;
+  padding-block: 2rem;
+}
+
+.hero-page {
+  display: grid;
+  min-height: calc(100svh - 4rem);
+  padding: 2rem;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+}

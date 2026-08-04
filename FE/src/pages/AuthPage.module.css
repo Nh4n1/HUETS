@@ -1,0 +1,21 @@
+.page {
+  display: grid;
+  min-height: calc(100svh - 4rem);
+  padding: 2rem 1rem;
+  place-items: center;
+}
+
+.card {
+  width: min(100%, 28rem);
+  box-shadow: var(--shadow-card);
+}
+
+.heading {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.footer {
+  margin-top: 1rem;
+  text-align: center;
+}

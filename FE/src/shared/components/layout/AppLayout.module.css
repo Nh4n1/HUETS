@@ -1,0 +1,49 @@
+.layout {
+  min-height: 100svh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: clamp(1rem, 4vw, 3rem);
+}
+
+.brand {
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav a {
+  color: rgb(255 255 255 / 75%);
+}
+
+.nav a:hover,
+.nav a[aria-current='page'] {
+  color: white;
+}
+
+.userName {
+  color: white;
+}
+
+.content {
+  min-height: calc(100svh - 4rem);
+}
+
+@media (max-width: 40rem) {
+  .userName {
+    display: none;
+  }
+
+  .nav {
+    gap: 0.625rem;
+  }
+}
