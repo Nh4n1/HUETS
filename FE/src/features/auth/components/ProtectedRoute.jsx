@@ -1,6 +1,6 @@
 import { Spin } from 'antd'
 import { Navigate, Outlet, useLocation } from 'react-router'
-import { useAuth } from './useAuth'
+import { useAuth } from '../context/useAuth'
 
 export function ProtectedRoute() {
   const { loading, isAuthenticated } = useAuth()

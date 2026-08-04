@@ -1,6 +1,6 @@
 import { Alert, Button, Card, Form, Input, Typography } from 'antd'
 import { Link, Navigate, useLocation } from 'react-router'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../context/useAuth'
 import styles from './AuthPage.module.css'
 
 export function LoginPage() {

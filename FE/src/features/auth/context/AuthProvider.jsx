@@ -4,9 +4,9 @@ import {
   clearAccessToken,
   configureSessionExpiredHandler,
   refreshAccessToken,
-} from '../api/httpClient'
+} from '../../../shared/api/httpClient'
 import { AuthContext } from './authContextValue'
-import { authReducer, initialAuthState } from './authReducer'
+import { authReducer, initialAuthState } from '../reducer/authReducer'
 
 // React StrictMode chạy effect hai lần ở môi trường development.
 // Promise dùng chung giúp việc khôi phục phiên chỉ gọi API một lần.

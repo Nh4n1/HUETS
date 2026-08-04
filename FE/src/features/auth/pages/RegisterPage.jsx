@@ -2,7 +2,7 @@ import { App, Alert, Button, Card, Form, Input, Typography } from 'antd'
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { registerApi } from '../api/authApi'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../context/useAuth'
 import styles from './AuthPage.module.css'
 
 export function RegisterPage() {

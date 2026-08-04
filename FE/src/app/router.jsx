@@ -1,11 +1,11 @@
 // app/router.jsx
 import { createBrowserRouter } from 'react-router'
-import { ProtectedRoute } from '../auth/ProtectedRoute'
-import { LoginPage } from '../pages/LoginPage'
-import { ProfilePage } from '../pages/ProfilePage'
-import { RegisterPage } from '../pages/RegisterPage'
-import { AppLayout } from '../shared/components/layout/AppLayout'
-import { HomePage } from '../shared/components/HomePage'
+import { ProtectedRoute } from '../features/auth/components/ProtectedRoute'
+import { LoginPage } from '../features/auth/pages/LoginPage'
+import { ProfilePage } from '../features/auth/pages/ProfilePage'
+import { RegisterPage } from '../features/auth/pages/RegisterPage'
+import { HomePage } from '../pages/HomePage'
+import { AppLayout } from './layouts/AppLayout'
 
 export const router = createBrowserRouter([
   {

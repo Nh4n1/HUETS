@@ -1,5 +1,5 @@
 import { Card, Descriptions, Typography } from 'antd'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../context/useAuth'
 
 export function ProfilePage() {
   const { user } = useAuth()

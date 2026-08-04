@@ -2,7 +2,7 @@ import {
   clearAccessToken,
   httpClient,
   setAccessToken,
-} from './httpClient'
+} from '../../../shared/api/httpClient'
 
 export async function loginApi(credentials) {
   const response = await httpClient.post('/auth/login', credentials)

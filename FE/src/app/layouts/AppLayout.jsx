@@ -1,7 +1,7 @@
 import { Button, Layout, Space, Typography } from 'antd'
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
-import { useAuth } from '../../../auth/useAuth'
+import { useAuth } from '../../features/auth/context/useAuth'
 import styles from './AppLayout.module.css'
 
 export function AppLayout() {

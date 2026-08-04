@@ -1,5 +1,5 @@
 import { App, ConfigProvider } from 'antd'
-import { AuthProvider } from '../auth/AuthContext'
+import { AuthProvider } from '../features/auth/context/AuthProvider'
 
 export function AppProviders({ children }) {
   return (
