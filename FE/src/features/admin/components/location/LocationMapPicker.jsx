@@ -19,12 +19,15 @@ const locationMarkerIcon = L.icon({
 })
 
 const HUE_CENTER = [16.4637, 107.5909]
-const DEFAULT_ZOOM = 13
+const DEFAULT_ZOOM = 15
+const SELECTED_POSITION_ZOOM = 17
+const MAX_ZOOM = 19
 
 function ClickHandler({ onChange }) {
-  useMapEvents({
+  const map = useMapEvents({
     click(event) {
       onChange(event.latlng.lat, event.latlng.lng)
+      map.setView(event.latlng, Math.max(map.getZoom(), SELECTED_POSITION_ZOOM))
     },
   })
   return null
@@ -37,12 +40,14 @@ export function LocationMapPicker({ value, onChange, readOnly = false }) {
   return (
     <MapContainer
       center={center}
-      zoom={DEFAULT_ZOOM}
-      style={{ height: 320, width: '100%' }}
+      zoom={hasPosition ? SELECTED_POSITION_ZOOM : DEFAULT_ZOOM}
+      maxZoom={MAX_ZOOM}
+      style={{ height: 420, width: '100%' }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={MAX_ZOOM}
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {readOnly ? null : <ClickHandler onChange={onChange} />}
       {hasPosition ? (
