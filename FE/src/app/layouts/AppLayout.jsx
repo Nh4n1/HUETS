@@ -31,6 +31,9 @@ export function AppLayout() {
           {user ? (
             <>
               <NavLink to="/profile">Hồ sơ</NavLink>
+              {user.role === 'admin' ? (
+                <NavLink to="/admin">Quản trị</NavLink>
+              ) : null}
               <Typography.Text className={styles.userName}>
                 {user.displayName}
               </Typography.Text>

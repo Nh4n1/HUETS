@@ -5,7 +5,6 @@ import morgan from "morgan";
 import helmet from "helmet";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-import { locationImageUploadConfig } from "./config/config.upload.ts";
 import { corsMiddleware } from "./middlewares/cors.middleware.ts";
 import router from "./routers/index.ts";
 import { ApiError } from "./utils/apiError.ts";
@@ -19,16 +18,6 @@ app.use(compression());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  locationImageUploadConfig.publicPath,
-  express.static(locationImageUploadConfig.storageDirectory, {
-    dotfiles: "deny",
-    index: false,
-    setHeaders: (res) => {
-      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-    },
-  }),
-);
 
 //init db
 const db = await import("./dbs/init.db.ts");

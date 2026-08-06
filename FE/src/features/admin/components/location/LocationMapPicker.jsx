@@ -1,0 +1,45 @@
+import L from 'leaflet'
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+import 'leaflet/dist/leaflet.css'
+import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
+
+// Vite bundles Leaflet's default marker icon URLs incorrectly; point them at the actual assets.
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+})
+
+const HUE_CENTER = [16.4637, 107.5909]
+const DEFAULT_ZOOM = 13
+
+function ClickHandler({ onChange }) {
+  useMapEvents({
+    click(event) {
+      onChange(event.latlng.lat, event.latlng.lng)
+    },
+  })
+  return null
+}
+
+export function LocationMapPicker({ value, onChange }) {
+  const hasPosition = typeof value?.lat === 'number' && typeof value?.lng === 'number'
+  const center = hasPosition ? [value.lat, value.lng] : HUE_CENTER
+
+  return (
+    <MapContainer
+      center={center}
+      zoom={DEFAULT_ZOOM}
+      style={{ height: 320, width: '100%' }}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <ClickHandler onChange={onChange} />
+      {hasPosition ? <Marker position={[value.lat, value.lng]} /> : null}
+    </MapContainer>
+  )
+}

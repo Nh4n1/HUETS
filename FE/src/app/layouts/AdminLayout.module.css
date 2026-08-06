@@ -1,0 +1,31 @@
+.layout {
+  min-height: 100svh;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  font-weight: 700;
+  padding: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 1rem;
+  background: #fff;
+}
+
+.collapseButton {
+  font-size: 1.125rem;
+}
+
+.content {
+  padding: clamp(1rem, 3vw, 2rem);
+  min-height: calc(100svh - 4rem);
+}
