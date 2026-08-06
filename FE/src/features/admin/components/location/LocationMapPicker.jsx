@@ -24,7 +24,7 @@ function ClickHandler({ onChange }) {
   return null
 }
 
-export function LocationMapPicker({ value, onChange }) {
+export function LocationMapPicker({ value, onChange, readOnly = false }) {
   const hasPosition = typeof value?.lat === 'number' && typeof value?.lng === 'number'
   const center = hasPosition ? [value.lat, value.lng] : HUE_CENTER
 
@@ -38,7 +38,7 @@ export function LocationMapPicker({ value, onChange }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <ClickHandler onChange={onChange} />
+      {readOnly ? null : <ClickHandler onChange={onChange} />}
       {hasPosition ? <Marker position={[value.lat, value.lng]} /> : null}
     </MapContainer>
   )

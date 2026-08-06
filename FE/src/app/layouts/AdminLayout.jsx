@@ -40,7 +40,7 @@ const menuItems = [
     icon: <EnvironmentOutlined />,
     label: 'Quản lý địa điểm',
     children: [
-      { key: '/admin/locations/pending', label: placeholderLink('Hàng chờ kiểm duyệt') },
+      { key: '/admin/locations/pending', label: <Link to="/admin/locations/pending">Hàng chờ kiểm duyệt</Link> },
       { key: '/admin/locations', label: <Link to="/admin/locations">Tất cả địa điểm</Link> },
       { key: '/admin/locations/new', label: <Link to="/admin/locations/new">Thêm địa điểm mới</Link> },
     ],
@@ -79,6 +79,8 @@ const menuItems = [
 
 function getSelectedKey(pathname) {
   if (pathname === '/admin/locations/new') return '/admin/locations/new'
+  if (pathname === '/admin/locations/pending') return '/admin/locations/pending'
+  if (pathname.startsWith('/admin/locations/')) return '/admin/locations'
   if (pathname === '/admin/locations') return '/admin/locations'
   return '/admin'
 }

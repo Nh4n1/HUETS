@@ -17,6 +17,7 @@ export type ApiErrorCode =
     | 'INVALID_IMAGE_ASSET_TOKEN'
     | 'INVALID_COORDINATES'
     | 'INVALID_ALIAS'
+    | 'STALE_RESOURCE'
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
     | 'NOT_FOUND';

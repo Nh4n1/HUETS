@@ -4,6 +4,7 @@ import locationRouter from './location/index.ts';
 import profileRouter from './profile/index.ts';
 import referenceRouter from './reference/index.ts';
 import uploadRouter from './upload/index.ts';
+import adminLocationRouter from './adminLocation/index.ts';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.get('/', (req, res, next) => {
 });
 
 router.use('/api/auth', accessRouter);
+router.use('/api/admin/locations', adminLocationRouter);
 router.use('/api/locations', locationRouter);
 router.use('/api/me', profileRouter);
 router.use('/api/reference', referenceRouter);

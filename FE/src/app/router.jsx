@@ -6,6 +6,8 @@ import { ProfilePage } from '../features/auth/pages/ProfilePage'
 import { RegisterPage } from '../features/auth/pages/RegisterPage'
 import { AdminRoute } from '../features/admin/components/AdminRoute'
 import { AdminCreateLocationPage } from '../features/admin/pages/location/AdminCreateLocationPage'
+import { AdminLocationDetailPage } from '../features/admin/pages/location/AdminLocationDetailPage'
+import { AdminLocationModerationPage } from '../features/admin/pages/location/AdminLocationModerationPage'
 import { AdminLocationsPage } from '../features/admin/pages/location/AdminLocationsPage'
 import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOverviewPage'
 import { HomePage } from '../pages/HomePage'
@@ -58,6 +60,14 @@ export const router = createBrowserRouter([
           {
             path: 'locations/new',
             Component: AdminCreateLocationPage,
+          },
+          {
+            path: 'locations/pending',
+            Component: AdminLocationModerationPage,
+          },
+          {
+            path: 'locations/:locationId',
+            Component: AdminLocationDetailPage,
           },
         ],
       },
