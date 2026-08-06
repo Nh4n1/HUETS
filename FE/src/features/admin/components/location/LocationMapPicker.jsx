@@ -5,11 +5,17 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import 'leaflet/dist/leaflet.css'
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
 
-// Vite bundles Leaflet's default marker icon URLs incorrectly; point them at the actual assets.
-L.Icon.Default.mergeOptions({
+// Use a standalone icon so Leaflet's Icon.Default does not prefix Vite's
+// inlined data URLs with its auto-detected image path.
+const locationMarkerIcon = L.icon({
   iconRetinaUrl: markerIcon2x,
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  tooltipAnchor: [16, -28],
+  shadowSize: [41, 41],
 })
 
 const HUE_CENTER = [16.4637, 107.5909]
@@ -39,7 +45,9 @@ export function LocationMapPicker({ value, onChange, readOnly = false }) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {readOnly ? null : <ClickHandler onChange={onChange} />}
-      {hasPosition ? <Marker position={[value.lat, value.lng]} /> : null}
+      {hasPosition ? (
+        <Marker icon={locationMarkerIcon} position={[value.lat, value.lng]} />
+      ) : null}
     </MapContainer>
   )
 }
