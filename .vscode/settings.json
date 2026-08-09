@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cmd /c \"cd d:\\\\School\\\\FPT\\\\HUETS\\\\BE && npm uninstall multer @types/multer\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

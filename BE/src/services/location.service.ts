@@ -4,7 +4,13 @@ import { verifyLocationImageAssetToken } from '../helpers/locationAssetToken.hel
 import { normalizeSearchText } from '../helpers/text.helper.ts';
 import Category from '../models/category.model.ts';
 import Location from '../models/location.model.ts';
-import type { ILocation, ILocationOpeningHours, IOpeningPeriod, IOpeningRange } from '../models/location.model.ts';
+import type {
+    ILocation,
+    ILocationOpeningHours,
+    IOpeningPeriod,
+    IOpeningRange,
+    LocationStatus,
+} from '../models/location.model.ts';
 import TagGroup from '../models/tagGroup.model.ts';
 import User from '../models/user.model.ts';
 import { getWardByCode } from './reference.service.ts';
@@ -62,6 +68,16 @@ export interface PublicLocationQuery {
     pageSize?: string;
     categoryCode?: string;
     wardCode?: string;
+}
+
+export interface AdminLocationQuery extends PublicLocationQuery {
+    status?: string;
+}
+
+export interface ModerateLocationInput {
+    expectedStatus?: unknown;
+    expectedUpdatedAt?: unknown;
+    reason?: unknown;
 }
 
 const requiredString = (value: unknown, field: string, maxLength: number) => {
@@ -295,10 +311,19 @@ const validateTags = async (categoryCode: string, value: unknown) => {
     return tagCodes;
 };
 
-const findDuplicateCandidates = async (normalizedName: string, longitude: number, latitude: number) => {
+const findDuplicateCandidates = async (
+    normalizedName: string,
+    longitude: number,
+    latitude: number,
+    excludedLocationId?: string,
+) => {
     await Location.init();
+    const excludedFilter = excludedLocationId && mongoose.isValidObjectId(excludedLocationId)
+        ? { _id: { $ne: new mongoose.Types.ObjectId(excludedLocationId) } }
+        : {};
     const [sameName, nearby] = await Promise.all([
         Location.find({
+            ...excludedFilter,
             status: { $ne: 'withdrawn' },
             $or: [{ normalizedName }, { 'aliases.normalizedValue': normalizedName }],
         }).select({ _id: 1, name: 1, categoryCode: 1, status: 1 }).limit(5).lean(),
@@ -314,7 +339,7 @@ const findDuplicateCandidates = async (normalizedName: string, longitude: number
                     near: { type: 'Point', coordinates: [longitude, latitude] },
                     distanceField: 'distanceMeters',
                     maxDistance: DUPLICATE_RADIUS_METERS,
-                    query: { status: { $ne: 'withdrawn' } },
+                    query: { ...excludedFilter, status: { $ne: 'withdrawn' } },
                     spherical: true,
                 },
             },
@@ -365,6 +390,18 @@ const categoryMapFor = async (locations: ILocation[]) => {
     return new Map(categories.map((category) => [category.code, category.name]));
 };
 
+const contributorMapFor = async (locations: ILocation[]) => {
+    const contributorIds = [...new Set(locations.map(({ createdBy }) => createdBy.toString()))];
+    const contributors = await User.find({ _id: { $in: contributorIds } })
+        .select({ email: 1, displayName: 1 })
+        .lean();
+    return new Map(contributors.map((contributor) => [contributor._id.toString(), {
+        id: contributor._id.toString(),
+        displayName: contributor.displayName,
+        email: contributor.email,
+    }]));
+};
+
 const toLocationSummary = (location: ILocation, categoryNames: Map<string, string>) => ({
     id: location._id.toString(),
     name: location.name,
@@ -399,6 +436,49 @@ const toLocationDetail = (location: ILocation, categoryName: string) => ({
     createdAt: location.createdAt,
     updatedAt: location.updatedAt,
 });
+
+const toAdminLocationSummary = (
+    location: ILocation,
+    categoryNames: Map<string, string>,
+    contributors: Map<string, { id: string; displayName: string; email: string }>,
+) => ({
+    ...toLocationSummary(location, categoryNames),
+    status: location.status,
+    contributor: contributors.get(location.createdBy.toString()) ?? null,
+    submittedAt: location.moderation.submittedAt,
+    createdAt: location.createdAt,
+    updatedAt: location.updatedAt,
+});
+
+const toAdminLocationDetail = async (location: ILocation) => {
+    const [categoryNames, contributors, duplicateCandidates] = await Promise.all([
+        categoryMapFor([location]),
+        contributorMapFor([location]),
+        findDuplicateCandidates(
+            location.normalizedName,
+            location.geo.coordinates[0],
+            location.geo.coordinates[1],
+            location._id.toString(),
+        ),
+    ]);
+
+    return {
+        ...toLocationDetail(location, categoryNames.get(location.categoryCode) ?? location.categoryCode),
+        contributor: contributors.get(location.createdBy.toString()) ?? null,
+        moderation: {
+            reviewedBy: location.moderation.reviewedBy?.toString() ?? null,
+            reviewedAt: location.moderation.reviewedAt,
+            rejectionReason: location.moderation.rejectionReason,
+            submittedAt: location.moderation.submittedAt,
+            withdrawnAt: location.moderation.withdrawnAt,
+            hiddenBy: location.moderation.hiddenBy?.toString() ?? null,
+            hiddenAt: location.moderation.hiddenAt,
+            hiddenReason: location.moderation.hiddenReason,
+        },
+        duplicateWarning: duplicateCandidates.length > 0,
+        duplicateCandidates,
+    };
+};
 
 export const createLocation = async (input: CreateLocationInput, actor: Actor) => {
     if (!mongoose.isValidObjectId(actor.id)) {
@@ -532,3 +612,154 @@ export const getPublicLocationById = async (locationId: string) => {
     const category = await Category.findOne({ code: location.categoryCode }).select({ name: 1 });
     return toLocationDetail(location, category?.name ?? location.categoryCode);
 };
+
+const LOCATION_STATUSES: LocationStatus[] = ['pending', 'approved', 'rejected', 'withdrawn', 'hidden'];
+
+export const getAdminLocations = async (query: AdminLocationQuery) => {
+    const page = positiveInteger(query.page, 1);
+    const pageSize = positiveInteger(query.pageSize, 12, 100);
+    const filter: Record<string, unknown> = {};
+
+    if (query.status) {
+        const status = query.status.trim().toLowerCase() as LocationStatus;
+        if (!LOCATION_STATUSES.includes(status)) {
+            throw new ApiError(400, 'VALIDATION_ERROR', 'Trạng thái Location không hợp lệ.');
+        }
+        filter.status = status;
+    }
+    if (query.categoryCode) filter.categoryCode = query.categoryCode.trim().toLowerCase();
+    if (query.wardCode) filter['address.wardCode'] = query.wardCode.trim();
+
+    const [locations, total] = await Promise.all([
+        Location.find(filter).sort({ createdAt: -1 }).skip((page - 1) * pageSize).limit(pageSize),
+        Location.countDocuments(filter),
+    ]);
+    const [categoryNames, contributors] = await Promise.all([
+        categoryMapFor(locations),
+        contributorMapFor(locations),
+    ]);
+
+    return {
+        data: locations.map((location) => toAdminLocationSummary(location, categoryNames, contributors)),
+        meta: {
+            page,
+            pageSize,
+            total,
+            totalPages: total === 0 ? 0 : Math.ceil(total / pageSize),
+        },
+    };
+};
+
+export const getAdminLocationById = async (locationId: string) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    const location = await Location.findById(locationId);
+    if (!location) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    return toAdminLocationDetail(location);
+};
+
+const assertActiveAdmin = async (actor: Actor) => {
+    if (!mongoose.isValidObjectId(actor.id)) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Tài khoản không hợp lệ.');
+    }
+    const user = await User.findById(actor.id).select({ role: 1, status: 1 });
+    if (!user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Tài khoản không còn tồn tại.');
+    }
+    if (user.status === 'locked') {
+        throw new ApiError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa.');
+    }
+    if (user.role !== 'admin') {
+        throw new ApiError(403, 'FORBIDDEN', 'Bạn không có quyền kiểm duyệt địa điểm.');
+    }
+    return user;
+};
+
+const parseModerationPrecondition = (input: ModerateLocationInput) => {
+    if (input.expectedStatus !== 'pending') {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'expectedStatus phải là pending.');
+    }
+    if (typeof input.expectedUpdatedAt !== 'string' || input.expectedUpdatedAt.trim().length === 0) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'expectedUpdatedAt là thông tin bắt buộc.');
+    }
+    const expectedUpdatedAt = new Date(input.expectedUpdatedAt);
+    if (Number.isNaN(expectedUpdatedAt.getTime())) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'expectedUpdatedAt không hợp lệ.');
+    }
+    return expectedUpdatedAt;
+};
+
+const throwModerationConflict = async (locationId: string): Promise<never> => {
+    const current = await Location.findById(locationId).select({ status: 1, updatedAt: 1 }).lean();
+    if (!current) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    throw new ApiError(
+        409,
+        'STALE_RESOURCE',
+        'Dữ liệu đã được thay đổi. Vui lòng tải lại.',
+        { currentStatus: current.status, currentUpdatedAt: current.updatedAt },
+    );
+};
+
+const moderatePendingLocation = async (
+    locationId: string,
+    input: ModerateLocationInput,
+    actor: Actor,
+    nextStatus: Extract<LocationStatus, 'approved' | 'rejected'>,
+) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    const [admin, expectedUpdatedAt] = await Promise.all([
+        assertActiveAdmin(actor),
+        Promise.resolve(parseModerationPrecondition(input)),
+    ]);
+    const reason = nextStatus === 'rejected'
+        ? requiredString(input.reason, 'Lý do từ chối', 1000)
+        : null;
+    const reviewedAt = new Date();
+
+    const location = await Location.findOneAndUpdate(
+        { _id: locationId, status: 'pending', updatedAt: expectedUpdatedAt },
+        {
+            $set: {
+                status: nextStatus,
+                'moderation.reviewedBy': admin._id,
+                'moderation.reviewedAt': reviewedAt,
+                'moderation.rejectionReason': reason,
+                updatedAt: reviewedAt,
+            },
+        },
+        { new: true, runValidators: true },
+    );
+
+    if (!location) {
+        return throwModerationConflict(locationId);
+    }
+    return {
+        id: location._id.toString(),
+        status: location.status,
+        moderation: {
+            reviewedBy: location.moderation.reviewedBy?.toString() ?? null,
+            reviewedAt: location.moderation.reviewedAt,
+            rejectionReason: location.moderation.rejectionReason,
+        },
+        updatedAt: location.updatedAt,
+    };
+};
+
+export const approveLocation = (
+    locationId: string,
+    input: ModerateLocationInput,
+    actor: Actor,
+) => moderatePendingLocation(locationId, input, actor, 'approved');
+
+export const rejectLocation = (
+    locationId: string,
+    input: ModerateLocationInput,
+    actor: Actor,
+) => moderatePendingLocation(locationId, input, actor, 'rejected');

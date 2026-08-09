@@ -101,9 +101,9 @@ export const login = async (input: LoginInput) => {
     return { accessToken, refreshToken, user: toPublicUser(user) };
 };
 
-export const refresh = async (refreshToken: string) => {
+export const refresh = async (refreshToken?: string) => {
     if (!refreshToken) {
-        throw new ApiError(400, 'VALIDATION_ERROR', 'Thiếu refresh token.');
+        throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'Không tìm thấy phiên đăng nhập.');
     }
 
     let payload: { sub: string };
@@ -137,7 +137,7 @@ export const refresh = async (refreshToken: string) => {
     return { accessToken, refreshToken: newRefreshToken };
 };
 
-export const logout = async (refreshToken: string) => {
+export const logout = async (refreshToken?: string) => {
     if (!refreshToken) return;
     await AuthSession.deleteOne({ refreshTokenHash: hashToken(refreshToken) });
 };
