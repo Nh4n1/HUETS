@@ -11,6 +11,8 @@ import { AdminLocationModerationPage } from '../features/admin/pages/location/Ad
 import { AdminLocationsPage } from '../features/admin/pages/location/AdminLocationsPage'
 import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOverviewPage'
 import { HomePage } from '../pages/HomePage'
+import { LocationDetailPage } from '../features/locations/pages/LocationDetailPage'
+import { LocationsPage } from '../features/locations/pages/LocationsPage'
 import { AdminLayout } from './layouts/AdminLayout'
 import { AppLayout } from './layouts/AppLayout'
 
@@ -22,6 +24,14 @@ export const router = createBrowserRouter([
       {
         index: true,
         Component: HomePage,
+      },
+      {
+        path: 'locations',
+        Component: LocationsPage,
+      },
+      {
+        path: 'locations/:locationId',
+        Component: LocationDetailPage,
       },
       {
         path: 'login',

@@ -24,7 +24,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { createLocationApi } from '../../api/adminLocationsApi'
-import { getCategoriesApi, getTagsByCategoryApi, getWardsApi } from '../../api/referenceApi'
+import { getCategoriesApi, getTagsByCategoryApi, getWardsApi } from '../../../../shared/api/referenceApi'
 import {
   confirmUploadApi,
   deleteUploadedImageApi,

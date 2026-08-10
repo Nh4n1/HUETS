@@ -80,7 +80,7 @@ export function AppLayout() {
           <nav className={styles.desktopNav} aria-label="Điều hướng chính">
             <NavLink to="/">Trang chủ</NavLink>
             <Link to="/#discover">Khám phá</Link>
-            <Link to="/#featured">Địa điểm</Link>
+            <Link to="/locations">Địa điểm</Link>
             <Link to="/#plan">Lịch trình</Link>
           </nav>
 
@@ -131,7 +131,7 @@ export function AppLayout() {
           >
             <NavLink to="/">Trang chủ</NavLink>
             <Link to="/#discover">Khám phá</Link>
-            <Link to="/#featured">Địa điểm nổi bật</Link>
+            <Link to="/locations">Địa điểm nổi bật</Link>
             <Link to="/#plan">Lên lịch trình</Link>
             {user ? (
               <>
@@ -169,6 +169,7 @@ export function AppLayout() {
 
           <div className={styles.footerColumn}>
             <h2>Khám phá</h2>
+            <Link to="/locations">Địa điểm</Link>
           </div>
 
           <div className={styles.footerColumn}>

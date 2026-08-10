@@ -6,6 +6,7 @@ const router = Router();
 
 router.post('/', authenticate, authorize('user', 'admin'), locationController.createLocation);
 router.get('/', locationController.getPublicLocations);
+router.get('/search', locationController.searchPublicLocations);
 router.get('/:locationId', locationController.getPublicLocationById);
 
 export default router;

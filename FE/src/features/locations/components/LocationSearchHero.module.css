@@ -1,0 +1,119 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2.25rem, 5vw, 3.75rem) 1rem;
+  color: var(--color-cream);
+  background:
+    radial-gradient(circle at 80% 0%, rgb(214 168 75 / 28%), transparent 34%),
+    linear-gradient(120deg, #3c271b, #75401f 72%, #87522e);
+}
+
+.hero::after {
+  position: absolute;
+  right: -5rem;
+  bottom: -8rem;
+  width: 20rem;
+  height: 20rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 50%;
+  content: '';
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 62rem);
+  margin-inline: auto;
+}
+
+.copy {
+  max-width: 45rem;
+}
+
+.eyebrow {
+  color: var(--color-accent-light);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.copy h1 {
+  margin: 0.45rem 0 0.55rem;
+  font-size: clamp(2rem, 4vw, 3.35rem);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.copy p {
+  margin: 0;
+  color: rgb(255 249 242 / 78%);
+  font-size: 0.98rem;
+}
+
+.searchBar {
+  display: grid;
+  max-width: 50rem;
+  margin-top: 1.5rem;
+  padding: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: var(--radius-lg);
+  grid-template-columns: minmax(0, 1fr) auto;
+  background: white;
+  box-shadow: 0 18px 45px rgb(25 15 8 / 26%);
+}
+
+.searchBar :global(.ant-input-affix-wrapper) {
+  min-height: 2.8rem;
+  border: 0;
+  box-shadow: none;
+}
+
+.searchBar :global(.ant-btn) {
+  height: 100%;
+  min-height: 2.8rem;
+  padding-inline: 1.35rem;
+}
+
+.suggestions {
+  display: flex;
+  margin-top: 0.85rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: rgb(255 249 242 / 72%);
+  font-size: 0.78rem;
+}
+
+.suggestions button {
+  min-height: 2rem;
+  padding: 0.32rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-pill);
+  color: var(--color-cream);
+  background: rgb(255 255 255 / 8%);
+  cursor: pointer;
+  font: inherit;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.suggestions button:hover,
+.suggestions button:focus-visible {
+  border-color: rgb(255 255 255 / 45%);
+  background: rgb(255 255 255 / 16%);
+}
+
+@media (max-width: 40rem) {
+  .searchBar {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .suggestions {
+    align-items: flex-start;
+  }
+
+  .suggestions>span {
+    width: 100%;
+  }
+}

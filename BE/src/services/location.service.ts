@@ -66,8 +66,10 @@ export interface CreateLocationInput {
 export interface PublicLocationQuery {
     page?: string;
     pageSize?: string;
+    q?: string;
     categoryCode?: string;
     wardCode?: string;
+    tagCodes?: string;
 }
 
 export interface AdminLocationQuery extends PublicLocationQuery {
@@ -576,16 +578,48 @@ const positiveInteger = (value: string | undefined, fallback: number, maximum?: 
     return maximum ? Math.min(number, maximum) : number;
 };
 
-export const getPublicLocations = async (query: PublicLocationQuery) => {
-    const page = positiveInteger(query.page, 1);
-    const pageSize = positiveInteger(query.pageSize, 12, 100);
+const escapeRegularExpression = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+export const buildPublicLocationFilter = (query: PublicLocationQuery): Record<string, unknown> => {
     const filter: Record<string, unknown> = { status: 'approved' };
+
+    if (query.q !== undefined) {
+        if (query.q.trim().length > 200) {
+            throw new ApiError(400, 'VALIDATION_ERROR', 'Từ khóa tìm kiếm không được vượt quá 200 ký tự.');
+        }
+        const normalizedQuery = normalizeSearchText(query.q);
+        if (normalizedQuery) {
+            filter.searchText = { $regex: escapeRegularExpression(normalizedQuery), $options: 'i' };
+        }
+    }
 
     if (query.categoryCode) filter.categoryCode = query.categoryCode.trim().toLowerCase();
     if (query.wardCode) filter['address.wardCode'] = query.wardCode.trim();
 
+    if (query.tagCodes !== undefined) {
+        const tagCodes = [...new Set(query.tagCodes
+            .split(',')
+            .map((code) => code.trim().toLowerCase())
+            .filter(Boolean))];
+        if (tagCodes.length > MAX_TAGS) {
+            throw new ApiError(400, 'VALIDATION_ERROR', `Chỉ được lọc tối đa ${MAX_TAGS} đặc điểm.`);
+        }
+        if (tagCodes.some((code) => !/^[a-z0-9_]+$/.test(code))) {
+            throw new ApiError(400, 'VALIDATION_ERROR', 'Danh sách đặc điểm lọc không hợp lệ.');
+        }
+        if (tagCodes.length > 0) filter.tagCodes = { $all: tagCodes };
+    }
+
+    return filter;
+};
+
+export const getPublicLocations = async (query: PublicLocationQuery) => {
+    const page = positiveInteger(query.page, 1);
+    const pageSize = positiveInteger(query.pageSize, 12, 100);
+    const filter = buildPublicLocationFilter(query);
+
     const [locations, total] = await Promise.all([
-        Location.find(filter).sort({ createdAt: -1 }).skip((page - 1) * pageSize).limit(pageSize),
+        Location.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize),
         Location.countDocuments(filter),
     ]);
     const categoryNames = await categoryMapFor(locations);
