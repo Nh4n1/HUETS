@@ -1,4 +1,5 @@
 import {
+  CalendarOutlined,
   CloseOutlined,
   CompassOutlined,
   DownOutlined,
@@ -48,6 +49,11 @@ export function AppLayout() {
         icon: <UserOutlined />,
         label: <Link to="/profile">Hồ sơ của tôi</Link>,
       },
+      {
+        key: 'my-itineraries',
+        icon: <CalendarOutlined />,
+        label: <Link to="/itineraries/mine">Lịch trình của tôi</Link>,
+      },
     ]
 
     if (user?.role === 'admin') {
@@ -79,9 +85,8 @@ export function AppLayout() {
 
           <nav className={styles.desktopNav} aria-label="Điều hướng chính">
             <NavLink to="/">Trang chủ</NavLink>
-            <Link to="/#discover">Khám phá</Link>
-            <Link to="/locations">Địa điểm</Link>
-            <Link to="/#plan">Lịch trình</Link>
+            <Link to="/explore">Khám phá</Link>
+            <Link to="/itineraries">Lịch trình</Link>
           </nav>
 
           <div className={styles.headerActions}>
@@ -130,12 +135,12 @@ export function AppLayout() {
             onClick={() => setMenuOpen(false)}
           >
             <NavLink to="/">Trang chủ</NavLink>
-            <Link to="/#discover">Khám phá</Link>
-            <Link to="/locations">Địa điểm nổi bật</Link>
-            <Link to="/#plan">Lên lịch trình</Link>
+            <Link to="/explore">Khám phá</Link>
+            <Link to="/itineraries">Lịch trình</Link>
             {user ? (
               <>
                 <Link to="/profile">Hồ sơ của tôi</Link>
+                <Link to="/itineraries/mine">Lịch trình của tôi</Link>
                 {user.role === 'admin' ? <Link to="/admin">Trang quản trị</Link> : null}
                 <Button type="text" danger loading={loggingOut} onClick={handleLogout}>
                   Đăng xuất

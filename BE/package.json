@@ -9,6 +9,8 @@
     "start": "node dist/server.js",
     "dev:location-image-token": "node src/database/dev/generateLocationImageToken.ts",
     "seed:references": "node src/database/seed/reference.seed.ts",
+    "seed:locations": "node src/database/seed/location.seed.ts",
+    "seed:demo": "npm run seed:references && npm run seed:locations",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -27,8 +29,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.0",
     "mongoose-slug-updater": "^3.3.0",
-    "morgan": "^1.11.0",
-    "pg": "^8.22.0"
+    "morgan": "^1.11.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

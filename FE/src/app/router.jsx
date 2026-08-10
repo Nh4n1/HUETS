@@ -13,6 +13,11 @@ import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOvervie
 import { HomePage } from '../pages/HomePage'
 import { LocationDetailPage } from '../features/locations/pages/LocationDetailPage'
 import { LocationsPage } from '../features/locations/pages/LocationsPage'
+import { ItinerariesPage } from '../features/itineraries/pages/ItinerariesPage'
+import { ItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
+import { ItineraryEditorPage } from '../features/itineraries/pages/ItineraryEditorPage'
+import { CommunityItinerariesPage } from '../features/itineraries/pages/CommunityItinerariesPage'
+import { CommunityItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
 import { AdminLayout } from './layouts/AdminLayout'
 import { AppLayout } from './layouts/AppLayout'
 
@@ -34,6 +39,18 @@ export const router = createBrowserRouter([
         Component: LocationDetailPage,
       },
       {
+        path: 'explore',
+        Component: LocationsPage,
+      },
+      {
+        path: 'itineraries',
+        Component: CommunityItinerariesPage,
+      },
+      {
+        path: 'itineraries/:itineraryId',
+        Component: CommunityItineraryDetailPage,
+      },
+      {
         path: 'login',
         Component: LoginPage,
       },
@@ -47,6 +64,22 @@ export const router = createBrowserRouter([
           {
             path: 'profile',
             Component: ProfilePage,
+          },
+          {
+            path: 'itineraries/mine',
+            Component: ItinerariesPage,
+          },
+          {
+            path: 'itineraries/new',
+            Component: ItineraryEditorPage,
+          },
+          {
+            path: 'itineraries/mine/:itineraryId',
+            Component: ItineraryDetailPage,
+          },
+          {
+            path: 'itineraries/mine/:itineraryId/edit',
+            Component: ItineraryEditorPage,
           },
         ],
       },
