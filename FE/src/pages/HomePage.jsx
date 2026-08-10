@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/context/useAuth'
 import { CommunitySection } from '../features/home/components/CommunitySection'
 import { DiscoverSection } from '../features/home/components/DiscoverSection'
@@ -9,20 +10,13 @@ import { JourneySection } from '../features/home/components/JourneySection'
 import { getPublicLocationsApi } from '../features/locations/api/locationApi'
 import styles from './HomePage.module.css'
 
-function normalize(value) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-}
-
 export function HomePage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [locations, setLocations] = useState([])
   const [loadStatus, setLoadStatus] = useState('loading')
   const [activeCategory, setActiveCategory] = useState('')
   const [query, setQuery] = useState('')
-  const [submittedQuery, setSubmittedQuery] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
@@ -47,18 +41,6 @@ export function HomePage() {
     return () => { cancelled = true }
   }, [activeCategory, reloadKey])
 
-  const visibleLocations = useMemo(() => {
-    if (!submittedQuery) return locations
-    const searchValue = normalize(submittedQuery)
-
-    return locations.filter((location) => normalize([
-      location.name,
-      location.category?.name,
-      location.formattedAddress,
-      ...(location.tagCodes ?? []),
-    ].join(' ')).includes(searchValue))
-  }, [locations, submittedQuery])
-
   const scrollToFeatured = () => {
     window.requestAnimationFrame(() => {
       document.getElementById('featured')?.scrollIntoView({ behavior: 'smooth' })
@@ -66,9 +48,9 @@ export function HomePage() {
   }
 
   const runSearch = (value) => {
+    const normalizedQuery = value.trim()
     setQuery(value)
-    setSubmittedQuery(value.trim())
-    scrollToFeatured()
+    navigate(normalizedQuery ? `/locations?q=${encodeURIComponent(normalizedQuery)}` : '/locations')
   }
 
   const handleSearch = (event) => {
@@ -79,7 +61,6 @@ export function HomePage() {
   const handleCategory = (code, shouldScroll = false) => {
     setLoadStatus('loading')
     setActiveCategory(code)
-    setSubmittedQuery('')
     setQuery('')
     if (shouldScroll) scrollToFeatured()
   }
@@ -103,11 +84,9 @@ export function HomePage() {
         onCategorySelect={handleCategory}
       />
       <FeaturedLocationsSection
-        locations={visibleLocations}
+        locations={locations}
         loadStatus={loadStatus}
-        submittedQuery={submittedQuery}
-        onClearSearch={() => runSearch('')}
-        onShowAll={() => handleCategory('')}
+        onShowAll={() => navigate('/locations')}
         onRetry={handleRetry}
       />
       <JourneySection isAuthenticated={Boolean(user)} />

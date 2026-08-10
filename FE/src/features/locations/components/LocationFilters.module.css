@@ -1,0 +1,90 @@
+.desktopPanel {
+  position: sticky;
+  top: 5.75rem;
+  display: grid;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  gap: 1.1rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.headingIcon {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: var(--radius-md);
+  place-items: center;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.heading>div {
+  display: grid;
+  flex: 1;
+  gap: 0.05rem;
+}
+
+.heading>div span {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heading strong {
+  color: var(--color-primary-dark);
+  font-size: 1.05rem;
+}
+
+.heading button {
+  padding: 0;
+  border: 0;
+  color: var(--color-primary);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.fields {
+  display: grid;
+  gap: 1rem;
+}
+
+.fields label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.fields label :global(.ant-select) {
+  width: 100%;
+  font-weight: 400;
+}
+
+.mobileDrawer :global(.ant-drawer-content) {
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.mobileDrawer :global(.ant-drawer-body) {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+@media (max-width: 62rem) {
+  .desktopPanel {
+    display: none;
+  }
+}

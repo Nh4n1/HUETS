@@ -1,4 +1,4 @@
-import { httpClient } from '../../../shared/api/httpClient'
+import { httpClient } from './httpClient'
 
 export async function getCategoriesApi() {
   const response = await httpClient.get('/reference/categories')

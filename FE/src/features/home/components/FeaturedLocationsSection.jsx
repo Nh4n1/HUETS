@@ -7,8 +7,6 @@ import { LocationSkeleton } from './LocationSkeleton'
 export function FeaturedLocationsSection({
   locations,
   loadStatus,
-  submittedQuery,
-  onClearSearch,
   onShowAll,
   onRetry,
 }) {
@@ -17,15 +15,8 @@ export function FeaturedLocationsSection({
       <div className={styles.featuredHeading}>
         <div>
           <span className={styles.sectionEyebrow}>Được chia sẻ gần đây</span>
-          <h2 id="featured-heading">
-            {submittedQuery ? `Kết quả cho “${submittedQuery}”` : 'Điểm đến đáng ghé'}
-          </h2>
+          <h2 id="featured-heading">Điểm đến đáng ghé</h2>
         </div>
-        {submittedQuery ? (
-          <button className={styles.clearSearch} type="button" onClick={onClearSearch}>
-            Xóa tìm kiếm
-          </button>
-        ) : null}
       </div>
 
       {loadStatus === 'loading' ? (
@@ -45,8 +36,8 @@ export function FeaturedLocationsSection({
       {loadStatus === 'success' && locations.length === 0 ? (
         <div className={styles.emptyState}>
           <CompassOutlined />
-          <h3>Chưa tìm thấy trong danh sách mới nhất</h3>
-          <p>Hãy thử một từ khóa khác hoặc xem tất cả chủ đề đang có.</p>
+          <h3>Chưa có địa điểm trong chủ đề này</h3>
+          <p>Hãy xem toàn bộ danh sách để khám phá những địa điểm khác.</p>
           <Button onClick={onShowAll}>Xem tất cả</Button>
         </div>
       ) : null}

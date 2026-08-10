@@ -14,6 +14,7 @@ export function CommunitySection({ isAuthenticated }) {
       <Link to={isAuthenticated ? '/profile' : '/register'}>
         {isAuthenticated ? 'Đi đến hồ sơ' : 'Tham gia cộng đồng'} <ArrowRightOutlined />
       </Link>
+      
     </section>
   )
 }

@@ -20,17 +20,24 @@ export const getPublicLocations = asyncHandler(async (req: Request, res: Respons
     const query: locationService.PublicLocationQuery = {};
     const page = queryString(req.query.page);
     const pageSize = queryString(req.query.pageSize);
+    const q = queryString(req.query.q);
     const categoryCode = queryString(req.query.categoryCode);
     const wardCode = queryString(req.query.wardCode);
+    const tagCodes = queryString(req.query.tagCodes);
 
     if (page) query.page = page;
     if (pageSize) query.pageSize = pageSize;
+    if (q !== undefined) query.q = q;
     if (categoryCode) query.categoryCode = categoryCode;
     if (wardCode) query.wardCode = wardCode;
+    if (tagCodes !== undefined) query.tagCodes = tagCodes;
 
     const result = await locationService.getPublicLocations(query);
     return sendSuccess(res, 200, result.data, result.meta);
 });
+
+// [GET] /api/locations/search
+export const searchPublicLocations = getPublicLocations;
 
 
 // [GET] /api/locations/:locationId

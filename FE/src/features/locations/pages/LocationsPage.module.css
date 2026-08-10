@@ -1,0 +1,20 @@
+.page {
+  min-height: 70svh;
+  background: var(--color-background);
+}
+
+.content {
+  display: grid;
+  width: min(100% - 2rem, var(--container-width));
+  margin: 0 auto;
+  padding-block: clamp(1.75rem, 4vw, 3.5rem);
+  grid-template-columns: 16rem minmax(0, 1fr);
+  gap: clamp(1.25rem, 3vw, 2rem);
+  align-items: start;
+}
+
+@media (max-width: 62rem) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
