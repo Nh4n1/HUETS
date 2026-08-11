@@ -343,6 +343,7 @@
 }
 
 .locationCard {
+  position: relative;
   height: 100%;
   min-width: 0;
   overflow: hidden;
@@ -350,7 +351,16 @@
   border-radius: var(--radius-xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.locationBookmark {
+  position: absolute !important;
+  z-index: 4;
+  top: 0.8rem;
+  right: 0.8rem;
 }
 
 .locationCard:hover {

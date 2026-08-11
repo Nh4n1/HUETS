@@ -319,3 +319,103 @@
     gap: 0.3rem;
   }
 }
+.personalCard {
+  margin-top: 1.25rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: var(--shadow-sm);
+}
+
+.personalHeader {
+  margin-bottom: 1rem;
+}
+
+.personalHeader :global(.ant-typography) {
+  margin-bottom: 0.25rem;
+}
+
+.personalHeader p {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.personalItem {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  padding: 1rem;
+
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+
+  align-items: center;
+  gap: 0.85rem;
+
+  color: var(--color-text);
+  background: var(--color-surface);
+
+  text-decoration: none;
+
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.personalItem:hover {
+  border-color: rgb(124 63 32 / 28%);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  transform: translateY(-1px);
+}
+
+.personalIcon {
+  display: grid;
+
+  width: 2.75rem;
+  height: 2.75rem;
+
+  flex: 0 0 auto;
+
+  border-radius: 0.8rem;
+
+  place-items: center;
+
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+
+  font-size: 1.1rem;
+}
+
+.personalContent {
+  min-width: 0;
+  flex: 1;
+}
+
+.personalContent strong {
+  display: block;
+  color: var(--color-text);
+}
+
+.personalContent small {
+  display: block;
+
+  margin-top: 0.2rem;
+
+  color: var(--color-text-muted);
+
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.personalArrow {
+  flex: 0 0 auto;
+
+  color: var(--color-primary);
+
+  font-size: 1.15rem;
+  font-weight: 800;
+}
