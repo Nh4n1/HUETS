@@ -13,6 +13,9 @@
   align-items: start;
 }
 
+.resultColumn { min-width: 0; }
+.notice { margin-bottom: 1rem; }
+
 @media (max-width: 62rem) {
   .content {
     grid-template-columns: 1fr;

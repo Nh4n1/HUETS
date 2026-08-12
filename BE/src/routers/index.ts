@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import accessRouter from './access/index.ts';
 import locationRouter from './location/index.ts';
+import locationSearchRouter from './locationSearch/index.ts';
 import profileRouter from './profile/index.ts';
 import referenceRouter from './reference/index.ts';
 import uploadRouter from './upload/index.ts';
@@ -18,6 +19,7 @@ router.get('/', (req, res, next) => {
 
 router.use('/api/auth', accessRouter);
 router.use('/api/admin/locations', adminLocationRouter);
+router.use('/api/location-search', locationSearchRouter);
 router.use('/api/locations', locationRouter);
 router.use('/api/itineraries', itineraryRouter);
 router.use('/api/me/itineraries', ownerItineraryRouter);
