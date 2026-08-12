@@ -24,6 +24,7 @@ export const getPublicLocations = asyncHandler(async (req: Request, res: Respons
     const categoryCode = queryString(req.query.categoryCode);
     const wardCode = queryString(req.query.wardCode);
     const tagCodes = queryString(req.query.tagCodes);
+    const sortBy = queryString(req.query.sortBy);
 
     if (page) query.page = page;
     if (pageSize) query.pageSize = pageSize;
@@ -31,6 +32,12 @@ export const getPublicLocations = asyncHandler(async (req: Request, res: Respons
     if (categoryCode) query.categoryCode = categoryCode;
     if (wardCode) query.wardCode = wardCode;
     if (tagCodes !== undefined) query.tagCodes = tagCodes;
+    if (sortBy) {
+        if (sortBy !== 'rating_desc') {
+            throw new ApiError(400, 'VALIDATION_ERROR', 'sortBy không hợp lệ.');
+        }
+        query.sortBy = sortBy;
+    }
 
     const result = await locationService.getPublicLocations(query);
     return sendSuccess(res, 200, result.data, result.meta);

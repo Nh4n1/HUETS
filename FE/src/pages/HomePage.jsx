@@ -25,6 +25,7 @@ export function HomePage() {
     getPublicLocationsApi({
       page: 1,
       pageSize: 8,
+      sortBy: 'rating_desc',
       ...(activeCategory ? { categoryCode: activeCategory } : {}),
     })
       .then((payload) => {

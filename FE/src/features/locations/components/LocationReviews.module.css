@@ -1,0 +1,71 @@
+.reviews {
+    padding-top: 2.5rem;
+}
+
+.eyebrow {
+    color: var(--color-primary);
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+.reviews h2 {
+    margin: .35rem 0 1rem;
+    font-size: 1.65rem;
+}
+
+.form {
+    margin-bottom: 2rem;
+    padding: 1.25rem;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-muted);
+}
+
+.loginHint {
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+}
+
+.list {
+    display: grid;
+    gap: 1rem;
+}
+
+.item {
+    display: grid;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--color-border-light);
+    grid-template-columns: 2.5rem 1fr;
+    gap: .8rem;
+}
+
+.itemHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.itemHeader :global(.ant-rate) {
+    font-size: .9rem;
+}
+
+.item p {
+    margin: .55rem 0;
+    color: var(--color-text-soft);
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.item time {
+    color: var(--color-text-muted);
+    font-size: .72rem;
+}
+
+.loadMore {
+    justify-self: center;
+    margin-top: .5rem;
+}
