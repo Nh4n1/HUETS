@@ -620,7 +620,7 @@ export const getPublicLocations = async (query: PublicLocationQuery) => {
     const page = positiveInteger(query.page, 1);
     const pageSize = positiveInteger(query.pageSize, 12, 100);
     const filter = buildPublicLocationFilter(query);
-    const sort = query.sortBy === 'rating_desc'
+    const sort: Record<string, 1 | -1> = query.sortBy === 'rating_desc'
         ? { 'ratingSummary.average': -1, 'ratingSummary.count': -1, _id: -1 }
         : { createdAt: -1, _id: -1 };
 

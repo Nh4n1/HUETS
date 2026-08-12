@@ -37,6 +37,7 @@ export const getPublicLocations = asyncHandler(async (req: Request, res: Respons
             throw new ApiError(400, 'VALIDATION_ERROR', 'sortBy không hợp lệ.');
         }
         query.sortBy = sortBy;
+        
     }
 
     const result = await locationService.getPublicLocations(query);
