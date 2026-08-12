@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { getPublicLocationByIdApi } from '../api/locationApi'
 import { LocationMap } from '../components/LocationMap'
+import { LocationReviews } from '../components/LocationReviews'
 import { getOpeningHoursRows, getRatingLabel, getTagLabel } from '../locationPresentation'
 import styles from './LocationDetailPage.module.css'
 
@@ -138,6 +139,14 @@ export function LocationDetailPage() {
               Mở trên OpenStreetMap
             </a>
           </section>
+          <LocationReviews
+            locationId={locationId}
+            onSummaryChange={(summary) => setLocation((current) => ({
+              ...current,
+              averageRating: summary.average,
+              reviewCount: summary.count,
+            }))}
+          />
         </article>
 
         <aside className={styles.infoCard}>
