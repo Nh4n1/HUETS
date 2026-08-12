@@ -5,14 +5,18 @@ import {
   CopyOutlined,
   DeleteOutlined,
   EditOutlined,
+  EllipsisOutlined,
   EnvironmentOutlined,
+  GlobalOutlined,
   LockOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
-import { Alert, Button, Empty, Modal, Spin, Tag, message } from 'antd'
+import { Alert, Button, Dropdown, Empty, Spin, Tag, message } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { useAuth } from '../../auth/context/useAuth'
+import { BookmarkButton } from '../../bookmarks/components/BookmarkButton'
+import { createItineraryBookmark } from '../../bookmarks/utils/bookmarkMappers'
 import { copyPublicItineraryApi, deleteItineraryApi, getItineraryApi, getPublicItineraryApi } from '../api/itineraryApi'
 import styles from './Itinerary.module.css'
 
@@ -26,7 +30,6 @@ export function ItineraryDetailPage({ publicView = false }) {
   const [itinerary, setItinerary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [copying, setCopying] = useState(false)
 
@@ -81,11 +84,15 @@ export function ItineraryDetailPage({ publicView = false }) {
       <div className={styles.detailToolbar}>
         <Link to={publicView ? '/itineraries' : '/itineraries/mine'}><Button type="text" icon={<ArrowLeftOutlined />}>{publicView ? 'Lịch trình cộng đồng' : 'Lịch trình của tôi'}</Button></Link>
         {publicView ? (
-          <Button type="primary" icon={<CopyOutlined />} loading={copying} onClick={copyItinerary}>Sao chép lịch trình</Button>
+          <div>
+            <Button type="primary" icon={<CopyOutlined />} loading={copying} onClick={copyItinerary}>Sao chép lịch trình</Button>
+            <BookmarkButton bookmark={createItineraryBookmark(itinerary)} showLabel />
+            <Dropdown menu={{ items: [{ key: 'report', label: 'Báo cáo', disabled: true }] }}><Button aria-label="Thêm hành động" icon={<EllipsisOutlined />} /></Dropdown>
+          </div>
         ) : (
           <div>
             <Link to={`/itineraries/mine/${itinerary.id}/edit`}><Button icon={<EditOutlined />}>Chỉnh sửa</Button></Link>
-            <Button danger type="text" icon={<DeleteOutlined />} onClick={() => setDeleteOpen(true)}>Xóa</Button>
+            <Dropdown menu={{ onClick: ({ key }) => { if (key === 'delete' && !deleting) confirmDelete() }, items: [{ key: 'delete', danger: true, disabled: deleting, icon: <DeleteOutlined />, label: deleting ? 'Đang xóa...' : 'Xóa' }] }}><Button aria-label="Thêm hành động" loading={deleting} icon={<EllipsisOutlined />} /></Dropdown>
           </div>
         )}
       </div>
@@ -93,7 +100,7 @@ export function ItineraryDetailPage({ publicView = false }) {
       <header className={styles.detailHero}>
         <div>
           <div className={styles.detailTags}>
-            <Tag color={itinerary.visibility === 'public' ? 'green' : 'default'} icon={itinerary.visibility === 'private' ? <LockOutlined /> : undefined}>
+            <Tag color={itinerary.visibility === 'public' ? 'green' : 'default'} icon={itinerary.visibility === 'private' ? <LockOutlined /> : <GlobalOutlined />}>
               {itinerary.visibility === 'public' ? 'Công khai' : 'Riêng tư'}
             </Tag>
             {itinerary.status === 'hidden' ? <Tag color="red">Đã bị ẩn</Tag> : null}
@@ -101,6 +108,7 @@ export function ItineraryDetailPage({ publicView = false }) {
           <h1>{itinerary.title}</h1>
           <p>{itinerary.description || 'Một hành trình khám phá Huế được tạo riêng cho bạn.'}</p>
           {publicView && itinerary.owner ? <div className={styles.communityOwner}>Chia sẻ bởi <strong>{itinerary.owner.displayName}</strong></div> : null}
+          <div className={styles.updatedLine}>Cập nhật {new Date(itinerary.updatedAt).toLocaleDateString('vi-VN')}</div>
         </div>
         <div className={styles.tripFacts}>
           <span><CalendarOutlined /> <strong>{itinerary.days.length}</strong> ngày</span>
@@ -109,9 +117,13 @@ export function ItineraryDetailPage({ publicView = false }) {
         </div>
       </header>
 
+      <nav className={styles.dayTabs} aria-label="Chọn ngày">
+        {itinerary.days.map((day) => <a href={`#day-${day.dayNumber}`} key={day.dayNumber}>Ngày {day.dayNumber}</a>)}
+      </nav>
+
       <section className={styles.detailDays}>
         {itinerary.days.map((day) => (
-          <article className={styles.detailDay} key={day.dayNumber}>
+          <article className={styles.detailDay} id={`day-${day.dayNumber}`} key={day.dayNumber}>
             <header><span>{day.dayNumber}</span><div><h2>Ngày {day.dayNumber}</h2><small>{day.items.length} điểm dừng</small></div></header>
             <div className={styles.detailTimeline}>
               {[...day.items].sort((left, right) => left.order - right.order).map((item) => (
@@ -142,12 +154,6 @@ export function ItineraryDetailPage({ publicView = false }) {
           </article>
         ))}
       </section>
-
-      {!publicView ? (
-        <Modal open={deleteOpen} title="Xóa lịch trình?" okText="Xóa" cancelText="Hủy" okButtonProps={{ danger: true, loading: deleting }} onOk={confirmDelete} onCancel={() => setDeleteOpen(false)}>
-          <p>Lịch trình “{itinerary.title}” sẽ không còn xuất hiện trong tài khoản của bạn.</p>
-        </Modal>
-      ) : null}
     </main>
   )
 }

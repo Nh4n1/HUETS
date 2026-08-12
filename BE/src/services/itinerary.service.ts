@@ -51,6 +51,9 @@ export interface UpdateItineraryInput extends CreateItineraryInput {}
 export interface PublicItineraryQuery {
     page?: string;
     pageSize?: string;
+    q?: string;
+    days?: string;
+    sort?: string;
 }
 
 const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -371,22 +374,59 @@ const positiveInteger = (value: string | undefined, fallback: number, maximum?: 
 export const getPublicItineraries = async (query: PublicItineraryQuery) => {
     const page = positiveInteger(query.page, 1);
     const pageSize = positiveInteger(query.pageSize, 12, 50);
+    const days = query.days === undefined ? undefined : positiveInteger(query.days, 1, MAX_ITINERARY_DAYS);
     const approvedLocationIds = await Location.distinct('_id', { status: 'approved' });
-    const filter = {
+    const escapedQuery = query.q?.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const filter: Record<string, unknown> = {
         visibility: 'public' as const,
         status: 'active' as const,
         isDeleted: false,
         'days.items.locationId': { $in: approvedLocationIds },
     };
+    if (escapedQuery) {
+        const matchingLocationIds = await Location.distinct('_id', {
+            status: 'approved',
+            $or: [
+                { name: { $regex: escapedQuery, $options: 'i' } },
+                { 'address.addressLine': { $regex: escapedQuery, $options: 'i' } },
+                { 'address.wardNameSnapshot': { $regex: escapedQuery, $options: 'i' } },
+            ],
+        });
+        filter.$or = [
+            { title: { $regex: escapedQuery, $options: 'i' } },
+            { description: { $regex: escapedQuery, $options: 'i' } },
+            { 'days.items.locationId': { $in: matchingLocationIds } },
+        ];
+    }
+    if (days) filter.days = { $size: days };
+
+    const sort = query.sort === 'updated' ? { updatedAt: -1 as const, _id: -1 as const }
+        : query.sort === 'most_stops' ? { stopCount: -1 as const, updatedAt: -1 as const, _id: -1 as const }
+            : { createdAt: -1 as const, _id: -1 as const };
+
+    const pipeline: mongoose.PipelineStage[] = [
+        { $match: filter },
+        { $addFields: { stopCount: { $sum: { $map: { input: '$days', as: 'day', in: { $size: '$$day.items' } } } } } },
+        { $sort: sort },
+        { $skip: (page - 1) * pageSize },
+        { $limit: pageSize },
+        { $project: { _id: 1 } },
+    ];
+    const orderedIds = (await Itinerary.aggregate<{ _id: mongoose.Types.ObjectId }>(pipeline)).map(({ _id }) => _id);
     const [itineraries, total] = await Promise.all([
-        Itinerary.find(filter).sort({ updatedAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize),
+        Itinerary.find({ _id: { $in: orderedIds } }),
         Itinerary.countDocuments(filter),
     ]);
-    const ownerIds = [...new Set(itineraries.map((itinerary) => itinerary.ownerId.toString()))];
+    const itineraryMap = new Map(itineraries.map((itinerary) => [itinerary._id.toString(), itinerary]));
+    const orderedItineraries = orderedIds.flatMap((id) => {
+        const itinerary = itineraryMap.get(id.toString());
+        return itinerary ? [itinerary] : [];
+    });
+    const ownerIds = [...new Set(orderedItineraries.map((itinerary) => itinerary.ownerId.toString()))];
     const owners = await User.find({ _id: { $in: ownerIds } }).select({ displayName: 1, avatarUrl: 1 }).lean();
     const ownerMap = new Map(owners.map((owner) => [owner._id.toString(), owner]));
     return {
-        data: await Promise.all(itineraries.map((itinerary) =>
+        data: await Promise.all(orderedItineraries.map((itinerary) =>
             toPublicResponse(itinerary, ownerMap.get(itinerary.ownerId.toString())))),
         meta: { page, pageSize, total, totalPages: total === 0 ? 0 : Math.ceil(total / pageSize) },
     };

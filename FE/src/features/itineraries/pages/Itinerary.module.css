@@ -1,19 +1,20 @@
-.page { width: min(100% - 2rem, var(--container-width)); min-height: 70svh; margin: 0 auto; padding: clamp(2rem, 5vw, 4.5rem) 0; }
-.hero, .detailHero { display: flex; justify-content: space-between; gap: 2rem; align-items: flex-end; padding: clamp(2rem, 5vw, 4rem); margin-bottom: 2rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-xl); background: linear-gradient(135deg, #fff8ef, #f3ebe0 55%, #e8f0ec); box-shadow: var(--shadow-sm); }
-.hero h1, .editorHeader h1, .detailHero h1 { margin: .35rem 0 .7rem; color: var(--color-text); font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.08; }
+.page { width: min(100% - 2rem, var(--container-width)); min-height: 70svh; margin: 0 auto; padding: clamp(2rem, 5vw, 4.5rem) 0; scroll-padding-top: calc(var(--app-header-height) + 1rem); }
+.hero, .detailHero { display: flex; justify-content: space-between; gap: 2rem; align-items: center; padding: clamp(1.5rem, 3vw, 2.25rem); margin-bottom: 1.5rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-xl); background: linear-gradient(135deg, #fff8ef, #f3ebe0 55%, #e8f0ec); box-shadow: var(--shadow-sm); }
+.hero h1, .editorHeader h1, .detailHero h1 { margin: .35rem 0 .7rem; color: var(--color-text); font-size: clamp(2rem, 4vw, 3rem); line-height: 1.08; }
 .hero p, .detailHero p { max-width: 42rem; margin: 0; color: var(--color-text-soft); font-size: 1.05rem; }
 .eyebrow { color: var(--color-primary); font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .cardGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
 .cardSkeleton { width: 100% !important; height: 18rem !important; border-radius: var(--radius-lg) !important; }
-.itineraryCard { display: flex; min-height: 18rem; padding: 1.5rem; flex-direction: column; border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-sm); transition: transform var(--transition-fast), box-shadow var(--transition-fast); }
+.itineraryCard { display: flex; min-height: 25rem; overflow: hidden; flex-direction: column; border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-sm); transition: transform var(--transition-fast), box-shadow var(--transition-fast); }
 .itineraryCard:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
 .cardTopline { display: flex; justify-content: space-between; gap: .75rem; align-items: center; color: var(--color-text-muted); font-size: .78rem; }
 .ownerLine { display: flex; gap: .55rem; align-items: center; color: var(--color-text-soft); font-size: .86rem; font-weight: 600; }
+.ownerLine > button { margin-left: auto; }
 .itineraryCard h2 { margin: 1.15rem 0 .5rem; font-size: 1.35rem; }
 .cardDescription { display: -webkit-box; margin: 0; overflow: hidden; color: var(--color-text-soft); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .cardStats { display: flex; margin-top: auto; padding: 1.25rem 0; gap: 1.25rem; color: var(--color-secondary-dark); font-size: .9rem; }
 .cardStats span, .summaryBox span { display: flex; gap: .4rem; align-items: center; }
-.cardActions { display: flex; padding-top: 1rem; gap: .25rem; border-top: 1px solid var(--color-border-light); }
+.cardActions { display: flex; padding-top: 1rem; gap: .5rem; border-top: 1px solid var(--color-border-light); justify-content: space-between; align-items: center; }
 .emptyPanel { display: grid; min-height: 24rem; place-items: center; align-content: center; gap: 1rem; border: 1px dashed var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface); }
 .itineraryTabs { display: flex; width: fit-content; margin: 0 0 1.5rem; padding: .3rem; gap: .25rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-pill); background: var(--color-surface-muted); }
 .itineraryTabs a { padding: .55rem 1.15rem; border-radius: var(--radius-pill); color: var(--color-text-soft); font-weight: 700; transition: background var(--transition-fast), color var(--transition-fast); }
@@ -48,7 +49,7 @@
 .noteField { grid-column: 1 / -1; }
 .itemActions { display: flex; flex-direction: column; gap: .35rem; }
 .addStopButton { width: 100%; margin-top: 1rem; }
-.editorSidebar { position: sticky; top: 6.5rem; }
+.editorSidebar { position: sticky; top: calc(var(--app-header-height) + 1rem); }
 .visibilityRow { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-block: 1px solid var(--color-border-light); }
 .visibilityRow > div { display: grid; }
 .visibilityRow small { color: var(--color-text-muted); }
@@ -82,5 +83,62 @@
 .unavailableContent > svg { font-size: 1.5rem; }
 .unavailableItem .timelineDot { background: var(--color-warning); box-shadow: 0 0 0 2px var(--color-warning); }
 
-@media (max-width: 64rem) { .cardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .editorLayout { grid-template-columns: 1fr; } .editorSidebar { position: static; } .itemFields { grid-template-columns: repeat(3, 1fr); } .locationField { grid-column: 1 / -1; } }
+.heroActions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.toolbar { display: grid; grid-template-columns: minmax(16rem, 1fr) 11rem 12rem auto; gap: .75rem; margin-bottom: 1rem; }
+.resultLine { display: flex; gap: .5rem; align-items: baseline; margin: 0 0 1rem; }
+.resultLine span, .updatedLine { color: var(--color-text-muted); font-size: .78rem; }
+.cardCover { display: grid; height: 11rem; flex: 0 0 auto; place-items: center; overflow: hidden; color: var(--color-secondary); background: linear-gradient(135deg, #eadac5, #d9e5df); font-size: 2rem; }
+.cardCover img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-fast); }
+.itineraryCard:hover .cardCover img { transform: scale(1.025); }
+.cardBody { display: flex; min-height: 14rem; padding: 1.2rem; flex: 1; flex-direction: column; }
+.cardBody h2 { margin-top: .75rem; }
+.updatedLine { margin-top: .7rem; }
+.createCard { display: grid; min-height: 25rem; padding: 2rem; place-items: center; align-content: center; gap: .65rem; text-align: center; color: var(--color-text-muted); border: 1px dashed var(--color-border); border-radius: var(--radius-lg); background: rgb(255 255 255 / 55%); }
+.createCard:hover { color: var(--color-primary); border-color: var(--color-primary); background: var(--color-cream); }
+.createPlus { display: grid; width: 3.5rem; height: 3.5rem; place-items: center; border-radius: 50%; color: var(--color-primary); background: var(--color-primary-soft); font-size: 1.5rem; }
+.createCard strong { color: var(--color-text); }
+.emptyPanel p { margin: -.5rem 1rem 0; color: var(--color-text-muted); text-align: center; }
+.editorHeader p { margin: -.3rem 0 0; color: var(--color-text-muted); }
+.editorPage { scroll-padding-top: calc(var(--app-header-height) + 1rem); }
+.locationPicker { display: grid; gap: .55rem; }
+.pickerTabs { display: grid; width: min(100%, 24rem); padding: .25rem; grid-template-columns: 1fr 1fr; gap: .25rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-muted); }
+.pickerTabs button, .visibilityChoice button { min-height: 2.75rem; padding: .55rem .7rem; border: 0; border-radius: .6rem; color: var(--color-text-soft); background: transparent; font-weight: 700; cursor: pointer; }
+.pickerTabs .selectedPickerTab, .visibilityChoice .selectedVisibility { color: var(--color-primary); background: white; box-shadow: var(--shadow-sm); }
+.locationResults { overflow: hidden; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: white; box-shadow: var(--shadow-sm); }
+.locationResult { display: grid; padding: .65rem; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: .7rem; align-items: center; }
+.locationResult + .locationResult { border-top: 1px solid var(--color-border-light); }
+.locationResult > div, .selectedLocation > div { display: grid; min-width: 0; }
+.locationResult span, .selectedLocation span { overflow: hidden; color: var(--color-text-muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
+.locationThumb, .locationThumbPlaceholder { display: grid; width: 3rem; height: 3rem; place-items: center; border-radius: .6rem; object-fit: cover; color: var(--color-secondary); background: var(--color-secondary-soft); }
+.pickerState { display: flex; min-height: 4rem; padding: 1rem; align-items: center; justify-content: center; gap: .6rem; color: var(--color-text-muted); font-size: .85rem; }
+.selectedLocation { display: grid; padding: .65rem; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: .7rem; align-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: white; }
+.fieldError { margin: -.35rem 0 0; color: var(--color-error); font-size: .78rem; }
+.derivedTime { display: grid; min-height: 4.5rem; padding: .55rem .75rem; align-content: center; border: 1px dashed var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-muted); }
+.derivedTime span, .derivedTime small { color: var(--color-text-muted); font-size: .7rem; }
+.derivedTime strong { font-size: 1.05rem; }
+.timeError { grid-column: 2 / -1; }
+.visibilityBlock { display: grid; padding: 0; gap: .5rem; border: 0; }
+.visibilityBlock legend { margin-bottom: .5rem; color: var(--color-text-soft); font-size: .82rem; font-weight: 700; }
+.visibilityChoice { display: grid; padding: .25rem; grid-template-columns: 1fr 1fr; gap: .25rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-muted); }
+.visibilityBlock small { color: var(--color-text-muted); }
+.dayTabs { display: flex; overflow-x: auto; margin: 0 0 1.5rem; gap: .5rem; scrollbar-width: thin; }
+.dayTabs a { min-height: 2.75rem; padding: .65rem 1rem; white-space: nowrap; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: white; font-weight: 700; }
+.detailDay { scroll-margin-top: calc(var(--app-header-height) + 1rem); }
+
+button, .page a { min-height: 2.75rem; }
+
+@media (max-width: 64rem) { .cardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .editorLayout { grid-template-columns: minmax(0, 1fr) 18rem; } .itemFields { grid-template-columns: repeat(3, 1fr); } .locationField { grid-column: 1 / -1; } .toolbar { grid-template-columns: 1fr 1fr; } .toolbar > :first-child { grid-column: 1 / -1; } }
 @media (max-width: 42rem) { .page { width: min(100% - 1.25rem, var(--container-width)); padding-top: 1.25rem; } .hero, .detailHero { align-items: stretch; padding: 1.5rem; flex-direction: column; } .hero a, .hero button { width: 100%; } .cardGrid { grid-template-columns: 1fr; } .editorHeader { display: block; } .daysHeading { gap: 1rem; align-items: start; } .itemEditor { grid-template-columns: 1fr; } .timelineRail { justify-content: start; } .itemFields { grid-template-columns: 1fr 1fr; } .locationField, .noteField { grid-column: 1 / -1; } .itemActions { flex-direction: row; } .detailToolbar { gap: .5rem; align-items: flex-start; } .detailToolbar > div { flex-direction: column; } .detailTimeline::before { left: .42rem; } .detailItem { grid-template-columns: 1rem minmax(0, 1fr); gap: .75rem; align-items: start; } .itemTime { grid-column: 2; grid-row: 1; text-align: left; } .timelineDot { grid-column: 1; grid-row: 1 / 3; margin-top: .3rem; } .locationContent, .unavailableContent { grid-column: 2; grid-template-columns: 1fr; } .locationContent img, .imagePlaceholder { width: 100%; height: 10rem; } }
+
+@media (max-width: 48rem) {
+  .editorLayout { grid-template-columns: 1fr; }
+  .editorSidebar { position: static; }
+  .toolbar { grid-template-columns: 1fr; }
+  .toolbar > :first-child { grid-column: auto; }
+  .heroActions { width: 100%; }
+  .heroActions > *, .heroActions a { width: 100%; }
+  .locationResult { grid-template-columns: 2.65rem minmax(0, 1fr); }
+  .locationResult button { grid-column: 1 / -1; width: 100%; }
+  .selectedLocation { grid-template-columns: 2.65rem minmax(0, 1fr); }
+  .selectedLocation button { grid-column: 1 / -1; width: fit-content; }
+}
