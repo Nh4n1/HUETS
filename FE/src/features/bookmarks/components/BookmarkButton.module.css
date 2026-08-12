@@ -1,0 +1,26 @@
+.button {
+  flex: 0 0 auto;
+}
+
+.button:global(.ant-btn) {
+  border-color: rgb(124 63 32 / 18%);
+  color: var(--color-primary);
+  background: rgb(255 253 249 / 94%);
+  box-shadow: 0 6px 18px rgb(68 48 33 / 16%);
+}
+
+.button:global(.ant-btn-primary) {
+  border-color: var(--color-primary);
+  color: white;
+  background: var(--color-primary);
+}
+
+.button:global(.ant-btn-circle) {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
