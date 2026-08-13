@@ -119,7 +119,7 @@ describe('location search service', () => {
         });
         const criteria = {
             categoryCode: 'cafe', requiredTagCodes: [], preferredTagCodes: ['quiet'],
-            keywords: [], wardCode: null, sortBy: 'relevance' as const,
+            keywords: [], wardCode: null, openCondition: null, sortBy: 'relevance' as const,
         };
         vi.mocked(validateSearchPlan).mockResolvedValue({
             criteria,

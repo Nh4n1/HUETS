@@ -5,6 +5,8 @@ import { searchPlanSchema, type SearchInterpretation, type SearchPlan } from '..
 import { ApiError } from '../utils/apiError.ts';
 import { getWardByCode } from './reference.service.ts';
 
+const DAY_NAMES = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ nhật'];
+
 export const validateSearchPlan = async (rawPlan: unknown): Promise<{
     criteria: SearchPlan;
     interpretation: SearchInterpretation;
@@ -57,6 +59,13 @@ export const validateSearchPlan = async (rawPlan: unknown): Promise<{
             requiredTags: criteria.requiredTagCodes.map((code) => ({ code, name: activeTagNames.get(code) ?? code })),
             preferredTags: criteria.preferredTagCodes.map((code) => ({ code, name: activeTagNames.get(code) ?? code })),
             ward: ward ? { code: ward.code, name: ward.name } : null,
+            openCondition: criteria.openCondition
+                ? {
+                    label: criteria.openCondition.mode === 'now'
+                        ? 'Đang mở cửa'
+                        : `Mở ${DAY_NAMES[criteria.openCondition.dayOfWeek - 1]} lúc ${criteria.openCondition.time}`,
+                }
+                : null,
         },
     };
 };

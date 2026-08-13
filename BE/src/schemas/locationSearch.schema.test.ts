@@ -11,12 +11,28 @@ const validPlan = {
     preferredTagCodes: ['quiet'],
     keywords: [],
     wardCode: null,
+    openCondition: null,
     sortBy: 'relevance' as const,
 };
 
 describe('location search schemas', () => {
     it('accepts a valid SearchPlan', () => {
         expect(searchPlanSchema.safeParse(validPlan).success).toBe(true);
+    });
+
+    it('accepts now and specific opening-hour conditions', () => {
+        expect(searchPlanSchema.safeParse({
+            ...validPlan,
+            openCondition: { mode: 'now' },
+        }).success).toBe(true);
+        expect(searchPlanSchema.safeParse({
+            ...validPlan,
+            openCondition: { mode: 'at', dayOfWeek: 6, time: '20:30' },
+        }).success).toBe(true);
+        expect(searchPlanSchema.safeParse({
+            ...validPlan,
+            openCondition: { mode: 'at', dayOfWeek: 8, time: '25:00' },
+        }).success).toBe(false);
     });
 
     it('rejects a tag that is both required and preferred', () => {

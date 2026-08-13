@@ -7,6 +7,9 @@ export function SearchInterpretation({ interpretation, onRemove }) {
   const chips = [
     ...(interpretation.category ? [{ type: 'category', ...interpretation.category, prefix: 'Danh mục' }] : []),
     ...(interpretation.ward ? [{ type: 'ward', ...interpretation.ward, prefix: 'Khu vực' }] : []),
+    ...(interpretation.openCondition
+      ? [{ type: 'opening', code: 'opening-hours', name: interpretation.openCondition.label, prefix: 'Giờ mở cửa' }]
+      : []),
     ...interpretation.requiredTags.map((tag) => ({ type: 'required', ...tag, prefix: 'Bắt buộc' })),
     ...interpretation.preferredTags.map((tag) => ({ type: 'preferred', ...tag, prefix: 'Ưu tiên' })),
   ]
