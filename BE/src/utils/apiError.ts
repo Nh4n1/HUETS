@@ -20,6 +20,8 @@ export type ApiErrorCode =
     | 'INVALID_COORDINATES'
     | 'INVALID_ALIAS'
     | 'STALE_RESOURCE'
+    | 'BOOKMARK_ALREADY_EXISTS'
+    | 'BOOKMARK_NOT_FOUND'
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
     | 'NOT_FOUND';
