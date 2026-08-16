@@ -1,5 +1,5 @@
 import { PlusOutlined, RobotOutlined } from '@ant-design/icons'
-import { Button, Tooltip } from 'antd'
+import { Button } from 'antd'
 import { Link } from 'react-router'
 import styles from '../pages/Itinerary.module.css'
 
@@ -13,9 +13,7 @@ export function ItineraryHubHeader() {
       </div>
       <div className={styles.heroActions}>
         <Link to="/itineraries/new"><Button size="large" icon={<PlusOutlined />}>Tạo thủ công</Button></Link>
-        <Tooltip title="Tính năng gợi ý lịch trình bằng AI sẽ được mở ở giai đoạn tiếp theo.">
-          <span><Button type="primary" size="large" icon={<RobotOutlined />} disabled>Gợi ý bằng AI</Button></span>
-        </Tooltip>
+        <Link to="/itineraries/ai/new"><Button type="primary" size="large" icon={<RobotOutlined />}>✨ Gợi ý bằng AI</Button></Link>
       </div>
     </section>
   )
