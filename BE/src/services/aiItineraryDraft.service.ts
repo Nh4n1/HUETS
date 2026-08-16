@@ -3,7 +3,7 @@ import type { IAIItineraryDraft } from '../models/aiItineraryDraft.model.ts';
 import { AI_ITINERARY_CONSTANTS } from '../config/aiItinerary.config.ts';
 import type { Types } from 'mongoose';
 
-export class AIItineraryDraftRepository {
+export class AIItineraryDraftService {
     static async createDraft(data: Partial<IAIItineraryDraft>): Promise<IAIItineraryDraft> {
         const expiresAt = new Date(Date.now() + AI_ITINERARY_CONSTANTS.DRAFT_TTL_SECONDS * 1000);
         const draft = new AIItineraryDraft({
