@@ -9,6 +9,8 @@ import adminLocationRouter from './adminLocation/index.ts';
 import itineraryRouter, { ownerItineraryRouter } from './itinerary/index.ts';
 import bookmarkRouter from './bookmark/index.ts';
 
+import aiItineraryRouter from './aiItinerary/index.ts';
+
 const router = Router();
 
 router.get('/', (req, res, next) => {
@@ -22,6 +24,7 @@ router.use('/api/auth', accessRouter);
 router.use('/api/admin/locations', adminLocationRouter);
 router.use('/api/location-search', locationSearchRouter);
 router.use('/api/locations', locationRouter);
+router.use('/api/ai-itinerary-plans', aiItineraryRouter);
 router.use('/api/itineraries', itineraryRouter);
 router.use('/api/bookmarks', bookmarkRouter);
 router.use('/api/me/itineraries', ownerItineraryRouter);
