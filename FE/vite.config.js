@@ -5,33 +5,34 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    // Code splitting strategy
     rollupOptions: {
       output: {
-        // Tách Ant Design vào file riêng
-        manualChunks: {
-          'antd': ['antd'],
-          'leaflet': ['leaflet', 'react-leaflet'],
-          'vendor': ['react', 'react-dom', 'react-router', 'axios'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('antd') || id.includes('@ant-design')) {
+              return 'antd'
+            }
+            if (id.includes('leaflet')) {
+              return 'leaflet'
+            }
+            if (
+              id.includes('/react/')
+              || id.includes('/react-dom/')
+              || id.includes('/react-router')
+              || id.includes('/axios/')
+            ) {
+              return 'vendor'
+            }
+          }
+          return undefined
         },
       },
     },
-    // Tối ưu kích thước
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console logs in production
-        drop_debugger: true,
-      },
-    },
-    // Giảm kích thước CSS
+    minify: true,
     cssMinify: true,
-    // Source map chỉ khi cần debug
     sourcemap: false,
-    // Tăng chunk size warning
     chunkSizeWarningLimit: 500,
   },
-  // Tối ưu CSS module
   css: {
     postcss: true,
   },
