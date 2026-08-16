@@ -8,6 +8,8 @@ import { Alert, Button, Image, Skeleton } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { getPublicLocationByIdApi } from '../api/locationApi'
+import { BookmarkButton } from '../../bookmarks/components/BookmarkButton'
+import { createLocationBookmark } from '../../bookmarks/utils/bookmarkMappers'
 import { LocationMap } from '../components/LocationMap'
 import { LocationReviews } from '../components/LocationReviews'
 import { getOpeningHoursRows, getRatingLabel, getTagLabel } from '../locationPresentation'
@@ -85,9 +87,15 @@ export function LocationDetailPage() {
           <h1>{location.name}</h1>
           <p className={styles.address}><EnvironmentOutlined /> {location.formattedAddress}</p>
         </div>
-        <div className={styles.rating}>
-          <StarFilled />
-          <div><strong>{getRatingLabel(location)}</strong><span>Đánh giá cộng đồng</span></div>
+        <div className={styles.headerActions}>
+          <div className={styles.rating}>
+            <StarFilled />
+            <div><strong>{getRatingLabel(location)}</strong><span>Đánh giá cộng đồng</span></div>
+          </div>
+          <BookmarkButton
+            bookmark={createLocationBookmark(location)}
+            showLabel
+          />
         </div>
       </header>
 
