@@ -1,5 +1,5 @@
-import { categoryTagWhitelist } from '../../config/category-tag-whitelist.ts';
-import { createAIItineraryPlanRequestSchema, type PreferencesInput } from '../../schemas/aiItinerary.schema.ts';
+import { categoryTagWhitelist } from '../config/category-tag-whitelist.ts';
+import { createAIItineraryPlanRequestSchema, type PreferencesInput } from '../schemas/aiItinerary.schema.ts';
 
 export interface CategoryTagValidationResult {
     isValid: boolean;

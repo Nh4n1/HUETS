@@ -4,7 +4,7 @@ import {
     dailyTimeRangeSchema,
     originSchema,
 } from '../schemas/aiItinerary.schema.ts';
-import { parseAndValidateAIItineraryRequest, validateCategoryAndTagRules } from '../modules/ai-itinerary/aiItinerary.validation.ts';
+import { parseAndValidateAIItineraryRequest, validateCategoryAndTagRules } from '../services/aiItineraryValidation.service.ts';
 
 describe('AI Itinerary Request Schemas & Validation', () => {
     it('should validate valid dailyTimeRange', () => {
@@ -28,7 +28,7 @@ describe('AI Itinerary Request Schemas & Validation', () => {
     it('should reject invalid coordinates in origin', () => {
         const result = originSchema.safeParse({
             type: 'current_location',
-            coordinates: [200, 16.4637], // longitude 200 is invalid
+            coordinates: [200, 16.4637],
         });
         expect(result.success).toBe(false);
     });
@@ -68,7 +68,7 @@ describe('AI Itinerary Request Schemas & Validation', () => {
             origin: { type: 'current_location', coordinates: [107.5, 16.4] },
             preferences: {
                 requiredTagCodes: ['sightseeing'],
-                preferredTagCodes: ['sightseeing'], // Duplicate conflict
+                preferredTagCodes: ['sightseeing'],
             },
         };
 
