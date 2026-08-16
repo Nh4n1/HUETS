@@ -25,6 +25,7 @@ import { ItineraryEditorPage } from '../features/itineraries/pages/ItineraryEdit
 import { CommunityItinerariesPage } from '../features/itineraries/pages/CommunityItinerariesPage'
 import { CommunityItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
 import { AIItineraryCreatePage } from '../features/ai-itinerary/pages/AIItineraryCreatePage'
+import { AIItineraryPreviewPage } from '../features/ai-itinerary/pages/AIItineraryPreviewPage'
 
 import { AdminLayout } from './layouts/AdminLayout'
 import { AppLayout } from './layouts/AppLayout'
@@ -103,6 +104,11 @@ export const router = createBrowserRouter([
           {
             path: 'itineraries/ai/new',
             Component: AIItineraryCreatePage,
+          },
+
+          {
+            path: 'ai-itinerary/preview/:planId',
+            Component: AIItineraryPreviewPage,
           },
 
           {
