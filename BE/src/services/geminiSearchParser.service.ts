@@ -6,13 +6,24 @@ import type { AiSearchInput, AiSearchParser } from './aiSearchParser.service.ts'
 const responseJsonSchema = {
     type: 'object',
     additionalProperties: false,
-    required: ['categoryCode', 'requiredTagCodes', 'preferredTagCodes', 'keywords', 'wardCode', 'sortBy'],
+    required: ['categoryCode', 'requiredTagCodes', 'preferredTagCodes', 'keywords', 'wardCode', 'openCondition', 'sortBy'],
     properties: {
         categoryCode: { anyOf: [{ type: 'string' }, { type: 'null' }] },
         requiredTagCodes: { type: 'array', maxItems: 10, items: { type: 'string' } },
         preferredTagCodes: { type: 'array', maxItems: 10, items: { type: 'string' } },
         keywords: { type: 'array', maxItems: 5, items: { type: 'string' } },
         wardCode: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+        openCondition: {
+            anyOf: [
+                { type: 'null' },
+                { type: 'object', additionalProperties: false, required: ['mode'], properties: { mode: { type: 'string', enum: ['now'] } } },
+                { type: 'object', additionalProperties: false, required: ['mode', 'dayOfWeek', 'time'], properties: {
+                    mode: { type: 'string', enum: ['at'] },
+                    dayOfWeek: { type: 'integer', minimum: 1, maximum: 7 },
+                    time: { type: 'string', pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' },
+                } },
+            ],
+        },
         sortBy: { type: 'string', enum: ['relevance', 'rating_desc'] },
     },
 };
@@ -29,6 +40,7 @@ export class GeminiSearchParser implements AiSearchParser {
         const prompt = [
             'Bạn là bộ phân tích tìm kiếm địa điểm tại Huế.',
             'Chỉ dùng code có trong catalog. "phải có/bắt buộc/cần có" là required; mong muốn còn lại là preferred.',
+            'openCondition: dùng {mode:"now"} cho đang mở/bây giờ; dùng {mode:"at",dayOfWeek:1..7,time:"HH:mm"} khi có đủ thứ và giờ (1=thứ Hai, 7=Chủ nhật); nếu không yêu cầu giờ thì null.',
             'Không tự bịa code. Không chắc thì dùng null hoặc mảng rỗng. keywords chỉ giữ từ khóa tên/ý nghĩa chưa map được.',
             `Catalog: ${JSON.stringify({ categories: input.categories, tags: input.tags, wards: input.wards })}`,
             `Yêu cầu: ${input.query}`,

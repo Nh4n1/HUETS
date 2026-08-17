@@ -1,5 +1,7 @@
 import { ArrowRightOutlined, EnvironmentOutlined, StarFilled } from '@ant-design/icons'
 import { Link } from 'react-router'
+import { BookmarkButton } from '../../bookmarks/components/BookmarkButton'
+import { createLocationBookmark } from '../../bookmarks/utils/bookmarkMappers'
 import { getRatingLabel, getTagLabel } from '../locationPresentation'
 import styles from './LocationResultCard.module.css'
 
@@ -22,6 +24,11 @@ export function LocationResultCard({ location }) {
             onError={(event) => { event.currentTarget.style.display = 'none' }}
           />
         ) : null}
+
+        <BookmarkButton
+          bookmark={createLocationBookmark(location)}
+          className={styles.bookmarkButton}
+        />
       </Link>
 
       <div className={styles.body}>

@@ -1,5 +1,6 @@
 export const emptyItem = () => ({
   locationId: '',
+  location: null,
   startTime: '',
   endTime: '',
   durationMinutes: '',
@@ -29,6 +30,7 @@ export function itineraryToForm(itinerary) {
         .sort((left, right) => left.order - right.order)
         .map((item) => ({
           locationId: item.locationId ?? '',
+          location: item.location ?? null,
           startTime: item.startTime ?? '',
           endTime: item.endTime ?? '',
           durationMinutes: item.durationMinutes ?? '',
@@ -84,7 +86,40 @@ export function getItineraryFormError(form) {
       if (item.startTime && item.endTime && startMinutes !== null && endMinutes !== null && endMinutes <= startMinutes) {
         return `Ngày ${dayIndex + 1}, điểm ${itemIndex + 1}: endTime phải sau startTime trong cùng ngày.`
       }
+      if (startMinutes !== null && item.durationMinutes !== '' && startMinutes + Number(item.durationMinutes) > 24 * 60) {
+        return `Ngày ${dayIndex + 1}, điểm ${itemIndex + 1}: thời gian kết thúc vượt quá một ngày.`
+      }
     }
   }
   return ''
+}
+
+export function getItineraryFormErrors(form) {
+  const errors = { title: '', items: {} }
+  if (!form.title.trim()) errors.title = 'Vui lòng nhập tên lịch trình.'
+
+  form.days.forEach((day, dayIndex) => {
+    const seen = new Set()
+    day.items.forEach((item, itemIndex) => {
+      const itemErrors = {}
+      if (!item.locationId) itemErrors.locationId = 'Vui lòng chọn địa điểm.'
+      if (item.locationId && seen.has(item.locationId)) itemErrors.locationId = 'Địa điểm này đã có trong ngày.'
+      if (item.locationId) seen.add(item.locationId)
+
+      const startMinutes = toMinutes(item.startTime)
+      const endMinutes = toMinutes(item.endTime)
+      if (item.startTime && item.endTime && startMinutes !== null && endMinutes !== null && endMinutes <= startMinutes) {
+        itemErrors.durationMinutes = 'Thời gian kết thúc phải sau thời gian bắt đầu.'
+      }
+      if (item.durationMinutes !== '' && Number(item.durationMinutes) < 1) {
+        itemErrors.durationMinutes = 'Thời lượng phải lớn hơn 0 phút.'
+      }
+      if (startMinutes !== null && item.durationMinutes !== '' && startMinutes + Number(item.durationMinutes) > 24 * 60) {
+        itemErrors.durationMinutes = 'Thời gian kết thúc không được vượt quá 24:00.'
+      }
+      if (Object.keys(itemErrors).length) errors.items[`${dayIndex}:${itemIndex}`] = itemErrors
+    })
+  })
+
+  return errors
 }

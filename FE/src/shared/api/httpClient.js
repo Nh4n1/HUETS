@@ -54,6 +54,7 @@ export function refreshAccessToken() {
   return refreshPromise
 }
 
+// Interceptor để tự động thêm access token vào header Authorization của các request.
 httpClient.interceptors.request.use((config) => {
   const token = getAccessToken()
 
@@ -64,6 +65,7 @@ httpClient.interceptors.request.use((config) => {
   return config
 })
 
+// Interceptor để tự động refresh access token khi nhận được response 401.
 httpClient.interceptors.response.use(
   (response) => response,
   async (error) => {

@@ -32,6 +32,7 @@
   --font-display: 'Segoe UI', Arial, system-ui, -apple-system, sans-serif;
   --font-body: 'Segoe UI', Arial, system-ui, -apple-system, sans-serif;
   --container-width: 75rem;
+  --app-header-height: 4.75rem;
   --section-space: clamp(4.5rem, 8vw, 7.5rem);
   --transition-fast: 180ms ease;
 }

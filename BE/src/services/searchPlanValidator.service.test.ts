@@ -22,6 +22,7 @@ describe('validateSearchPlan', () => {
             preferredTagCodes: ['family'],
             keywords: [],
             wardCode: null,
+            openCondition: null,
             sortBy: 'relevance',
         });
 

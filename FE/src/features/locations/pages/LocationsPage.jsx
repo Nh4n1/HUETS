@@ -33,6 +33,14 @@ export function LocationsPage() {
     ? "rating_desc"
     : "relevance";
   const structuredUrl = searchParams.get("mode") === "filters";
+  const urlOpenMode = searchParams.get("openMode");
+  const urlOpenDay = Number(searchParams.get("openDay"));
+  const urlOpenTime = searchParams.get("openTime");
+  const urlOpenCondition = useMemo(() => urlOpenMode === "now"
+    ? { mode: "now" }
+    : urlOpenMode === "at" && urlOpenDay >= 1 && urlOpenDay <= 7 && urlOpenTime
+      ? { mode: "at", dayOfWeek: urlOpenDay, time: urlOpenTime }
+      : null, [urlOpenDay, urlOpenMode, urlOpenTime]);
   const page = Math.max(Number(searchParams.get("page")) || 1, 1);
   const browseTags = useMemo(
     () => urlTags.split(",").filter(Boolean),
@@ -197,6 +205,7 @@ export function LocationsPage() {
         requiredTagCodes: browseTags,
         preferredTagCodes: browsePreferredTags,
         keywords: [],
+        openCondition: urlOpenCondition,
         sortBy: urlSortBy,
       },
       page,
@@ -211,7 +220,7 @@ export function LocationsPage() {
       setErrorMessage(getErrorMessage(error, "KhÃ´ng thá»ƒ Ã¡p dá»¥ng tiÃªu chÃ­ tÃ¬m kiáº¿m."));
     }).finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [browsePreferredTags, browseTags, page, searchMode, structuredUrl, urlCategory, urlSortBy, urlWard]);
+  }, [browsePreferredTags, browseTags, page, searchMode, structuredUrl, urlCategory, urlOpenCondition, urlSortBy, urlWard]);
 
   async function runCriteria(
     nextCriteria,
@@ -240,6 +249,13 @@ export function LocationsPage() {
         tagCodes: executableCriteria.requiredTagCodes,
         preferredTagCodes: useStructuredUrl
           ? executableCriteria.preferredTagCodes
+          : undefined,
+        openMode: useStructuredUrl ? executableCriteria.openCondition?.mode : undefined,
+        openDay: useStructuredUrl && executableCriteria.openCondition?.mode === "at"
+          ? executableCriteria.openCondition.dayOfWeek
+          : undefined,
+        openTime: useStructuredUrl && executableCriteria.openCondition?.mode === "at"
+          ? executableCriteria.openCondition.time
           : undefined,
         sortBy: useStructuredUrl && executableCriteria.sortBy !== "relevance"
           ? executableCriteria.sortBy
@@ -295,6 +311,7 @@ export function LocationsPage() {
       requiredTagCodes: browseTags,
       preferredTagCodes: browsePreferredTags,
       keywords: query ? [query.slice(0, 50)] : [],
+      openCondition: urlOpenCondition,
       sortBy: "relevance",
     };
     return runCriteria(
@@ -326,6 +343,8 @@ export function LocationsPage() {
         1,
         { markAdjusted: true },
       );
+    if (type === "opening")
+      runCriteria({ ...criteria, openCondition: null }, 1, { markAdjusted: true });
   }
 
   function resetCriteria() {
@@ -342,6 +361,7 @@ export function LocationsPage() {
     Number(Boolean(wardCode)) +
     requiredTagCodes.length +
     preferredTagCodes.length;
+  const activeCriteriaCount = activeFilterCount + Number(Boolean(criteria?.openCondition));
 
   return (
     <main className={styles.page}>
@@ -354,7 +374,7 @@ export function LocationsPage() {
       <div className={styles.content}>
         <LocationFilters
           open={filterDrawerOpen}
-          activeFilterCount={activeFilterCount}
+          activeFilterCount={activeCriteriaCount}
           referenceError={referenceError}
           categoryCode={categoryCode}
           wardCode={wardCode}
@@ -415,8 +435,8 @@ export function LocationsPage() {
             pageSize={PAGE_SIZE}
             loading={loading}
             errorMessage={errorMessage}
-            activeFilterCount={activeFilterCount}
-            hasCriteria={Boolean(query || activeFilterCount)}
+            activeFilterCount={activeCriteriaCount}
+            hasCriteria={Boolean(query || activeCriteriaCount)}
             sortBy={sortBy}
             criteriaAdjusted={criteriaAdjusted}
             onSortChange={(value) =>
@@ -428,6 +448,7 @@ export function LocationsPage() {
                     requiredTagCodes,
                     preferredTagCodes: [],
                     keywords: query ? [query.slice(0, 50)] : [],
+                    openCondition: null,
                     sortBy: value,
                   }, 1, { markAdjusted: true })
             }

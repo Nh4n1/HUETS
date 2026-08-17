@@ -11,12 +11,22 @@ const keywordSchema = z.string()
     .min(1)
     .max(50);
 
+const openConditionSchema = z.discriminatedUnion('mode', [
+    z.object({ mode: z.literal('now') }).strict(),
+    z.object({
+        mode: z.literal('at'),
+        dayOfWeek: z.number().int().min(1).max(7),
+        time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Giờ phải có định dạng HH:mm.'),
+    }).strict(),
+]);
+
 export const searchPlanSchema = z.object({
     categoryCode: codeSchema.nullable(),
     requiredTagCodes: z.array(codeSchema).max(10),
     preferredTagCodes: z.array(codeSchema).max(10),
     keywords: z.array(keywordSchema).max(5),
     wardCode: z.string().trim().min(1).max(20).nullable(),
+    openCondition: openConditionSchema.nullable(),
     sortBy: z.enum(['relevance', 'rating_desc']),
 }).strict().superRefine((plan, context) => {
     const requiredTags = new Set(plan.requiredTagCodes);
@@ -79,4 +89,5 @@ export interface SearchInterpretation {
     requiredTags: SearchInterpretationItem[];
     preferredTags: SearchInterpretationItem[];
     ward: SearchInterpretationItem | null;
+    openCondition: { label: string } | null;
 }

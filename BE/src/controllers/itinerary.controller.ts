@@ -20,8 +20,14 @@ export const getPublicItineraries = asyncHandler(async (req: Request, res: Respo
     const query: itineraryService.PublicItineraryQuery = {};
     const page = queryString(req.query.page);
     const pageSize = queryString(req.query.pageSize);
+    const q = queryString(req.query.q);
+    const days = queryString(req.query.days);
+    const sort = queryString(req.query.sort);
     if (page) query.page = page;
     if (pageSize) query.pageSize = pageSize;
+    if (q) query.q = q;
+    if (days) query.days = days;
+    if (sort) query.sort = sort;
     const result = await itineraryService.getPublicItineraries(query);
     return sendSuccess(res, 200, result.data, result.meta);
 });

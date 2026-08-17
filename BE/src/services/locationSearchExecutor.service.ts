@@ -5,6 +5,22 @@ import type { SearchPlan } from '../schemas/locationSearch.schema.ts';
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const currentVietnamDayAndTime = () => {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+    }).formatToParts(new Date());
+    const weekday = parts.find(({ type }) => type === 'weekday')?.value;
+    const dayByName: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+    return {
+        dayOfWeek: dayByName[weekday ?? ''] ?? 1,
+        time: `${parts.find(({ type }) => type === 'hour')?.value ?? '00'}:${parts.find(({ type }) => type === 'minute')?.value ?? '00'}`,
+    };
+};
+
 export const executeSearchPlan = async (criteria: SearchPlan, page: number, pageSize: number) => {
     const filter: Record<string, unknown> = { status: 'approved' };
     if (criteria.categoryCode) filter.categoryCode = criteria.categoryCode;
@@ -15,6 +31,23 @@ export const executeSearchPlan = async (criteria: SearchPlan, page: number, page
             $regex: criteria.keywords.map((keyword) => escapeRegExp(normalizeSearchText(keyword))).join('|'),
             $options: 'i',
         };
+    }
+    if (criteria.openCondition) {
+        const point = criteria.openCondition.mode === 'now'
+            ? currentVietnamDayAndTime()
+            : criteria.openCondition;
+        filter.$or = [
+            { 'openingHours.status': 'always_open' },
+            {
+                'openingHours.status': 'scheduled',
+                'openingHours.periods': {
+                    $elemMatch: {
+                        dayOfWeek: point.dayOfWeek,
+                        ranges: { $elemMatch: { open: { $lte: point.time }, close: { $gt: point.time } } },
+                    },
+                },
+            },
+        ];
     }
 
     const preferredCodes = criteria.preferredTagCodes;

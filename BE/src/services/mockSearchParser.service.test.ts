@@ -32,4 +32,18 @@ describe('MockSearchParser', () => {
         expect(result.requiredTagCodes).toEqual(['wifi']);
         expect(result.preferredTagCodes).toEqual([]);
     });
+
+    it('parses opening now and an explicit weekday/time', async () => {
+        await expect(new MockSearchParser().parse({
+            query: 'Cafe đang mở cửa bây giờ',
+            ...catalog,
+        })).resolves.toMatchObject({ openCondition: { mode: 'now' } });
+
+        await expect(new MockSearchParser().parse({
+            query: 'Cafe mở cửa thứ 7 lúc 20h',
+            ...catalog,
+        })).resolves.toMatchObject({
+            openCondition: { mode: 'at', dayOfWeek: 6, time: '20:00' },
+        });
+    });
 });

@@ -34,6 +34,18 @@ export class MockSearchParser implements AiSearchParser {
         const requiredTagCodes = hardIntent ? matchedTags.map(({ code }) => code) : [];
         const preferredTagCodes = hardIntent ? [] : matchedTags.map(({ code }) => code);
         const ward = input.wards.find(({ name }) => includesPhrase(query, name));
+        const asksOpenNow = /\b(dang mo cua|mo cua bay gio|bay gio con mo|con mo cua)\b/.test(query);
+        const dayMatch = /\bthu\s*(2|3|4|5|6|7)|\bchu nhat\b/.exec(query);
+        const timeMatch = /\b([01]?\d|2[0-3])(?:\s*(?:gio|h)|:)([0-5]\d)?\b/.exec(query);
+        const openCondition = asksOpenNow
+            ? { mode: 'now' as const }
+            : dayMatch && timeMatch
+                ? {
+                    mode: 'at' as const,
+                    dayOfWeek: query.includes('chu nhat') ? 7 : Number(dayMatch[1]) - 1,
+                    time: `${String(Number(timeMatch[1])).padStart(2, '0')}:${timeMatch[2] ?? '00'}`,
+                }
+                : null;
 
         return searchPlanSchema.parse({
             categoryCode,
@@ -41,6 +53,7 @@ export class MockSearchParser implements AiSearchParser {
             preferredTagCodes,
             keywords: categoryCode || matchedTags.length || ward ? [] : [input.query.trim()],
             wardCode: ward?.code ?? null,
+            openCondition,
             sortBy: /\b(danh gia cao|tot nhat|rating cao)\b/.test(query) ? 'rating_desc' : 'relevance',
         });
     }

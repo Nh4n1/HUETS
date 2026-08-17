@@ -32,3 +32,24 @@ export function createLocationBookmark(location) {
     },
   }
 }
+
+export function createItineraryBookmark(itinerary) {
+  return {
+    targetType: 'itinerary',
+    targetId: itinerary.id,
+    snapshot: {
+      title: itinerary.title,
+      description: itinerary.description ?? '',
+      owner: itinerary.owner ?? null,
+      dayCount: itinerary.days?.length ?? 0,
+      itemCount: itinerary.days?.reduce(
+        (total, day) => total + (day.items?.length ?? 0),
+        0,
+      ) ?? 0,
+      coverImageUrl: itinerary.days
+        ?.flatMap((day) => day.items ?? [])
+        .find((item) => item.availability !== 'unavailable' && item.location?.coverImageUrl)
+        ?.location?.coverImageUrl ?? null,
+    },
+  }
+}
