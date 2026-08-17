@@ -2,10 +2,7 @@ import {
   BookFilled,
   BookOutlined,
 } from '@ant-design/icons'
-import {
-  App,
-  Button,
-} from 'antd'
+import { Button } from 'antd'
 import {
   useLocation,
   useNavigate,
@@ -21,8 +18,6 @@ export function BookmarkButton({
 }) {
   const navigate = useNavigate()
   const location = useLocation()
-
-  const { message } = App.useApp()
 
   const {
     isAuthenticated,
@@ -52,13 +47,9 @@ export function BookmarkButton({
       return
     }
 
+    // toggleBookmark tự đồng bộ với BE và tự hiển thị thông báo
+    // thành công/thất bại tương ứng với kết quả gọi API thật.
     toggleBookmark(bookmark)
-
-    message.success(
-      saved
-        ? 'Đã bỏ khỏi nội dung đã lưu.'
-        : 'Đã lưu vào nội dung của bạn.',
-    )
   }
 
   return (

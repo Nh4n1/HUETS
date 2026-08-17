@@ -5,6 +5,7 @@
 .header h1 { margin: 0.4rem 0 0.65rem; font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.05; letter-spacing: -0.05em; }
 .address { display: flex; margin: 0; align-items: center; gap: 0.45rem; color: var(--color-text-muted); }
 .address :global(.anticon) { color: var(--color-primary); }
+.headerActions { display: flex; flex: 0 0 auto; align-items: center; gap: 0.75rem; }
 .rating { display: flex; padding: 0.9rem 1.1rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); align-items: center; gap: 0.75rem; background: white; box-shadow: var(--shadow-sm); }
 .rating > :global(.anticon) { color: var(--color-accent); font-size: 1.5rem; }
 .rating div { display: grid; }
@@ -49,6 +50,7 @@
 
 @media (max-width: 52rem) {
   .header { align-items: flex-start; flex-direction: column; }
+  .headerActions { width: 100%; }
   .layout { grid-template-columns: 1fr; }
   .infoCard { position: static; grid-row: 1; }
 }
@@ -57,5 +59,6 @@
   .page { padding-top: 1.25rem; }
   .gallery { height: 25rem; grid-template-columns: 1fr; grid-template-rows: 2fr 1fr; }
   .thumbnailGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .headerActions { flex-wrap: wrap; }
   .rating { width: 100%; }
 }
