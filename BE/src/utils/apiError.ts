@@ -22,10 +22,11 @@ export type ApiErrorCode =
     | 'STALE_RESOURCE'
     | 'BOOKMARK_ALREADY_EXISTS'
     | 'BOOKMARK_NOT_FOUND'
+    | 'REPORT_ALREADY_EXISTS'
+    | 'REPORT_NOT_FOUND'
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
     | 'NOT_FOUND';
-
 export class ApiError extends Error {
     statusCode: number;
     code: ApiErrorCode;
