@@ -19,6 +19,7 @@ import { HomePage } from '../pages/HomePage'
 
 import { LocationDetailPage } from '../features/locations/pages/LocationDetailPage'
 import { LocationsPage } from '../features/locations/pages/LocationsPage'
+import { ContributeLocationPage } from '../features/locations/pages/ContributeLocationPage'
 
 import { ItinerariesPage } from '../features/itineraries/pages/ItinerariesPage'
 import { ItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
@@ -88,6 +89,11 @@ export const router = createBrowserRouter([
           {
             path: 'saved',
             Component: SavedContentPage,
+          },
+
+          {
+            path: 'locations/contribute',
+            Component: ContributeLocationPage,
           },
 
           {

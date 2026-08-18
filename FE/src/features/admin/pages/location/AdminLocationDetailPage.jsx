@@ -23,7 +23,7 @@ import {
   getAdminLocationByIdApi,
   rejectLocationApi,
 } from '../../api/adminLocationsApi'
-import { LocationMapPicker } from '../../components/location/LocationMapPicker'
+import { LocationMapPicker } from '../../../locations/components/LocationMapPicker'
 import {
   formatDateTime,
   LOCATION_STATUS,
