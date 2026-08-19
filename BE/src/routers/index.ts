@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import accessRouter from './access/index.ts';
-import locationRouter from './location/index.ts';
+import locationRouter, { ownerLocationRouter } from './location/index.ts';
 import locationSearchRouter from './locationSearch/index.ts';
 import profileRouter from './profile/index.ts';
 import referenceRouter from './reference/index.ts';
@@ -27,6 +27,7 @@ router.use('/api/locations', locationRouter);
 router.use('/api/itineraries', itineraryRouter);
 router.use('/api/bookmarks', bookmarkRouter);
 router.use('/api/me/itineraries', ownerItineraryRouter);
+router.use('/api/me/locations', ownerLocationRouter);
 router.use('/api/me', profileRouter);
 router.use('/api/reference', referenceRouter);
 router.use('/api/uploads', uploadRouter);

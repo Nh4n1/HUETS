@@ -79,6 +79,12 @@ export interface AdminLocationQuery extends PublicLocationQuery {
     status?: string;
 }
 
+export interface MyLocationQuery {
+    page?: string;
+    pageSize?: string;
+    status?: string;
+}
+
 export interface ModerateLocationInput {
     expectedStatus?: unknown;
     expectedUpdatedAt?: unknown;
@@ -455,6 +461,15 @@ const toAdminLocationSummary = (
     updatedAt: location.updatedAt,
 });
 
+const toMyLocationSummary = (location: ILocation, categoryNames: Map<string, string>) => ({
+    ...toLocationSummary(location, categoryNames),
+    status: location.status,
+    rejectionReason: location.moderation.rejectionReason,
+    submittedAt: location.moderation.submittedAt,
+    createdAt: location.createdAt,
+    updatedAt: location.updatedAt,
+});
+
 const toAdminLocationDetail = async (location: ILocation) => {
     const [categoryNames, contributors, duplicateCandidates] = await Promise.all([
         categoryMapFor([location]),
@@ -681,6 +696,36 @@ export const getAdminLocations = async (query: AdminLocationQuery) => {
 
     return {
         data: locations.map((location) => toAdminLocationSummary(location, categoryNames, contributors)),
+        meta: {
+            page,
+            pageSize,
+            total,
+            totalPages: total === 0 ? 0 : Math.ceil(total / pageSize),
+        },
+    };
+};
+
+export const getMyLocations = async (actor: Actor, query: MyLocationQuery) => {
+    const page = positiveInteger(query.page, 1);
+    const pageSize = positiveInteger(query.pageSize, 12, 100);
+    const filter: Record<string, unknown> = { createdBy: actor.id };
+
+    if (query.status) {
+        const status = query.status.trim().toLowerCase() as LocationStatus;
+        if (!LOCATION_STATUSES.includes(status)) {
+            throw new ApiError(400, 'VALIDATION_ERROR', 'Trạng thái Location không hợp lệ.');
+        }
+        filter.status = status;
+    }
+
+    const [locations, total] = await Promise.all([
+        Location.find(filter).sort({ createdAt: -1 }).skip((page - 1) * pageSize).limit(pageSize),
+        Location.countDocuments(filter),
+    ]);
+    const categoryNames = await categoryMapFor(locations);
+
+    return {
+        data: locations.map((location) => toMyLocationSummary(location, categoryNames)),
         meta: {
             page,
             pageSize,
