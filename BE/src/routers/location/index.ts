@@ -4,6 +4,7 @@ import { authenticate, authorize } from "../../middlewares/auth.middleware.ts";
 import * as locationReviewController from "../../controllers/locationReview.controller.ts";
 
 const router = Router();
+export const ownerLocationRouter = Router();
 
 router.post(
   "/",
@@ -21,5 +22,13 @@ router.put(
   locationReviewController.saveLocationReview,
 );
 router.get("/:locationId", locationController.getPublicLocationById);
+
+// Current user's own contributed locations, any status (pending/approved/rejected/...).
+ownerLocationRouter.get(
+  "/",
+  authenticate,
+  authorize("user", "admin"),
+  locationController.getMyLocations,
+);
 
 export default router;

@@ -1,6 +1,7 @@
 import {
   BookOutlined,
   CheckCircleOutlined,
+  EnvironmentOutlined,
   IdcardOutlined,
   MailOutlined,
   SafetyCertificateOutlined,
@@ -261,6 +262,38 @@ export function ProfilePage() {
               <small>
                 Xem các địa điểm và lịch trình
                 bạn đã bookmark.
+              </small>
+            </span>
+
+            <span
+              className={styles.personalArrow}
+              aria-hidden="true"
+            >
+              →
+            </span>
+          </Link>
+
+          <Link
+            to="/locations/mine"
+            className={styles.personalItem}
+          >
+            <span
+              className={styles.personalIcon}
+              aria-hidden="true"
+            >
+              <EnvironmentOutlined />
+            </span>
+
+            <span
+              className={styles.personalContent}
+            >
+              <strong>
+                Địa điểm tôi đã đóng góp
+              </strong>
+
+              <small>
+                Theo dõi trạng thái kiểm duyệt các địa
+                điểm bạn đã gửi.
               </small>
             </span>
 
