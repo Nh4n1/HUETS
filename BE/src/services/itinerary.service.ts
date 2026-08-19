@@ -561,5 +561,105 @@ export const copyPublicItinerary = async (itineraryId: string, actor: Actor) => 
         status: 'active',
         days,
     });
-    return toResponse(copy);
+    return toResponse(copy);    
+};
+export interface AdminItineraryQuery {
+    page?: string;
+    pageSize?: string;
+    status?: string;
+    visibility?: string;
+    q?: string;
+}
+
+export interface ModerateItineraryInput {
+    status?: unknown;
+    reason?: unknown;
+}
+
+const toAdminItinerarySummary = (itinerary: IItinerary, owner?: { displayName: string }) => ({
+    id: itinerary._id.toString(),
+    title: itinerary.title,
+    visibility: itinerary.visibility,
+    status: itinerary.status,
+    owner: owner ? { displayName: owner.displayName } : null,
+    dayCount: itinerary.days.length,
+    stopCount: itinerary.days.reduce((total, day) => total + day.items.length, 0),
+    moderation: itinerary.moderation,
+    createdAt: itinerary.createdAt,
+    updatedAt: itinerary.updatedAt,
+});
+
+export const getAdminItineraries = async (query: AdminItineraryQuery) => {
+    const page = positiveInteger(query.page, 1);
+    const pageSize = positiveInteger(query.pageSize, 12, 100);
+    const filter: Record<string, unknown> = { isDeleted: false };
+
+    if (query.status) {
+        const status = query.status.trim().toLowerCase();
+        if (status !== 'active' && status !== 'hidden') {
+            throw new ApiError(400, 'VALIDATION_ERROR', 'Trạng thái Itinerary không hợp lệ.');
+        }
+        filter.status = status;
+    }
+    if (query.visibility) {
+        const visibility = query.visibility.trim().toLowerCase();
+        if (visibility !== 'public' && visibility !== 'private') {
+            throw new ApiError(400, 'VALIDATION_ERROR', 'visibility không hợp lệ.');
+        }
+        filter.visibility = visibility;
+    }
+    const escapedQuery = query.q?.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (escapedQuery) filter.title = { $regex: escapedQuery, $options: 'i' };
+
+    const [itineraries, total] = await Promise.all([
+        Itinerary.find(filter).sort({ updatedAt: -1 }).skip((page - 1) * pageSize).limit(pageSize),
+        Itinerary.countDocuments(filter),
+    ]);
+    const ownerIds = [...new Set(itineraries.map((itinerary) => itinerary.ownerId.toString()))];
+    const owners = await User.find({ _id: { $in: ownerIds } }).select({ displayName: 1 }).lean();
+    const ownerMap = new Map(owners.map((owner) => [owner._id.toString(), owner]));
+
+    return {
+        data: itineraries.map((itinerary) =>
+            toAdminItinerarySummary(itinerary, ownerMap.get(itinerary.ownerId.toString()))),
+        meta: { page, pageSize, total, totalPages: total === 0 ? 0 : Math.ceil(total / pageSize) },
+    };
+};
+
+export const getAdminItineraryById = async (itineraryId: string) => {
+    if (!mongoose.isValidObjectId(itineraryId)) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
+    const itinerary = await Itinerary.findOne({ _id: itineraryId, isDeleted: false });
+    if (!itinerary) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
+    return toResponse(itinerary);
+};
+
+export const moderateItinerary = async (itineraryId: string, input: ModerateItineraryInput, actor: Actor) => {
+    assertActor(actor);
+    if (!mongoose.isValidObjectId(itineraryId)) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
+    if (input.status !== 'active' && input.status !== 'hidden') {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'status phải là active hoặc hidden.');
+    }
+    const reason = optionalText(input.reason, 'reason', 500, true) ?? null;
+    if (input.status === 'hidden' && !reason) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'Cần nhập lý do khi ẩn Itinerary.');
+    }
+    const itinerary = await Itinerary.findOne({ _id: itineraryId, isDeleted: false });
+    if (!itinerary) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
+
+    itinerary.status = input.status;
+    itinerary.moderation = input.status === 'hidden'
+        ? { hiddenBy: new mongoose.Types.ObjectId(actor.id), hiddenAt: new Date(), hiddenReason: reason }
+        : { hiddenBy: null, hiddenAt: null, hiddenReason: null };
+    await itinerary.save();
+    return toResponse(itinerary);
+};
+
+export const adminDeleteItinerary = async (itineraryId: string, actor: Actor) => {
+    assertActor(actor);
+    if (!mongoose.isValidObjectId(itineraryId)) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
+    const itinerary = await Itinerary.findOne({ _id: itineraryId, isDeleted: false });
+    if (!itinerary) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
+    itinerary.isDeleted = true;
+    itinerary.deletedAt = new Date();
+    await itinerary.save();
 };
