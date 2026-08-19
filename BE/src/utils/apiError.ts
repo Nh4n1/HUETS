@@ -22,6 +22,7 @@ export type ApiErrorCode =
     | 'STALE_RESOURCE'
     | 'BOOKMARK_ALREADY_EXISTS'
     | 'BOOKMARK_NOT_FOUND'
+    | 'CANNOT_LOCK_SELF'
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
     | 'NOT_FOUND';
