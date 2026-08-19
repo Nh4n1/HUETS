@@ -8,6 +8,7 @@ import uploadRouter from './upload/index.ts';
 import adminLocationRouter from './adminLocation/index.ts';
 import itineraryRouter, { ownerItineraryRouter } from './itinerary/index.ts';
 import bookmarkRouter from './bookmark/index.ts';
+import reportRouter from './report/index.ts';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/api/me/itineraries', ownerItineraryRouter);
 router.use('/api/me', profileRouter);
 router.use('/api/reference', referenceRouter);
 router.use('/api/uploads', uploadRouter);
+router.use('/api/reports', reportRouter);
 
 export default router;
