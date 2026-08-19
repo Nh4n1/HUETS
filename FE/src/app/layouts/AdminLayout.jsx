@@ -53,7 +53,7 @@ const menuItems = [
   {
     key: '/admin/itineraries',
     icon: <CalendarOutlined />,
-    label: placeholderLink('Quản lý lịch trình'),
+    label: <Link to="/admin/itineraries">Quản lý lịch trình</Link>,
   },
   {
     key: '/admin/reports',
@@ -82,6 +82,7 @@ function getSelectedKey(pathname) {
   if (pathname === '/admin/locations/pending') return '/admin/locations/pending'
   if (pathname.startsWith('/admin/locations/')) return '/admin/locations'
   if (pathname === '/admin/locations') return '/admin/locations'
+  if (pathname.startsWith('/admin/itineraries')) return '/admin/itineraries'
   return '/admin'
 }
 
