@@ -1,14 +1,17 @@
 export function createLocationBookmark(location) {
+  const coverImageUrl =
+    location.coverImageUrl
+    ?? (typeof location.images?.[0] === 'string' ? location.images[0] : location.images?.[0]?.url)
+    ?? null
+
   return {
     targetType: 'location',
-    targetId: location.id,
+    targetId: location.id ?? location._id,
 
     snapshot: {
       name: location.name,
 
-      coverImageUrl:
-        location.coverImageUrl
-        ?? null,
+      coverImageUrl,
 
       category:
         location.category
@@ -34,9 +37,21 @@ export function createLocationBookmark(location) {
 }
 
 export function createItineraryBookmark(itinerary) {
+  const coverImageUrl =
+    itinerary.coverImageUrl
+    ?? itinerary.days
+      ?.flatMap((day) => day.items ?? [])
+      .find((item) => item.availability !== 'unavailable' && (item.location?.coverImageUrl || item.location?.images?.[0]))
+      ?.location?.coverImageUrl
+    ?? itinerary.days
+      ?.flatMap((day) => day.items ?? [])
+      .find((item) => item.location?.images?.[0])
+      ?.location?.images?.[0]?.url
+    ?? null
+
   return {
     targetType: 'itinerary',
-    targetId: itinerary.id,
+    targetId: itinerary.id ?? itinerary._id,
     snapshot: {
       title: itinerary.title,
       description: itinerary.description ?? '',
@@ -46,10 +61,7 @@ export function createItineraryBookmark(itinerary) {
         (total, day) => total + (day.items?.length ?? 0),
         0,
       ) ?? 0,
-      coverImageUrl: itinerary.days
-        ?.flatMap((day) => day.items ?? [])
-        .find((item) => item.availability !== 'unavailable' && item.location?.coverImageUrl)
-        ?.location?.coverImageUrl ?? null,
+      coverImageUrl,
     },
   }
 }

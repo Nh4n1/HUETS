@@ -56,6 +56,24 @@ export const getPublicLocationById = asyncHandler(async (req: Request, res: Resp
     return sendSuccess(res, 200, location);
 });
 
+// [GET] /api/me/locations
+export const getMyLocations = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    }
+    const query: locationService.MyLocationQuery = {};
+    const page = queryString(req.query.page);
+    const pageSize = queryString(req.query.pageSize);
+    const status = queryString(req.query.status);
+
+    if (page) query.page = page;
+    if (pageSize) query.pageSize = pageSize;
+    if (status) query.status = status;
+
+    const result = await locationService.getMyLocations(req.user, query);
+    return sendSuccess(res, 200, result.data, result.meta);
+});
+
 // [GET] /api/admin/locations/moderation
 export const getAdminLocations = asyncHandler(async (req: Request, res: Response) => {
     const query: locationService.AdminLocationQuery = {};

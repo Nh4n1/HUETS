@@ -14,11 +14,14 @@ import { AdminLocationModerationPage } from '../features/admin/pages/location/Ad
 import { AdminLocationsPage } from '../features/admin/pages/location/AdminLocationsPage'
 import { AdminItinerariesPage } from '../features/admin/pages/itinerary/AdminItinerariesPage'
 import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOverviewPage'
+import { AdminUsersPage } from '../features/admin/pages/user/AdminUsersPage'
 
 import { HomePage } from '../pages/HomePage'
 
 import { LocationDetailPage } from '../features/locations/pages/LocationDetailPage'
 import { LocationsPage } from '../features/locations/pages/LocationsPage'
+import { ContributeLocationPage } from '../features/locations/pages/ContributeLocationPage'
+import { MyContributionsPage } from '../features/locations/pages/MyContributionsPage'
 
 import { ItinerariesPage } from '../features/itineraries/pages/ItinerariesPage'
 import { ItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
@@ -91,6 +94,16 @@ export const router = createBrowserRouter([
           },
 
           {
+            path: 'locations/contribute',
+            Component: ContributeLocationPage,
+          },
+
+          {
+            path: 'locations/mine',
+            Component: MyContributionsPage,
+          },
+
+          {
             path: 'itineraries/mine',
             Component: ItinerariesPage,
           },
@@ -149,8 +162,8 @@ export const router = createBrowserRouter([
           },
 
           {
-            path: 'itineraries',
-            Component: AdminItinerariesPage,
+            path: 'users',
+            Component: AdminUsersPage,
           },
         ],
       },
