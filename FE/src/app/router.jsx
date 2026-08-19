@@ -12,6 +12,7 @@ import { AdminCreateLocationPage } from '../features/admin/pages/location/AdminC
 import { AdminLocationDetailPage } from '../features/admin/pages/location/AdminLocationDetailPage'
 import { AdminLocationModerationPage } from '../features/admin/pages/location/AdminLocationModerationPage'
 import { AdminLocationsPage } from '../features/admin/pages/location/AdminLocationsPage'
+import { AdminItinerariesPage } from '../features/admin/pages/itinerary/AdminItinerariesPage'
 import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOverviewPage'
 import { AdminUsersPage } from '../features/admin/pages/user/AdminUsersPage'
 

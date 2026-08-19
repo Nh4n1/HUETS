@@ -53,7 +53,7 @@ const menuItems = [
   {
     key: '/admin/itineraries',
     icon: <CalendarOutlined />,
-    label: placeholderLink('Quản lý lịch trình'),
+    label: <Link to="/admin/itineraries">Quản lý lịch trình</Link>,
   },
   {
     key: '/admin/reports',
