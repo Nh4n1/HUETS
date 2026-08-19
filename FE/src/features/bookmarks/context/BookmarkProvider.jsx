@@ -69,15 +69,12 @@ function BookmarkStore({
               && item.targetId === serverItem.targetId,
           )
 
-          return (
-            cached
-            ?? {
-              targetType: serverItem.targetType,
-              targetId: serverItem.targetId,
-              snapshot: {},
-              savedAt: serverItem.createdAt,
-            }
-          )
+          return {
+            targetType: serverItem.targetType,
+            targetId: serverItem.targetId,
+            snapshot: cached?.snapshot ?? {},
+            savedAt: serverItem.createdAt ?? cached?.savedAt ?? new Date().toISOString(),
+          }
         })
 
         setBookmarks(merged)
