@@ -364,6 +364,17 @@ function LocationBookmarks({
                 styles.imagePlaceholder
               }
             >
+              {snapshot.coverImageUrl ? (
+                <img
+                  src={snapshot.coverImageUrl}
+                  alt={snapshot.name || 'Ảnh địa điểm'}
+                  className={styles.coverImage}
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.style.display = 'none'
+                  }}
+                />
+              ) : null}
               <EnvironmentOutlined />
             </div>
 
@@ -477,6 +488,17 @@ function ItineraryBookmarks({
                 styles.itineraryCover
               }
             >
+              {snapshot.coverImageUrl ? (
+                <img
+                  src={snapshot.coverImageUrl}
+                  alt={snapshot.title || 'Ảnh lịch trình'}
+                  className={styles.coverImage}
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.style.display = 'none'
+                  }}
+                />
+              ) : null}
               <BookOutlined />
             </div>
 

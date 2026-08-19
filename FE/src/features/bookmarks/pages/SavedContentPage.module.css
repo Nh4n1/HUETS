@@ -137,6 +137,8 @@
 
 .imagePlaceholder,
 .itineraryCover {
+  position: relative;
+  overflow: hidden;
   display: grid;
 
   height: 10rem;
@@ -153,6 +155,15 @@
     );
 
   font-size: 2rem;
+}
+
+.coverImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .itineraryCover {
