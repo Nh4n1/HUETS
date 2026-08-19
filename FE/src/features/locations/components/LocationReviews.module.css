@@ -65,6 +65,24 @@
     font-size: .72rem;
 }
 
+.itemFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+}
+
+.reportButton {
+    height: auto;
+    padding: 0 .3rem;
+    color: var(--color-text-muted);
+    font-size: .72rem;
+}
+
+.reportButton:hover {
+    color: var(--color-error);
+}
+
 .loadMore {
     justify-self: center;
     margin-top: .5rem;

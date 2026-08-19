@@ -1,8 +1,9 @@
-import { Avatar, Button, Empty, Form, Input, Rate, message } from 'antd'
-import { UserOutlined } from '@ant-design/icons'
+import { Avatar, Button, Empty, Form, Input, Rate, Tooltip, message } from 'antd'
+import { FlagOutlined, UserOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../../auth/context/useAuth'
+import { ReportModal } from '../../reports/components/ReportModal'
 import { getLocationReviewsApi, saveLocationReviewApi } from '../api/locationApi'
 import styles from './LocationReviews.module.css'
 
@@ -14,6 +15,7 @@ export function LocationReviews({ locationId, onSummaryChange }) {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [reportingReviewId, setReportingReviewId] = useState(null)
 
   const loadReviews = () => {
     setLoading(true)
@@ -98,7 +100,22 @@ export function LocationReviews({ locationId, onSummaryChange }) {
             <div>
               <div className={styles.itemHeader}><strong>{review.author.displayName}</strong><Rate disabled value={review.rating} /></div>
               {review.comment ? <p>{review.comment}</p> : null}
-              <time>{new Date(review.updatedAt).toLocaleDateString('vi-VN')}</time>
+              <div className={styles.itemFooter}>
+                <time>{new Date(review.updatedAt).toLocaleDateString('vi-VN')}</time>
+                {isAuthenticated && review.userId !== user?.id ? (
+                  <Tooltip title="Báo cáo đánh giá này">
+                    <Button
+                      type="text"
+                      size="small"
+                      className={styles.reportButton}
+                      icon={<FlagOutlined />}
+                      onClick={() => setReportingReviewId(review.id)}
+                    >
+                      Báo cáo
+                    </Button>
+                  </Tooltip>
+                ) : null}
+              </div>
             </div>
           </article>
         ))}
@@ -108,6 +125,14 @@ export function LocationReviews({ locationId, onSummaryChange }) {
           </Button>
         ) : null}
       </div>
+
+      <ReportModal
+        open={Boolean(reportingReviewId)}
+        targetType="locationReview"
+        targetId={reportingReviewId}
+        contextLabel="Báo cáo đánh giá vi phạm quy định cộng đồng."
+        onClose={() => setReportingReviewId(null)}
+      />
     </section>
   )
 }

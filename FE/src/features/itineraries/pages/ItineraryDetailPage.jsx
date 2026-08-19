@@ -7,6 +7,7 @@ import {
   EditOutlined,
   EllipsisOutlined,
   EnvironmentOutlined,
+  FlagOutlined,
   GlobalOutlined,
   LockOutlined,
   WarningOutlined,
@@ -17,6 +18,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { useAuth } from '../../auth/context/useAuth'
 import { BookmarkButton } from '../../bookmarks/components/BookmarkButton'
 import { createItineraryBookmark } from '../../bookmarks/utils/bookmarkMappers'
+import { ReportModal } from '../../reports/components/ReportModal'
 import { copyPublicItineraryApi, deleteItineraryApi, getItineraryApi, getPublicItineraryApi } from '../api/itineraryApi'
 import styles from './Itinerary.module.css'
 
@@ -32,6 +34,15 @@ export function ItineraryDetailPage({ publicView = false }) {
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [copying, setCopying] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+
+  const handleReportClick = () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: location } })
+      return
+    }
+    setReportOpen(true)
+  }
 
   useEffect(() => {
     let active = true
@@ -87,7 +98,14 @@ export function ItineraryDetailPage({ publicView = false }) {
           <div>
             <Button type="primary" icon={<CopyOutlined />} loading={copying} onClick={copyItinerary}>Sao chép lịch trình</Button>
             <BookmarkButton bookmark={createItineraryBookmark(itinerary)} showLabel />
-            <Dropdown menu={{ items: [{ key: 'report', label: 'Báo cáo', disabled: true }] }}><Button aria-label="Thêm hành động" icon={<EllipsisOutlined />} /></Dropdown>
+            <Dropdown
+              menu={{
+                onClick: ({ key }) => { if (key === 'report') handleReportClick() },
+                items: [{ key: 'report', icon: <FlagOutlined />, label: 'Báo cáo' }],
+              }}
+            >
+              <Button aria-label="Thêm hành động" icon={<EllipsisOutlined />} />
+            </Dropdown>
           </div>
         ) : (
           <div>
@@ -154,6 +172,16 @@ export function ItineraryDetailPage({ publicView = false }) {
           </article>
         ))}
       </section>
+
+      {publicView ? (
+        <ReportModal
+          open={reportOpen}
+          targetType="itinerary"
+          targetId={itinerary.id}
+          contextLabel={`Báo cáo lịch trình "${itinerary.title}"`}
+          onClose={() => setReportOpen(false)}
+        />
+      ) : null}
     </main>
   )
 }

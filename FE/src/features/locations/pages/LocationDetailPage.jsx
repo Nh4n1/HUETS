@@ -2,14 +2,17 @@ import {
   ArrowLeftOutlined,
   ClockCircleOutlined,
   EnvironmentOutlined,
+  FlagOutlined,
   StarFilled,
 } from '@ant-design/icons'
 import { Alert, Button, Image, Skeleton } from 'antd'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useLocation as useRouterLocation, useNavigate, useParams } from 'react-router'
 import { getPublicLocationByIdApi } from '../api/locationApi'
+import { useAuth } from '../../auth/context/useAuth'
 import { BookmarkButton } from '../../bookmarks/components/BookmarkButton'
 import { createLocationBookmark } from '../../bookmarks/utils/bookmarkMappers'
+import { ReportModal } from '../../reports/components/ReportModal'
 import { LocationMap } from '../components/LocationMap'
 import { LocationReviews } from '../components/LocationReviews'
 import { getOpeningHoursRows, getRatingLabel, getTagLabel } from '../locationPresentation'
@@ -27,11 +30,23 @@ function DetailSkeleton() {
 
 export function LocationDetailPage() {
   const { locationId } = useParams()
+  const navigate = useNavigate()
+  const routerLocation = useRouterLocation()
+  const { isAuthenticated } = useAuth()
   const [location, setLocation] = useState(null)
   const [loadedRequestKey, setLoadedRequestKey] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [reportOpen, setReportOpen] = useState(false)
   const requestKey = `${locationId}|${reloadKey}`
+
+  const handleReportClick = () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: routerLocation } })
+      return
+    }
+    setReportOpen(true)
+  }
 
   useEffect(() => {
     let active = true
@@ -96,6 +111,9 @@ export function LocationDetailPage() {
             bookmark={createLocationBookmark(location)}
             showLabel
           />
+          <Button icon={<FlagOutlined />} onClick={handleReportClick}>
+            Báo cáo
+          </Button>
         </div>
       </header>
 
@@ -179,6 +197,14 @@ export function LocationDetailPage() {
           </div>
         </aside>
       </div>
+
+      <ReportModal
+        open={reportOpen}
+        targetType="location"
+        targetId={location.id}
+        contextLabel={`Báo cáo địa điểm "${location.name}"`}
+        onClose={() => setReportOpen(false)}
+      />
     </main>
   )
 }
