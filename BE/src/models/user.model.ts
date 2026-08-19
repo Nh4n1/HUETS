@@ -13,6 +13,7 @@ export interface IUser extends Document {
     bio?: string;
     role: UserRole;
     status: UserStatus;
+    lockReason?: string | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -26,7 +27,8 @@ const userSchema = new Schema<IUser>(
         avatarUrl: { type: String },
         bio: { type: String },
         role: { type: String, enum: ['user', 'admin'], default: 'user' },
-        status: { type: String, enum: ['active', 'locked'], default: 'active' },
+                status: { type: String, enum: ['active', 'locked'], default: 'active' },
+        lockReason: { type: String, default: null },
     },
     { timestamps: true, collection: 'users' },
 );
