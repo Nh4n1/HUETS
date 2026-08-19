@@ -1,7 +1,7 @@
-import { Alert, Button, Select, Space, Table, Tag, Typography } from 'antd'
+import { Alert, App, Button, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { getAdminLocationsApi } from '../../api/adminLocationsApi'
+import { approveLocationApi, getAdminLocationsApi, rejectLocationApi } from '../../api/adminLocationsApi'
 import {
   formatDateTime,
   LOCATION_STATUS,
@@ -10,12 +10,38 @@ import {
 const PAGE_SIZE = 12
 
 export function AdminLocationsPage({ fixedStatus, title = 'Quản lý địa điểm' }) {
+  const { message, modal } = App.useApp()
+  const [rejectForm] = Form.useForm()
+
   const [locations, setLocations] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState(fixedStatus ?? '')
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+
+  const [rejectTarget, setRejectTarget] = useState(null)
+  const [moderatingId, setModeratingId] = useState(null)
+
+  async function loadLocations() {
+    try {
+      setLoading(true)
+      const { data, meta } = await getAdminLocationsApi({
+        page,
+        pageSize: PAGE_SIZE,
+        status: (fixedStatus ?? status) || undefined,
+      })
+      setLocations(data)
+      setTotal(meta.total)
+      setErrorMessage('')
+    } catch (error) {
+      setErrorMessage(
+        error.response?.data?.message ?? 'Không thể tải danh sách địa điểm.',
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -45,6 +71,61 @@ export function AdminLocationsPage({ fixedStatus, title = 'Quản lý địa đi
       active = false
     }
   }, [fixedStatus, page, status])
+
+  async function runModeration(record, request, successMessage) {
+    try {
+      setModeratingId(record.id)
+      await request()
+      message.success(successMessage)
+      await loadLocations()
+    } catch (error) {
+      if (error.response?.data?.code === 'STALE_RESOURCE') {
+        message.warning('Địa điểm đã được thay đổi bởi thao tác khác. Danh sách đã được tải lại.')
+        await loadLocations()
+        return
+      }
+      message.error(error.response?.data?.message ?? 'Không thể thực hiện kiểm duyệt.')
+    } finally {
+      setModeratingId(null)
+    }
+  }
+
+  function handleApprove(record) {
+    modal.confirm({
+      title: `Duyệt địa điểm "${record.name}"?`,
+      content: 'Địa điểm sẽ được hiển thị công khai ngay sau khi duyệt.',
+      okText: 'Duyệt',
+      cancelText: 'Hủy',
+      onOk: () => runModeration(
+        record,
+        () => approveLocationApi(record.id, {
+          expectedStatus: record.status,
+          expectedUpdatedAt: record.updatedAt,
+        }),
+        'Đã duyệt địa điểm.',
+      ),
+    })
+  }
+
+  function openRejectModal(record) {
+    setRejectTarget(record)
+    rejectForm.resetFields()
+  }
+
+  async function handleRejectConfirm() {
+    const values = await rejectForm.validateFields()
+    const record = rejectTarget
+    await runModeration(
+      record,
+      () => rejectLocationApi(record.id, {
+        expectedStatus: record.status,
+        expectedUpdatedAt: record.updatedAt,
+        reason: values.reason,
+      }),
+      'Đã từ chối địa điểm.',
+    )
+    setRejectTarget(null)
+  }
 
   const columns = [
     {
@@ -85,9 +166,30 @@ export function AdminLocationsPage({ fixedStatus, title = 'Quản lý địa đi
       title: 'Thao tác',
       key: 'actions',
       render: (_, record) => (
-        <Link to={`/admin/locations/${record.id}`}>
-          {record.status === 'pending' ? 'Kiểm duyệt' : 'Xem chi tiết'}
-        </Link>
+        record.status === 'pending' ? (
+          <Space>
+            <Button
+              size="small"
+              type="primary"
+              loading={moderatingId === record.id}
+              disabled={moderatingId !== null && moderatingId !== record.id}
+              onClick={() => handleApprove(record)}
+            >
+              Duyệt
+            </Button>
+            <Button
+              size="small"
+              danger
+              disabled={moderatingId !== null}
+              onClick={() => openRejectModal(record)}
+            >
+              Từ chối
+            </Button>
+            <Link to={`/admin/locations/${record.id}`}>Chi tiết</Link>
+          </Space>
+        ) : (
+          <Link to={`/admin/locations/${record.id}`}>Xem chi tiết</Link>
+        )
       ),
     },
   ]
@@ -145,7 +247,7 @@ export function AdminLocationsPage({ fixedStatus, title = 'Quản lý địa đi
         loading={loading}
         dataSource={locations}
         columns={columns}
-        scroll={{ x: 1000 }}
+        scroll={{ x: 1100 }}
         pagination={{
           current: page,
           pageSize: PAGE_SIZE,
@@ -154,6 +256,29 @@ export function AdminLocationsPage({ fixedStatus, title = 'Quản lý địa đi
           onChange: handlePageChange,
         }}
       />
+
+      <Modal
+        title={rejectTarget ? `Từ chối địa điểm "${rejectTarget.name}"` : 'Từ chối địa điểm'}
+        open={Boolean(rejectTarget)}
+        okText="Xác nhận từ chối"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true, loading: moderatingId === rejectTarget?.id }}
+        onOk={handleRejectConfirm}
+        onCancel={() => setRejectTarget(null)}
+      >
+        <Form form={rejectForm} layout="vertical">
+          <Form.Item
+            name="reason"
+            label="Lý do từ chối"
+            rules={[
+              { required: true, whitespace: true, message: 'Vui lòng nhập lý do từ chối.' },
+              { max: 1000, message: 'Lý do không được vượt quá 1000 ký tự.' },
+            ]}
+          >
+            <Input.TextArea rows={4} placeholder="Mô tả thông tin cần người đóng góp chỉnh sửa" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </main>
   )
 }
