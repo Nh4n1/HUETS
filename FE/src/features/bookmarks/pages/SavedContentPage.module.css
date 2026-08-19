@@ -273,6 +273,15 @@
 .empty {
   padding: 3rem 1rem;
 }
+.empty {
+  padding: 3rem 1rem;
+}
+
+.pagination {
+  display: flex;
+  margin-top: 1.5rem;
+  justify-content: center;
+}
 
 @media (max-width: 64rem) {
   .grid {
@@ -295,3 +304,4 @@
     grid-template-columns: 1fr;
   }
 }
+

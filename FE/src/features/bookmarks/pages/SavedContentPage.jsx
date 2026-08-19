@@ -8,6 +8,7 @@ import {
   Card,
   Empty,
   Input,
+  Pagination,
   Select,
   Tabs,
   Typography,
@@ -18,6 +19,8 @@ import { useBookmarks } from '../context/useBookmarks'
 import styles from './SavedContentPage.module.css'
 
 const { Title, Text } = Typography
+
+const PAGE_SIZE = 8
 
 export function SavedContentPage() {
   const { bookmarks, removeBookmark } = useBookmarks()
@@ -30,6 +33,9 @@ export function SavedContentPage() {
 
   const [filter, setFilter] =
     useState('')
+
+  const [page, setPage] =
+    useState(1)
 
   const locationBookmarks = useMemo(
     () =>
@@ -171,10 +177,56 @@ export function SavedContentPage() {
       query,
     ])
 
+  const activeTotal =
+    activeTab === 'location'
+      ? filteredLocations.length
+      : filteredItineraries.length
+
+  // Nếu danh sách co lại (do bỏ lưu, đổi tab, lọc...)
+  // khiến trang hiện tại vượt quá số trang thực tế,
+  // ghim tạm về trang hợp lệ cuối cùng khi render,
+  // không setState trong effect để tránh render lồng nhau.
+  const totalPages = Math.max(
+    1,
+    Math.ceil(activeTotal / PAGE_SIZE),
+  )
+
+  const currentPage = Math.min(
+    page,
+    totalPages,
+  )
+
+  const pagedLocations = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return filteredLocations.slice(
+      start,
+      start + PAGE_SIZE,
+    )
+  }, [filteredLocations, currentPage])
+
+  const pagedItineraries = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return filteredItineraries.slice(
+      start,
+      start + PAGE_SIZE,
+    )
+  }, [filteredItineraries, currentPage])
+
   function handleTabChange(key) {
     setActiveTab(key)
     setQuery('')
     setFilter('')
+    setPage(1)
+  }
+
+  function handleQueryChange(event) {
+    setQuery(event.target.value)
+    setPage(1)
+  }
+
+  function handleFilterChange(value) {
+    setFilter(value)
+    setPage(1)
   }
 
   return (
@@ -225,11 +277,7 @@ export function SavedContentPage() {
                   ? 'Tìm theo tên địa điểm...'
                   : 'Tìm theo tiêu đề hoặc tác giả...'
               }
-              onChange={(event) =>
-                setQuery(
-                  event.target.value,
-                )
-              }
+              onChange={handleQueryChange}
             />
 
             {activeTab ===
@@ -237,7 +285,7 @@ export function SavedContentPage() {
               <Select
                 value={filter}
                 options={categoryOptions}
-                onChange={setFilter}
+                onChange={handleFilterChange}
               />
             ) : null}
           </div>
@@ -245,7 +293,7 @@ export function SavedContentPage() {
           {activeTab === 'location' ? (
             <LocationBookmarks
               bookmarks={
-                filteredLocations
+                pagedLocations
               }
               onRemove={
                 removeBookmark
@@ -254,13 +302,24 @@ export function SavedContentPage() {
           ) : (
             <ItineraryBookmarks
               bookmarks={
-                filteredItineraries
+                pagedItineraries
               }
               onRemove={
                 removeBookmark
               }
             />
           )}
+
+          {activeTotal > PAGE_SIZE ? (
+            <Pagination
+              className={styles.pagination}
+              current={currentPage}
+              pageSize={PAGE_SIZE}
+              total={activeTotal}
+              showSizeChanger={false}
+              onChange={setPage}
+            />
+          ) : null}
         </Card>
       </section>
     </main>
