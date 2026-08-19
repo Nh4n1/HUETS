@@ -5,7 +5,6 @@ import {
   DownOutlined,
   EnvironmentOutlined,
   MenuOutlined,
-  PlusCircleOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { Avatar, Button, Dropdown, Layout } from 'antd'
@@ -54,11 +53,6 @@ export function AppLayout() {
         key: 'my-itineraries',
         icon: <CalendarOutlined />,
         label: <Link to="/itineraries/mine">Lịch trình của tôi</Link>,
-      },
-      {
-        key: 'contribute-location',
-        icon: <PlusCircleOutlined />,
-        label: <Link to="/locations/contribute">Đóng góp địa điểm</Link>,
       },
     ]
 
@@ -147,7 +141,6 @@ export function AppLayout() {
               <>
                 <Link to="/profile">Hồ sơ của tôi</Link>
                 <Link to="/itineraries/mine">Lịch trình của tôi</Link>
-                <Link to="/locations/contribute">Đóng góp địa điểm</Link>
                 {user.role === 'admin' ? <Link to="/admin">Trang quản trị</Link> : null}
                 <Button type="text" danger loading={loggingOut} onClick={handleLogout}>
                   Đăng xuất
