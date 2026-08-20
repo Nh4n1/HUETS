@@ -24,3 +24,13 @@ export async function rejectLocationApi(locationId, payload) {
   const response = await httpClient.post(`/admin/locations/${locationId}/reject`, payload)
   return response.data
 }
+
+export async function updateAdminLocationApi(locationId, payload) {
+  const response = await httpClient.patch(`/admin/locations/${locationId}`, payload)
+  return response.data
+}
+
+export async function deleteAdminLocationApi(locationId, payload) {
+  const response = await httpClient.delete(`/admin/locations/${locationId}`, { data: payload })
+  return response.data
+}

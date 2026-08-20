@@ -22,7 +22,7 @@ const currentVietnamDayAndTime = () => {
 };
 
 export const executeSearchPlan = async (criteria: SearchPlan, page: number, pageSize: number) => {
-    const filter: Record<string, unknown> = { status: 'approved' };
+    const filter: Record<string, unknown> = { status: 'approved', isDeleted: { $ne: true } };
     if (criteria.categoryCode) filter.categoryCode = criteria.categoryCode;
     if (criteria.wardCode) filter['address.wardCode'] = criteria.wardCode;
     if (criteria.requiredTagCodes.length) filter.tagCodes = { $all: criteria.requiredTagCodes };

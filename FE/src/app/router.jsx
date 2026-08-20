@@ -10,6 +10,7 @@ import { SavedContentPage } from '../features/bookmarks/pages/SavedContentPage'
 import { AdminRoute } from '../features/admin/components/AdminRoute'
 import { AdminCreateLocationPage } from '../features/admin/pages/location/AdminCreateLocationPage'
 import { AdminLocationDetailPage } from '../features/admin/pages/location/AdminLocationDetailPage'
+import { AdminEditLocationPage } from '../features/admin/pages/location/AdminEditLocationPage'
 import { AdminLocationModerationPage } from '../features/admin/pages/location/AdminLocationModerationPage'
 import { AdminLocationsPage } from '../features/admin/pages/location/AdminLocationsPage'
 import { AdminItinerariesPage } from '../features/admin/pages/itinerary/AdminItinerariesPage'
@@ -159,6 +160,11 @@ export const router = createBrowserRouter([
           {
             path: 'locations/:locationId',
             Component: AdminLocationDetailPage,
+          },
+
+          {
+            path: 'locations/:locationId/edit',
+            Component: AdminEditLocationPage,
           },
 
           {

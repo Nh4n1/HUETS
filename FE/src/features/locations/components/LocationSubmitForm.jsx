@@ -23,6 +23,7 @@ import {
   Typography,
   Upload,
 } from 'antd'
+import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import { getCategoriesApi, getTagsByCategoryApi, getWardsApi } from '../../../shared/api/referenceApi'
 import {
@@ -62,10 +63,42 @@ function cloneRanges(ranges = []) {
   return ranges.map((range) => ({ open: range.open, close: range.close }))
 }
 
+function scheduledDaysFromLocation(location) {
+  const days = createEmptyScheduledDays()
+  if (location?.openingHours?.status !== 'scheduled') return days
+
+  location.openingHours.periods.forEach((period) => {
+    days[period.dayOfWeek] = {
+      enabled: true,
+      ranges: period.ranges.map((range) => ({
+        open: dayjs(`2000-01-01T${range.open}:00`),
+        close: dayjs(`2000-01-01T${range.close}:00`),
+      })),
+    }
+  })
+  return days
+}
+
+function imageFileListFromLocation(location) {
+  return (location?.images ?? []).map((image, index) => ({
+    uid: `existing-${image.id}`,
+    name: `Ảnh ${index + 1}`,
+    status: 'done',
+    url: image.url,
+    existingImageId: image.id,
+  }))
+}
+
 // Form tạo địa điểm dùng chung. `onSuccess` được gọi sau khi tạo thành công
 // (BE tự quyết định status: admin -> approved ngay, user thường -> pending
 // chờ duyệt), để trang cha tự xử lý thông báo/điều hướng phù hợp.
-export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuccess }) {
+export function LocationSubmitForm({
+  mode = 'create',
+  initialLocation = null,
+  submitLabel = 'Tạo địa điểm',
+  onSubmit,
+  onSuccess,
+}) {
   const { message } = App.useApp()
   const [form] = Form.useForm()
   const mapLatitude = Form.useWatch('latitude', form)
@@ -77,14 +110,18 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
   const [referenceError, setReferenceError] = useState('')
 
   const [tagGroups, setTagGroups] = useState([])
-  const [tagsLoading, setTagsLoading] = useState(false)
+  const [tagsLoading, setTagsLoading] = useState(mode === 'edit')
   const [selectedTagsByGroup, setSelectedTagsByGroup] = useState({})
 
-  const [openingStatus, setOpeningStatus] = useState('unknown')
-  const [scheduledDays, setScheduledDays] = useState(createEmptyScheduledDays)
+  const [openingStatus, setOpeningStatus] = useState(
+    initialLocation?.openingHours?.status ?? 'unknown',
+  )
+  const [scheduledDays, setScheduledDays] = useState(
+    () => scheduledDaysFromLocation(initialLocation),
+  )
   const [scheduleErrors, setScheduleErrors] = useState({})
 
-  const [fileList, setFileList] = useState([])
+  const [fileList, setFileList] = useState(() => imageFileListFromLocation(initialLocation))
 
   const [submitting, setSubmitting] = useState(false)
   const [submitPhase, setSubmitPhase] = useState('')
@@ -112,6 +149,50 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    if (mode !== 'edit' || !initialLocation || referenceLoading) return
+
+    form.setFieldsValue({
+      name: initialLocation.name,
+      description: initialLocation.description,
+      categoryCode: initialLocation.category?.code,
+      wardCode: initialLocation.address?.wardCode,
+      addressLine: initialLocation.address?.addressLine,
+      locationNote: initialLocation.address?.locationNote ?? '',
+      latitude: initialLocation.latitude,
+      longitude: initialLocation.longitude,
+    })
+
+    let active = true
+    getTagsByCategoryApi(initialLocation.category?.code)
+      .then((result) => {
+        if (!active) return
+        setTagGroups(result.groups)
+        setSelectedTagsByGroup(Object.fromEntries(
+          result.groups.map((group) => [
+            group.code,
+            group.tags
+              .map((tag) => tag.code)
+              .filter((code) => initialLocation.tagCodes?.includes(code)),
+          ]),
+        ))
+      })
+      .catch((error) => {
+        if (active) {
+          setErrorMessage(
+            error.response?.data?.message ?? 'Không thể tải đặc điểm của địa điểm.',
+          )
+        }
+      })
+      .finally(() => {
+        if (active) setTagsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [form, initialLocation, mode, referenceLoading])
 
   async function handleCategoryChange(categoryCode) {
     setSelectedTagsByGroup({})
@@ -366,13 +447,15 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
     try {
       setSubmitting(true)
 
-      // Ảnh chỉ thực sự lên Cloudinary tại đây, khi user đã bấm submit.
-      setSubmitPhase('Đang tải ảnh lên...')
+      // Ở chế độ edit, ảnh hiện có được giữ nguyên; chỉ file mới được upload.
+      const newFiles = fileList.filter((file) => file.originFileObj)
+      setSubmitPhase(newFiles.length > 0 ? 'Đang tải ảnh lên...' : 'Đang chuẩn bị dữ liệu...')
       const results = []
-      for (const file of fileList) {
+      for (const file of newFiles) {
         const signatureData = await getUploadSignatureApi()
         const result = await uploadFileToCloudinary(file.originFileObj, signatureData)
         results.push({
+          uid: file.uid,
           secureUrl: result.secure_url,
           publicId: result.public_id,
           bytes: result.bytes,
@@ -381,12 +464,29 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
         uploadedPublicIds.push(result.public_id)
       }
 
-      setSubmitPhase('Đang xác nhận ảnh...')
-      const { assets } = await confirmUploadApi(results)
-      const images = assets.map((asset, index) => ({ assetToken: asset.assetToken, position: index }))
+      let assets = []
+      if (results.length > 0) {
+        setSubmitPhase('Đang xác nhận ảnh...')
+        const confirmation = await confirmUploadApi(results.map((result) => ({
+          secureUrl: result.secureUrl,
+          publicId: result.publicId,
+          bytes: result.bytes,
+          format: result.format,
+        })))
+        assets = confirmation.assets
+      }
+      const assetTokenByUid = new Map(
+        newFiles.map((file, index) => [file.uid, assets[index]?.assetToken]),
+      )
+      const images = fileList.map((file, position) => (
+        file.existingImageId
+          ? { existingImageId: file.existingImageId, position }
+          : { assetToken: assetTokenByUid.get(file.uid), position }
+      ))
 
-      setSubmitPhase('Đang tạo địa điểm...')
-      const location = await createLocationApi({
+      setSubmitPhase(mode === 'edit' ? 'Đang cập nhật địa điểm...' : 'Đang tạo địa điểm...')
+      const submitRequest = onSubmit ?? createLocationApi
+      const location = await submitRequest({
         name: values.name,
         description: values.description,
         categoryCode: values.categoryCode,
@@ -398,12 +498,16 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
         longitude: values.longitude,
         openingHours,
         images,
+        ...(mode === 'edit' ? { aliases: initialLocation?.aliases ?? [] } : {}),
       })
 
       onSuccess?.(location)
     } catch (error) {
       setErrorMessage(
-        error.response?.data?.message ?? 'Tải ảnh lên hoặc tạo địa điểm không thành công.',
+        error.response?.data?.message
+          ?? (mode === 'edit'
+            ? 'Tải ảnh lên hoặc cập nhật địa điểm không thành công.'
+            : 'Tải ảnh lên hoặc tạo địa điểm không thành công.'),
       )
 
       // Best-effort cleanup: don't leave images orphaned on Cloudinary if a later
