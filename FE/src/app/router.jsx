@@ -162,6 +162,11 @@ export const router = createBrowserRouter([
           },
 
           {
+            path: 'itineraries',
+            Component: AdminItinerariesPage,
+          },
+
+          {
             path: 'users',
             Component: AdminUsersPage,
           },
