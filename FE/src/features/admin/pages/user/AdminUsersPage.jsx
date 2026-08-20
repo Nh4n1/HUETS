@@ -22,6 +22,7 @@ import {
   USER_ROLE,
   USER_STATUS,
 } from '../../components/user/userPresentation'
+import styles from '../AdminPage.module.css'
 
 const PAGE_SIZE = 12
 
@@ -222,33 +223,29 @@ export function AdminUsersPage() {
   ]
 
   return (
-    <main className="page-container">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 16,
-          marginBottom: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        <Typography.Title level={2} style={{ margin: 0 }}>
-          Quản lý người dùng
-        </Typography.Title>
+    <main className={`${styles.page} page-container`}>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.eyebrow}>Tài khoản hệ thống</span>
+          <Typography.Title level={2}>Quản lý người dùng</Typography.Title>
+          <p>Tìm kiếm, theo dõi trạng thái và kiểm soát quyền truy cập của người dùng.</p>
+        </div>
+      </header>
 
-        <Space wrap>
+      <section className={styles.toolbar} aria-label="Tìm kiếm và lọc người dùng">
+        <Typography.Text type="secondary">{total} người dùng</Typography.Text>
+        <div className={styles.filters}>
           <Input.Search
             allowClear
             placeholder="Tìm theo tên hoặc email..."
-            style={{ minWidth: 240 }}
+            className={styles.search}
             onSearch={handleSearchChange}
           />
 
           <Select
             value={role}
             onChange={handleRoleChange}
-            style={{ minWidth: 160 }}
+            className={styles.select}
             options={[
               { value: '', label: 'Tất cả vai trò' },
               ...Object.entries(USER_ROLE).map(([value, item]) => ({
@@ -261,7 +258,7 @@ export function AdminUsersPage() {
           <Select
             value={status}
             onChange={handleStatusChange}
-            style={{ minWidth: 180 }}
+            className={styles.select}
             options={[
               { value: '', label: 'Tất cả trạng thái' },
               ...Object.entries(USER_STATUS).map(([value, item]) => ({
@@ -270,27 +267,31 @@ export function AdminUsersPage() {
               })),
             ]}
           />
-        </Space>
-      </div>
+        </div>
+      </section>
 
       {errorMessage ? (
-        <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} />
+        <Alert className={styles.alert} type="error" showIcon message={errorMessage} action={<Button size="small" onClick={refreshUsers}>Thử lại</Button>} />
       ) : null}
 
-      <Table
-        rowKey="id"
-        loading={loading}
-        dataSource={users}
-        columns={columns}
-        scroll={{ x: 900 }}
-        pagination={{
-          current: page,
-          pageSize: PAGE_SIZE,
-          total,
-          showTotal: (value) => `${value} người dùng`,
-          onChange: handlePageChange,
-        }}
-      />
+      <section className={styles.contentCard}>
+        <Table
+          rowKey="id"
+          loading={loading}
+          dataSource={users}
+          columns={columns}
+          scroll={{ x: 900 }}
+          locale={{ emptyText: 'Không có người dùng phù hợp với bộ lọc.' }}
+          pagination={{
+            current: page,
+            pageSize: PAGE_SIZE,
+            total,
+            showTotal: (value) => `${value} người dùng`,
+            showSizeChanger: false,
+            onChange: handlePageChange,
+          }}
+        />
+      </section>
 
       <Modal
         title={lockTarget ? `Khóa tài khoản ${lockTarget.displayName}` : 'Khóa tài khoản'}

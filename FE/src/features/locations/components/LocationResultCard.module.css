@@ -12,10 +12,7 @@
 }
 
 .bookmarkButton {
-  position: absolute !important;
-  z-index: 4;
-  top: 0.7rem;
-  right: 0.7rem;
+  box-shadow: none !important;
 }
 
 .card:hover {
@@ -124,12 +121,18 @@
   font-size: 0.72rem;
 }
 
-.detailLink {
-  display: inline-flex;
+.actions {
+  display: flex;
   margin-top: auto;
   padding-top: 1rem;
   align-items: center;
-  align-self: flex-end;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.detailLink {
+  display: inline-flex;
+  align-items: center;
   gap: 0.35rem;
   color: var(--color-primary);
   font-size: 0.8rem;
@@ -153,5 +156,9 @@
   .heading {
     flex-direction: column;
     gap: 0.45rem;
+  }
+
+  .actions {
+    justify-content: space-between;
   }
 }

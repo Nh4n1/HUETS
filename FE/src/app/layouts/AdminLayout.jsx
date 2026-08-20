@@ -5,12 +5,12 @@ import {
   DashboardOutlined,
   EnvironmentOutlined,
   FlagOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   SettingOutlined,
   StarOutlined,
   TagsOutlined,
   TeamOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons'
 import { Button, Layout, Menu, Space, Typography } from 'antd'
 import { useMemo, useState } from 'react'
@@ -115,6 +115,7 @@ export function AdminLayout() {
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
+        onBreakpoint={setCollapsed}
         trigger={null}
         breakpoint="lg"
       >
@@ -138,13 +139,16 @@ export function AdminLayout() {
             type="text"
             className={styles.collapseButton}
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            aria-label={collapsed ? 'Mở menu quản trị' : 'Thu gọn menu quản trị'}
             onClick={() => setCollapsed((previous) => !previous)}
-          />
+          >
+            <span>{collapsed ? 'Mở menu' : 'Thu gọn menu'}</span>
+          </Button>
 
-          <Space size="middle">
+          <Space className={styles.userActions} size="middle">
             <Link to="/">Về trang chủ</Link>
-            <BellOutlined />
-            <Typography.Text>{user?.displayName}</Typography.Text>
+            <BellOutlined aria-label="Thông báo" />
+            <Typography.Text className={styles.userName}>{user?.displayName}</Typography.Text>
             <Button size="small" loading={loggingOut} onClick={handleLogout}>
               Đăng xuất
             </Button>

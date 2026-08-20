@@ -91,8 +91,8 @@ export function AppLayout() {
 
           <nav className={styles.desktopNav} aria-label="Điều hướng chính">
             <NavLink to="/">Trang chủ</NavLink>
-            <Link to="/explore">Khám phá</Link>
-            <Link to="/itineraries">Lịch trình</Link>
+            <NavLink to="/explore">Khám phá</NavLink>
+            <NavLink to="/itineraries">Lịch trình</NavLink>
           </nav>
 
           <div className={styles.headerActions}>

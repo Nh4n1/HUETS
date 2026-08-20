@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { getMyLocationsApi } from '../api/myLocationsApi'
 import { formatDateTime, LOCATION_STATUS } from '../myLocationsPresentation'
+import styles from './LocationWorkflowPage.module.css'
 
 const PAGE_SIZE = 12
 
@@ -63,39 +64,36 @@ export function MyContributionsPage() {
   }
 
   return (
-    <main className="page-container" style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
+    <main className={styles.page}>
+      <header className={styles.header}>
         <div>
-          <Typography.Title level={2} style={{ marginBottom: 4 }}>Địa điểm tôi đã đóng góp</Typography.Title>
-          <Typography.Text type="secondary">
-            Theo dõi trạng thái kiểm duyệt của các địa điểm bạn đã gửi.
-          </Typography.Text>
+          <span className={styles.eyebrow}>Đóng góp của bạn</span>
+          <Typography.Title level={2}>Địa điểm tôi đã đóng góp</Typography.Title>
+          <p>Theo dõi trạng thái kiểm duyệt của các địa điểm bạn đã gửi.</p>
         </div>
         <Link to="/locations/contribute">
           <Button type="primary" icon={<PlusOutlined />}>
             Đóng góp địa điểm mới
           </Button>
         </Link>
-      </div>
+      </header>
 
-      {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} /> : null}
+      {errorMessage ? <Alert type="error" showIcon message={errorMessage} /> : null}
 
-      <Select
-        value={status}
-        options={STATUS_FILTER_OPTIONS}
-        onChange={handleStatusChange}
-        style={{ width: 220, marginBottom: 16 }}
-      />
+      <section className={styles.toolbar} aria-label="Lọc địa điểm đã đóng góp">
+        <Typography.Text type="secondary">{total} địa điểm</Typography.Text>
+        <Select value={status} options={STATUS_FILTER_OPTIONS} onChange={handleStatusChange} />
+      </section>
 
       {loading ? (
-        <Spin />
+        <div className={styles.loading}><Spin tip="Đang tải đóng góp..." /></div>
       ) : locations.length === 0 ? (
-        <Empty
+        <Empty className={styles.empty}
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           description="Bạn chưa đóng góp địa điểm nào."
         />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className={styles.list}>
           {locations.map((location) => {
             const presentation = LOCATION_STATUS[location.status] ?? {
               label: location.status,
@@ -103,22 +101,18 @@ export function MyContributionsPage() {
             }
 
             return (
-              <Card key={location.id} variant="borderless">
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: 240 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <Typography.Title level={4} style={{ margin: 0 }}>
+              <Card className={styles.item} key={location.id}>
+                <div className={styles.itemRow}>
+                  <div className={styles.itemMain}>
+                    <div className={styles.itemHeading}>
+                      <Typography.Title level={4}>
                         {location.name}
                       </Typography.Title>
                       <Tag color={presentation.color}>{presentation.label}</Tag>
                     </div>
-                    <Typography.Text type="secondary">
-                      <EnvironmentOutlined /> {location.formattedAddress}
-                    </Typography.Text>
-                    <div style={{ marginTop: 4 }}>
-                      <Typography.Text type="secondary">
-                        Gửi lúc: {formatDateTime(location.submittedAt)}
-                      </Typography.Text>
+                    <div className={styles.meta}>
+                      <span><EnvironmentOutlined /> {location.formattedAddress}</span>
+                      <span>Gửi lúc: {formatDateTime(location.submittedAt)}</span>
                     </div>
                     {location.status === 'rejected' && location.rejectionReason ? (
                       <Alert
@@ -144,8 +138,7 @@ export function MyContributionsPage() {
       )}
 
       {total > PAGE_SIZE ? (
-        <Pagination
-          style={{ marginTop: 24, textAlign: 'right' }}
+        <Pagination className={styles.pagination}
           current={page}
           pageSize={PAGE_SIZE}
           total={total}

@@ -28,6 +28,7 @@ import {
   formatDateTime,
   LOCATION_STATUS,
 } from '../../components/location/locationPresentation'
+import styles from '../AdminPage.module.css'
 
 function openingHoursLabel(openingHours) {
   if (!openingHours || openingHours.status === 'unknown') return 'Chưa xác định'
@@ -139,7 +140,7 @@ export function AdminLocationDetailPage() {
 
   if (!location) {
     return (
-      <main className="page-container">
+      <main className={`${styles.page} page-container`}>
         <Alert type="error" showIcon message={errorMessage || 'Không tìm thấy địa điểm.'} />
       </main>
     )
@@ -151,25 +152,25 @@ export function AdminLocationDetailPage() {
   }
 
   return (
-    <main className="page-container">
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+    <main className={`${styles.page} page-container`}>
+      <div className={styles.detailStack}>
+        <header className={styles.pageHeader}>
           <div>
-            <Link to="/admin/locations/pending">← Quay lại hàng chờ</Link>
-            <Typography.Title level={2} style={{ marginBottom: 0 }}>{location.name}</Typography.Title>
+            <Link className={styles.backLink} to="/admin/locations/pending">← Quay lại hàng chờ</Link>
+            <Typography.Title level={2}>{location.name}</Typography.Title>
             <Tag color={status.color}>{status.label}</Tag>
           </div>
           {location.status === 'pending' ? (
-            <Space>
+            <div className={styles.headerActions}>
               <Button danger disabled={submitting} onClick={() => setRejectOpen(true)}>
                 Từ chối
               </Button>
               <Button type="primary" loading={submitting} onClick={handleApprove}>
                 Duyệt địa điểm
               </Button>
-            </Space>
+            </div>
           ) : null}
-        </div>
+        </header>
 
         {errorMessage ? <Alert type="error" showIcon message={errorMessage} /> : null}
         {location.duplicateWarning ? (
@@ -275,7 +276,7 @@ export function AdminLocationDetailPage() {
             />
           </Card>
         ) : null}
-      </Space>
+      </div>
 
       <Modal
         title="Từ chối địa điểm"
