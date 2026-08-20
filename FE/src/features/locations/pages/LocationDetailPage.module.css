@@ -6,6 +6,7 @@
 .address { display: flex; margin: 0; align-items: center; gap: 0.45rem; color: var(--color-text-muted); }
 .address :global(.anticon) { color: var(--color-primary); }
 .headerActions { display: flex; flex: 0 0 auto; align-items: center; gap: 0.75rem; }
+.bookmarkAction:global(.ant-btn) { height: 3rem; padding-inline: 1.15rem; border-color: var(--color-primary); font-weight: 750; box-shadow: var(--shadow-sm); }
 .rating { display: flex; padding: 0.9rem 1.1rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); align-items: center; gap: 0.75rem; background: white; box-shadow: var(--shadow-sm); }
 .rating > :global(.anticon) { color: var(--color-accent); font-size: 1.5rem; }
 .rating div { display: grid; }
@@ -61,4 +62,6 @@
   .thumbnailGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .headerActions { flex-wrap: wrap; }
   .rating { width: 100%; }
+  .bookmarkAction:global(.ant-btn) { width: 100%; }
+  .externalMap { padding: 0.7rem 0; }
 }

@@ -1,0 +1,29 @@
+.form { min-width: 0; }
+
+.form :global(.ant-card) {
+  border-color: var(--color-border-light);
+  border-radius: var(--radius-lg);
+}
+
+.form :global(.ant-card-head) { background: var(--color-surface-muted); }
+.form :global(.ant-form-item-label > label) { color: var(--color-text-soft); font-weight: 650; }
+.form :global(.ant-radio-group),
+.form :global(.ant-checkbox-group) { display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; }
+
+.submitBar {
+  display: flex;
+  padding: 0.8rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  align-items: center;
+  gap: 0.75rem;
+  background: rgb(255 253 249 / 94%);
+  box-shadow: 0 12px 34px rgb(68 48 33 / 14%);
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 40rem) {
+  .form :global(.ant-card-body) { padding: 1rem; }
+  .form :global(.ant-picker-range) { width: 100% !important; }
+  .submitBar :global(.ant-btn) { flex: 1; }
+}

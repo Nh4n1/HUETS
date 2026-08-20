@@ -1,8 +1,8 @@
-import { DeleteOutlined, EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons'
 import { Alert, Button, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { deleteAdminItineraryApi, getAdminItinerariesApi, moderateItineraryApi } from '../../api/adminItinerariesApi'
+import styles from '../AdminPage.module.css'
 
 const PAGE_SIZE = 12
 const STATUS_TAG = { active: { label: 'Hiển thị', color: 'green' }, hidden: { label: 'Đã ẩn', color: 'orange' } }
@@ -79,12 +79,12 @@ export function AdminItinerariesPage() {
       render: (_, record) => (
         <Space>
           {record.status === 'hidden' ? (
-            <Button size="small" icon={<EyeOutlined />} onClick={() => handleUnhide(record)}>Hiện lại</Button>
+            <Button size="small" onClick={() => handleUnhide(record)}>Hiện lại</Button>
           ) : (
-            <Button size="small" icon={<EyeInvisibleOutlined />} onClick={() => setHideTarget(record)}>Ẩn</Button>
+            <Button size="small" onClick={() => setHideTarget(record)}>Ẩn</Button>
           )}
           <Popconfirm title="Xoá lịch trình này?" okText="Xoá" cancelText="Huỷ" onConfirm={() => handleDelete(record)}>
-            <Button size="small" danger icon={<DeleteOutlined />}>Xoá</Button>
+            <Button size="small" danger>Xoá</Button>
           </Popconfirm>
         </Space>
       ),
@@ -92,27 +92,38 @@ export function AdminItinerariesPage() {
   ]
 
   return (
-    <main className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Typography.Title level={2} style={{ margin: 0 }}>Quản lý lịch trình cộng đồng</Typography.Title>
+    <main className={`${styles.page} page-container`}>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.eyebrow}>Nội dung cộng đồng</span>
+          <Typography.Title level={2}>Quản lý lịch trình</Typography.Title>
+          <p>Theo dõi trạng thái hiển thị và xử lý các lịch trình do cộng đồng chia sẻ.</p>
+        </div>
+      </header>
+
+      <section className={styles.toolbar} aria-label="Bộ lọc lịch trình">
+        <Typography.Text type="secondary">{total} lịch trình</Typography.Text>
         <Select
           value={status}
           onChange={(v) => { setLoading(true); setPage(1); setStatus(v) }}
-          style={{ minWidth: 180 }}
+          className={styles.select}
           options={[{ value: '', label: 'Tất cả trạng thái' }, { value: 'active', label: 'Hiển thị' }, { value: 'hidden', label: 'Đã ẩn' }]}
         />
-      </div>
+      </section>
 
-      {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} /> : null}
+      {errorMessage ? <Alert className={styles.alert} type="error" showIcon message={errorMessage} action={<Button size="small" onClick={reload}>Thử lại</Button>} /> : null}
 
-      <Table
-        rowKey="id"
-        loading={loading}
-        dataSource={itineraries}
-        columns={columns}
-        scroll={{ x: 900 }}
-        pagination={{ current: page, pageSize: PAGE_SIZE, total, showTotal: (v) => `${v} lịch trình`, onChange: (p) => { setLoading(true); setPage(p) } }}
-      />
+      <section className={styles.contentCard}>
+        <Table
+          rowKey="id"
+          loading={loading}
+          dataSource={itineraries}
+          columns={columns}
+          scroll={{ x: 900 }}
+          locale={{ emptyText: 'Không có lịch trình phù hợp với bộ lọc.' }}
+          pagination={{ current: page, pageSize: PAGE_SIZE, total, showTotal: (v) => `${v} lịch trình`, showSizeChanger: false, onChange: (p) => { setLoading(true); setPage(p) } }}
+        />
+      </section>
 
       <Modal title="Ẩn lịch trình" open={!!hideTarget} onOk={confirmHide} onCancel={() => { setHideTarget(null); setHideReason('') }} okText="Ẩn" cancelText="Huỷ">
         <Input.TextArea rows={3} placeholder="Lý do ẩn (bắt buộc)" value={hideReason} onChange={(e) => setHideReason(e.target.value)} />

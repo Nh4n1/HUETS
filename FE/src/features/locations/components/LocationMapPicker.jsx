@@ -4,6 +4,7 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png'
 import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import 'leaflet/dist/leaflet.css'
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
+import styles from './LocationMapPicker.module.css'
 
 // Use a standalone icon so Leaflet's Icon.Default does not prefix Vite's
 // inlined data URLs with its auto-detected image path.
@@ -39,10 +40,10 @@ export function LocationMapPicker({ value, onChange, readOnly = false }) {
 
   return (
     <MapContainer
+      className={styles.map}
       center={center}
       zoom={hasPosition ? SELECTED_POSITION_ZOOM : DEFAULT_ZOOM}
       maxZoom={MAX_ZOOM}
-      style={{ height: 420, width: '100%' }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

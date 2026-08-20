@@ -30,7 +30,7 @@ export function DiscoverSection({ activeCategory, onCategorySelect }) {
         </p>
       </div>
 
-      <div className={styles.categoryList} aria-label="Chọn chủ đề địa điểm">
+      <div className={styles.categoryList} aria-label="Lọc địa điểm theo chủ đề">
         {categories.map((category) => (
           <button
             type="button"

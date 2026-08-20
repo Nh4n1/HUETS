@@ -33,6 +33,7 @@ import {
 } from '../../../shared/api/uploadApi'
 import { createLocationApi } from '../api/locationSubmitApi'
 import { LocationMapPicker } from './LocationMapPicker'
+import styles from './LocationSubmitForm.module.css'
 
 const MAX_IMAGES = 5
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
@@ -432,7 +433,7 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
         <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} />
       ) : null}
 
-      <Form layout="vertical" form={form} onFinish={handleFinish} onFinishFailed={handleFinishFailed}>
+      <Form className={styles.form} layout="vertical" form={form} onFinish={handleFinish} onFinishFailed={handleFinishFailed}>
         <Card title="Thông tin cơ bản" style={{ marginBottom: 16 }}>
           <Form.Item
             name="name"
@@ -451,7 +452,7 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
           </Form.Item>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 name="categoryCode"
                 label="Danh mục"
@@ -464,7 +465,7 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 name="wardCode"
                 label="Phường/xã"
@@ -700,15 +701,12 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
         </Card>
 
         <Divider />
-
-        <Button type="primary" htmlType="submit" size="large" loading={submitting}>
-          {submitLabel}
-        </Button>
-        {submitPhase ? (
-          <Typography.Text type="secondary" style={{ marginLeft: 12 }}>
-            {submitPhase}
-          </Typography.Text>
-        ) : null}
+        <div className={styles.submitBar}>
+          <Button type="primary" htmlType="submit" size="large" loading={submitting}>
+            {submitLabel}
+          </Button>
+          {submitPhase ? <Typography.Text type="secondary">{submitPhase}</Typography.Text> : null}
+        </div>
       </Form>
     </>
   )

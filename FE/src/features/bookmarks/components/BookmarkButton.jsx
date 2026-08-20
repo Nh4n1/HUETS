@@ -18,6 +18,8 @@ export function BookmarkButton({
   bookmark,
   className = '',
   showLabel = false,
+  savedLabel = 'Đã lưu',
+  unsavedLabel = 'Lưu',
 }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -72,16 +74,16 @@ export function BookmarkButton({
         }
         aria-label={
           saved
-            ? 'Bỏ lưu'
-            : 'Lưu nội dung'
+            ? `Bỏ ${savedLabel.replace(/^Đã\s+/u, '').toLocaleLowerCase('vi')}`
+            : unsavedLabel
         }
         aria-pressed={saved}
         onClick={handleClick}
       >
         {showLabel
           ? saved
-            ? 'Đã lưu'
-            : 'Lưu'
+            ? savedLabel
+            : unsavedLabel
           : null}
       </Button>
     </Tooltip>

@@ -25,10 +25,6 @@ export function LocationResultCard({ location }) {
           />
         ) : null}
 
-        <BookmarkButton
-          bookmark={createLocationBookmark(location)}
-          className={styles.bookmarkButton}
-        />
       </Link>
 
       <div className={styles.body}>
@@ -53,9 +49,15 @@ export function LocationResultCard({ location }) {
           </div>
         ) : null}
 
-        <Link className={styles.detailLink} to={`/locations/${location.id}`}>
-          Xem chi tiết <ArrowRightOutlined />
-        </Link>
+        <div className={styles.actions}>
+          <BookmarkButton
+            bookmark={createLocationBookmark(location)}
+            className={styles.bookmarkButton}
+          />
+          <Link className={styles.detailLink} to={`/locations/${location.id}`}>
+            Xem chi tiết <ArrowRightOutlined />
+          </Link>
+        </div>
       </div>
     </article>
   )

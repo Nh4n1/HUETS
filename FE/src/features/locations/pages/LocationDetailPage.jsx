@@ -95,6 +95,9 @@ export function LocationDetailPage() {
           <BookmarkButton
             bookmark={createLocationBookmark(location)}
             showLabel
+            savedLabel="Đã lưu địa điểm"
+            unsavedLabel="Lưu địa điểm"
+            className={styles.bookmarkAction}
           />
         </div>
       </header>

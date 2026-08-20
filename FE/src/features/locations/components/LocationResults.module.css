@@ -88,6 +88,7 @@
 @media (max-width: 40rem) {
   .heading {
     align-items: flex-start;
+    flex-direction: column;
   }
 
   .heading h2 {
@@ -96,5 +97,13 @@
 
   .mobileFilterButton {
     flex: 0 0 auto;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actions :global(.ant-select) {
+    flex: 1;
   }
 }
