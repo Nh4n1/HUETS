@@ -20,6 +20,11 @@ export async function getMeApi() {
   return response.data
 }
 
+export async function updateProfileApi(data) {
+  const response = await httpClient.patch('/me', data)
+  return response.data
+}
+
 export async function logoutApi() {
   try {
     await httpClient.post('/auth/logout')

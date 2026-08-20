@@ -1,14 +1,17 @@
 import {
   BookOutlined,
   CheckCircleOutlined,
+  EditOutlined,
   EnvironmentOutlined,
   IdcardOutlined,
   MailOutlined,
   SafetyCertificateOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { Avatar, Card, Tag, Typography } from 'antd'
+import { Alert, App, Avatar, Button, Card, Form, Input, Tag, Typography } from 'antd'
+import { useState } from 'react'
 import { Link } from 'react-router'
+import { updateProfileApi } from '../api/authApi'
 import { useAuth } from '../context/useAuth'
 import styles from './ProfilePage.module.css'
 
@@ -24,20 +27,58 @@ const STATUS_LABELS = {
 
 export function ProfilePage() {
   const { user } = useAuth()
+  const { message } = App.useApp()
+  const [form] = Form.useForm()
+  const [profile, setProfile] = useState(user)
+  const [isEditing, setIsEditing] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
-  if (!user) return null
+  if (!profile) return null
+
+  function startEditing() {
+    form.setFieldsValue({
+      displayName: profile.displayName,
+      bio: profile.bio ?? '',
+    })
+    setErrorMessage('')
+    setIsEditing(true)
+  }
+
+  function cancelEditing() {
+    form.resetFields()
+    setErrorMessage('')
+    setIsEditing(false)
+  }
+
+  async function handleUpdate(values) {
+    try {
+      setSubmitting(true)
+      setErrorMessage('')
+      const updatedProfile = await updateProfileApi(values)
+      setProfile(updatedProfile)
+      setIsEditing(false)
+      message.success('Cập nhật hồ sơ thành công.')
+    } catch (error) {
+      setErrorMessage(
+        error.response?.data?.message ?? 'Không thể cập nhật hồ sơ.',
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const roleLabel =
-    ROLE_LABELS[user.role] ?? user.role
+    ROLE_LABELS[profile.role] ?? profile.role
 
   const statusLabel =
-    STATUS_LABELS[user.status] ?? user.status
+    STATUS_LABELS[profile.status] ?? profile.status
 
   const isActive =
-    user.status === 'active'
+    profile.status === 'active'
 
   const hasBio =
-    Boolean(user.bio?.trim())
+    Boolean(profile.bio?.trim())
 
   return (
     <main className={styles.page}>
@@ -77,9 +118,9 @@ export function ProfilePage() {
             <Avatar
               className={styles.avatar}
               size={104}
-              src={user.avatarUrl}
+              src={profile.avatarUrl}
               icon={<UserOutlined />}
-              alt={`Ảnh đại diện của ${user.displayName}`}
+              alt={`Ảnh đại diện của ${profile.displayName}`}
             />
 
             <div className={styles.identityText}>
@@ -87,12 +128,12 @@ export function ProfilePage() {
                 level={2}
                 className={styles.displayName}
               >
-                {user.displayName}
+                {profile.displayName}
               </Typography.Title>
 
               <div className={styles.emailLine}>
                 <MailOutlined aria-hidden="true" />
-                <span>{user.email}</span>
+                <span>{profile.email}</span>
               </div>
 
               <div
@@ -122,8 +163,81 @@ export function ProfilePage() {
                 </Tag>
               </div>
             </div>
+
+            <Button
+              className={styles.editButton}
+              icon={<EditOutlined />}
+              onClick={startEditing}
+              disabled={isEditing}
+            >
+              Chỉnh sửa hồ sơ
+            </Button>
           </div>
         </Card>
+
+        {isEditing ? (
+          <Card className={styles.editCard} bordered={false}>
+            <Typography.Title level={3}>Cập nhật hồ sơ</Typography.Title>
+
+            {errorMessage ? (
+              <Alert
+                className={styles.formAlert}
+                showIcon
+                type="error"
+                message={errorMessage}
+              />
+            ) : null}
+
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={handleUpdate}
+              disabled={submitting}
+            >
+              <Form.Item
+                name="displayName"
+                label="Tên hiển thị"
+                rules={[
+                  { required: true, whitespace: true, message: 'Vui lòng nhập tên hiển thị.' },
+                  {
+                    min: 2,
+                    transform: (value) => value?.trim(),
+                    message: 'Tên hiển thị phải có ít nhất 2 ký tự.',
+                  },
+                  {
+                    max: 80,
+                    transform: (value) => value?.trim(),
+                    message: 'Tên hiển thị không được vượt quá 80 ký tự.',
+                  },
+                ]}
+              >
+                <Input maxLength={80} showCount autoComplete="name" />
+              </Form.Item>
+
+              <Form.Item
+                name="bio"
+                label="Giới thiệu"
+                rules={[
+                  { max: 500, message: 'Giới thiệu không được vượt quá 500 ký tự.' },
+                ]}
+              >
+                <Input.TextArea
+                  rows={5}
+                  maxLength={500}
+                  showCount
+                  placeholder="Chia sẻ đôi nét về bạn..."
+                />
+              </Form.Item>
+
+              <div className={styles.formActions}>
+                <Button onClick={cancelEditing}>Hủy</Button>
+                <Button type="primary" htmlType="submit" loading={submitting}>
+                  Lưu thay đổi
+                </Button>
+              </div>
+            </Form>
+          </Card>
+        ) : null}
 
         {/* =========================
             GIỚI THIỆU + TÀI KHOẢN
@@ -155,7 +269,7 @@ export function ProfilePage() {
 
             {hasBio ? (
               <p className={styles.bio}>
-                {user.bio}
+                {profile.bio}
               </p>
             ) : (
               <div className={styles.emptyBio}>
@@ -191,7 +305,7 @@ export function ProfilePage() {
             <dl className={styles.accountList}>
               <div className={styles.accountRow}>
                 <dt>Email</dt>
-                <dd>{user.email}</dd>
+                <dd>{profile.email}</dd>
               </div>
 
               <div className={styles.accountRow}>
