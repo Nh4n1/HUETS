@@ -1,6 +1,8 @@
 import {
   ArrowLeftOutlined,
   ArrowRightOutlined,
+  CopyOutlined,
+  DeleteOutlined,
   PlusOutlined,
 } from '@ant-design/icons'
 import {
@@ -48,8 +50,15 @@ const DAYS_OF_WEEK = [
 
 function createEmptyScheduledDays() {
   return Object.fromEntries(
-    DAYS_OF_WEEK.map((day) => [day.value, { enabled: false, open: null, close: null }]),
+    DAYS_OF_WEEK.map((day) => [day.value, {
+      enabled: false,
+      ranges: [{ open: null, close: null }],
+    }]),
   )
+}
+
+function cloneRanges(ranges = []) {
+  return ranges.map((range) => ({ open: range.open, close: range.close }))
 }
 
 // Form tạo địa điểm dùng chung. `onSuccess` được gọi sau khi tạo thành công
@@ -72,6 +81,7 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
 
   const [openingStatus, setOpeningStatus] = useState('unknown')
   const [scheduledDays, setScheduledDays] = useState(createEmptyScheduledDays)
+  const [scheduleErrors, setScheduleErrors] = useState({})
 
   const [fileList, setFileList] = useState([])
 
@@ -143,16 +153,97 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
   function handleDayToggle(dayValue, enabled) {
     setScheduledDays((previous) => ({
       ...previous,
-      [dayValue]: { ...previous[dayValue], enabled },
+      [dayValue]: {
+        ...previous[dayValue],
+        enabled,
+        ranges: previous[dayValue]?.ranges?.length
+          ? previous[dayValue].ranges
+          : [{ open: null, close: null }],
+      },
     }))
+    setScheduleErrors((previous) => {
+      const next = { ...previous }
+      delete next[dayValue]
+      return next
+    })
   }
 
-  function handleDayTimeChange(dayValue, times) {
+  function handleDayTimeChange(dayValue, rangeIndex, times) {
     const [open, close] = times ?? [null, null]
     setScheduledDays((previous) => ({
       ...previous,
-      [dayValue]: { ...previous[dayValue], open, close },
+      [dayValue]: {
+        ...previous[dayValue],
+        ranges: (previous[dayValue]?.ranges ?? [{ open: null, close: null }]).map((range, index) => (
+          index === rangeIndex ? { open, close } : range
+        )),
+      },
     }))
+    setScheduleErrors((previous) => {
+      const next = { ...previous }
+      delete next[dayValue]
+      return next
+    })
+  }
+
+  function addDayRange(dayValue) {
+    setScheduledDays((previous) => ({
+      ...previous,
+      [dayValue]: {
+        ...previous[dayValue],
+        ranges: [...(previous[dayValue]?.ranges ?? []), { open: null, close: null }],
+      },
+    }))
+    setScheduleErrors((previous) => {
+      const next = { ...previous }
+      delete next[dayValue]
+      return next
+    })
+  }
+
+  function removeDayRange(dayValue, rangeIndex) {
+    setScheduledDays((previous) => {
+      const ranges = previous[dayValue]?.ranges ?? []
+      if (ranges.length <= 1) return previous
+      return {
+        ...previous,
+        [dayValue]: {
+          ...previous[dayValue],
+          ranges: ranges.filter((_, index) => index !== rangeIndex),
+        },
+      }
+    })
+    setScheduleErrors((previous) => {
+      const next = { ...previous }
+      delete next[dayValue]
+      return next
+    })
+  }
+
+  function applyFirstCompleteRangeToDays(dayValues) {
+    const source = DAYS_OF_WEEK
+      .map((day) => scheduledDays[day.value])
+      .find((day) => day?.ranges?.length > 0 && day.ranges.every((range) => (
+        range.open && range.close && range.close.isAfter(range.open)
+      )))
+
+    if (!source) {
+      message.info('Hãy nhập một ngày hoàn chỉnh trước khi sao chép giờ.')
+      return
+    }
+
+    setScheduledDays((previous) => {
+      const next = { ...previous }
+      dayValues.forEach((dayValue) => {
+        next[dayValue] = {
+          ...next[dayValue],
+          enabled: true,
+          ranges: cloneRanges(source.ranges),
+        }
+      })
+      return next
+    })
+    setScheduleErrors({})
   }
 
   function moveImage(fromIndex, toIndex) {
@@ -192,23 +283,66 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
       return { status: openingStatus, periods: [] }
     }
 
-    const periods = DAYS_OF_WEEK
+    const errors = {}
+    const periods = []
+
+    DAYS_OF_WEEK
       .filter((day) => scheduledDays[day.value]?.enabled)
-      .map((day) => {
-        const entry = scheduledDays[day.value]
-        if (!entry.open || !entry.close) return null
-        return {
-          dayOfWeek: day.value,
-          ranges: [{ open: entry.open.format('HH:mm'), close: entry.close.format('HH:mm') }],
+      .forEach((day) => {
+        const ranges = scheduledDays[day.value]?.ranges ?? []
+        if (ranges.length === 0 || ranges.some((range) => !range.open || !range.close)) {
+          errors[day.value] = 'Vui lòng nhập đủ giờ mở và giờ đóng.'
+          return
         }
+        if (ranges.some((range) => !range.close.isAfter(range.open))) {
+          errors[day.value] = 'Giờ đóng phải sau giờ mở.'
+          return
+        }
+        const sortedRanges = [...ranges].sort((left, right) => left.open.valueOf() - right.open.valueOf())
+        if (sortedRanges.some((range, index) => (
+          index > 0 && range.open.isBefore(sortedRanges[index - 1].close)
+        ))) {
+          errors[day.value] = 'Các khung giờ trong ngày không được chồng lấn.'
+          return
+        }
+        periods.push({
+          dayOfWeek: day.value,
+          ranges: ranges.map((range) => ({
+            open: range.open.format('HH:mm'),
+            close: range.close.format('HH:mm'),
+          })),
+        })
       })
-      .filter(Boolean)
+
+    setScheduleErrors(errors)
+
+    if (Object.keys(errors).length > 0) {
+      throw new Error('Vui lòng kiểm tra lại giờ hoạt động của từng ngày.')
+    }
 
     if (periods.length === 0) {
       throw new Error('Vui lòng chọn giờ mở cửa cho ít nhất một ngày.')
     }
     return { status: 'scheduled', periods }
   }
+
+  const openingSummary = useMemo(() => {
+    if (openingStatus === 'unknown') return 'Chưa xác định giờ hoạt động.'
+    if (openingStatus === 'always_open') return 'Mở cửa 24/7.'
+
+    const rows = DAYS_OF_WEEK
+      .filter((day) => scheduledDays[day.value]?.enabled)
+      .map((day) => {
+        const ranges = scheduledDays[day.value]?.ranges ?? []
+        const hours = ranges
+          .filter((range) => range.open && range.close)
+          .map((range) => `${range.open.format('HH:mm')}–${range.close.format('HH:mm')}`)
+          .join(', ')
+        return `${day.label}: ${hours || 'chưa nhập giờ'}`
+      })
+
+    return rows.length > 0 ? rows.join(' · ') : 'Chưa chọn ngày mở cửa.'
+  }, [openingStatus, scheduledDays])
 
   async function handleFinish(values) {
     setErrorMessage('')
@@ -410,38 +544,114 @@ export function LocationSubmitForm({ submitLabel = 'Tạo địa điểm', onSuc
         <Card title="Giờ hoạt động" style={{ marginBottom: 16 }}>
           <Radio.Group
             value={openingStatus}
-            onChange={(event) => setOpeningStatus(event.target.value)}
+            optionType="button"
+            buttonStyle="solid"
+            style={{ display: 'flex', flexWrap: 'wrap' }}
+            onChange={(event) => {
+              setOpeningStatus(event.target.value)
+              setScheduleErrors({})
+            }}
             options={[
               { value: 'unknown', label: 'Chưa rõ' },
-              { value: 'always_open', label: 'Mở cửa cả ngày' },
-              { value: 'scheduled', label: 'Theo lịch cụ thể' },
+              { value: 'always_open', label: 'Mở cửa 24/7' },
+              { value: 'scheduled', label: 'Có lịch cụ thể' },
             ]}
           />
+          <Typography.Paragraph type="secondary" style={{ margin: '12px 0 0' }}>
+            {openingStatus === 'unknown'
+              ? 'Chọn mục này nếu chưa xác minh được giờ hoạt động.'
+              : openingStatus === 'always_open'
+                ? 'Địa điểm hoạt động cả ngày, tất cả các ngày trong tuần.'
+                : 'Bật những ngày địa điểm mở cửa và nhập một hoặc nhiều khung giờ.'}
+          </Typography.Paragraph>
 
           {openingStatus === 'scheduled' ? (
             <div style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                <Button
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={() => applyFirstCompleteRangeToDays([1, 2, 3, 4, 5])}
+                >
+                  Áp dụng cho Thứ 2–Thứ 6
+                </Button>
+                <Button
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={() => applyFirstCompleteRangeToDays([6, 7])}
+                >
+                  Áp dụng cho cuối tuần
+                </Button>
+              </div>
               {DAYS_OF_WEEK.map((day) => (
-                <Row key={day.value} gutter={16} align="middle" style={{ marginBottom: 8 }}>
-                  <Col span={4}>
+                <Row key={day.value} gutter={[12, 8]} align="top" style={{ marginBottom: 12 }}>
+                  <Col xs={24} sm={6} md={5}>
                     <Checkbox
                       checked={scheduledDays[day.value]?.enabled}
                       onChange={(event) => handleDayToggle(day.value, event.target.checked)}
                     >
                       {day.label}
                     </Checkbox>
+                    {!scheduledDays[day.value]?.enabled ? (
+                      <Typography.Text type="secondary" style={{ display: 'block', marginLeft: 24 }}>
+                        Đóng cửa
+                      </Typography.Text>
+                    ) : null}
                   </Col>
-                  <Col span={10}>
-                    <TimePicker.RangePicker
-                      format="HH:mm"
-                      disabled={!scheduledDays[day.value]?.enabled}
-                      value={[scheduledDays[day.value]?.open, scheduledDays[day.value]?.close]}
-                      onChange={(times) => handleDayTimeChange(day.value, times)}
-                    />
+                  <Col xs={24} sm={18} md={19}>
+                    {scheduledDays[day.value]?.enabled ? (
+                      <>
+                        {(scheduledDays[day.value]?.ranges ?? []).map((range, rangeIndex) => (
+                          <div
+                            key={`${day.value}-${rangeIndex}`}
+                            style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}
+                          >
+                            <TimePicker.RangePicker
+                              format="HH:mm"
+                              value={[range.open, range.close]}
+                              onChange={(times) => handleDayTimeChange(day.value, rangeIndex, times)}
+                              style={{ width: 'min(100%, 360px)' }}
+                              placeholder={['Giờ mở', 'Giờ đóng']}
+                            />
+                            {rangeIndex > 0 ? (
+                              <Button
+                                type="text"
+                                danger
+                                icon={<DeleteOutlined />}
+                                aria-label={`Xóa khung giờ ${rangeIndex + 1} của ${day.label}`}
+                                title="Xóa khung giờ"
+                                onClick={() => removeDayRange(day.value, rangeIndex)}
+                              />
+                            ) : null}
+                          </div>
+                        ))}
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<PlusOutlined />}
+                          onClick={() => addDayRange(day.value)}
+                        >
+                          Thêm khung giờ
+                        </Button>
+                        {scheduleErrors[day.value] ? (
+                          <Typography.Text type="danger" style={{ display: 'block' }}>
+                            {scheduleErrors[day.value]}
+                          </Typography.Text>
+                        ) : null}
+                      </>
+                    ) : null}
                   </Col>
                 </Row>
               ))}
+              <Typography.Paragraph type="secondary" style={{ margin: '4px 0 0' }}>
+                Tóm tắt: {openingSummary}
+              </Typography.Paragraph>
             </div>
-          ) : null}
+          ) : (
+            <Typography.Paragraph type="secondary" style={{ margin: '12px 0 0' }}>
+              Tóm tắt: {openingSummary}
+            </Typography.Paragraph>
+          )}
         </Card>
 
         <Card title="Hình ảnh (1-5 ảnh)" style={{ marginBottom: 16 }}>

@@ -7,6 +7,7 @@ import referenceRouter from './reference/index.ts';
 import uploadRouter from './upload/index.ts';
 import adminLocationRouter from './adminLocation/index.ts';
 import adminUserRouter from './adminUser/index.ts';
+import adminItineraryRouter from './adminItinerary/index.ts';
 import itineraryRouter, { ownerItineraryRouter } from './itinerary/index.ts';
 import bookmarkRouter from './bookmark/index.ts';
 
@@ -22,6 +23,7 @@ router.get('/', (req, res, next) => {
 router.use('/api/auth', accessRouter);
 router.use('/api/admin/locations', adminLocationRouter);
 router.use('/api/admin/users', adminUserRouter);
+router.use('/api/admin/itineraries', adminItineraryRouter);
 router.use('/api/location-search', locationSearchRouter);
 router.use('/api/locations', locationRouter);
 router.use('/api/itineraries', itineraryRouter);
