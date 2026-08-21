@@ -3,6 +3,7 @@ import { categoryTagWhitelist } from '../config/category-tag-whitelist.ts';
 import { verifyLocationImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
 import { normalizeSearchText } from '../helpers/text.helper.ts';
 import Category from '../models/category.model.ts';
+import Bookmark from '../models/bookmark.model.ts';
 import Location from '../models/location.model.ts';
 import type {
     ILocation,
@@ -45,6 +46,7 @@ interface OpeningHoursInput {
 
 interface ImageInput {
     assetToken?: unknown;
+    existingImageId?: unknown;
     position?: unknown;
 }
 
@@ -89,6 +91,14 @@ export interface ModerateLocationInput {
     expectedStatus?: unknown;
     expectedUpdatedAt?: unknown;
     reason?: unknown;
+}
+
+export interface UpdateLocationInput extends CreateLocationInput {
+    expectedUpdatedAt?: unknown;
+}
+
+export interface DeleteLocationInput {
+    expectedUpdatedAt?: unknown;
 }
 
 const requiredString = (value: unknown, field: string, maxLength: number) => {
@@ -230,19 +240,42 @@ const parseOpeningHours = (value: unknown): ILocationOpeningHours => {
     return { status, periods: periods.sort((left, right) => left.dayOfWeek - right.dayOfWeek) };
 };
 
-const parseImages = (value: unknown, userId: string) => {
+export const parseLocationImages = (
+    value: unknown,
+    userId: string,
+    existingImages: ILocation['images'] | undefined = undefined,
+) => {
     if (!Array.isArray(value) || value.length < 1 || value.length > MAX_IMAGES) {
         throw new ApiError(422, 'INVALID_IMAGE_COUNT', 'Location phải có từ 1 đến 5 ảnh.');
     }
 
     let totalSize = 0;
     const images = value.map((rawImage) => {
-        const image = rawImage as ImageInput;
-        if (typeof image.assetToken !== 'string' || !Number.isInteger(image.position)) {
-            throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Ảnh phải có assetToken và position hợp lệ.');
-        }
         if (!rawImage || typeof rawImage !== 'object') {
             throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Thông tin ảnh không hợp lệ.');
+        }
+        const image = rawImage as ImageInput;
+        if (!Number.isInteger(image.position)) {
+            throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Ảnh phải có position hợp lệ.');
+        }
+
+        if (typeof image.existingImageId === 'string') {
+            const existingImage = existingImages?.find(
+                (candidate) => candidate._id.toString() === image.existingImageId,
+            );
+            if (!existingImage || image.assetToken !== undefined) {
+                throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Ảnh hiện có không thuộc địa điểm này.');
+            }
+            return {
+                _id: existingImage._id,
+                url: existingImage.url,
+                publicId: existingImage.publicId ?? null,
+                position: Number(image.position),
+            };
+        }
+
+        if (typeof image.assetToken !== 'string') {
+            throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Ảnh mới phải có assetToken hợp lệ.');
         }
       
 
@@ -272,6 +305,10 @@ const parseImages = (value: unknown, userId: string) => {
     }
     if (totalSize > MAX_TOTAL_IMAGE_SIZE_BYTES) {
         throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Tổng dung lượng ảnh không được vượt quá 20 MB.');
+    }
+    const imageKeys = images.map((image) => image.publicId ?? image.url);
+    if (new Set(imageKeys).size !== imageKeys.length) {
+        throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Danh sách ảnh không được chứa ảnh trùng nhau.');
     }
     return images;
 };
@@ -335,6 +372,7 @@ const findDuplicateCandidates = async (
     const [sameName, nearby] = await Promise.all([
         Location.find({
             ...excludedFilter,
+            isDeleted: { $ne: true },
             status: { $ne: 'withdrawn' },
             $or: [{ normalizedName }, { 'aliases.normalizedValue': normalizedName }],
         }).select({ _id: 1, name: 1, categoryCode: 1, status: 1 }).limit(5).lean(),
@@ -350,7 +388,7 @@ const findDuplicateCandidates = async (
                     near: { type: 'Point', coordinates: [longitude, latitude] },
                     distanceField: 'distanceMeters',
                     maxDistance: DUPLICATE_RADIUS_METERS,
-                    query: { ...excludedFilter, status: { $ne: 'withdrawn' } },
+                    query: { ...excludedFilter, isDeleted: { $ne: true }, status: { $ne: 'withdrawn' } },
                     spherical: true,
                 },
             },
@@ -534,7 +572,7 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
     const latitude = parseCoordinate(input.latitude, 'latitude');
     const longitude = parseCoordinate(input.longitude, 'longitude');
     const openingHours = parseOpeningHours(input.openingHours);
-    const images = parseImages(input.images, user._id.toString());
+    const images = parseLocationImages(input.images, user._id.toString());
     const duplicateCandidates = await findDuplicateCandidates(normalizedName, longitude, latitude);
     const now = new Date();
     const status = user.role === 'admin' ? 'approved' : 'pending';
@@ -577,6 +615,9 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
             hiddenAt: null,
             hiddenReason: null,
         },
+        isDeleted: false,
+        deletedAt: null,
+        deletedBy: null,
         searchText,
     });
 
@@ -599,7 +640,7 @@ const positiveInteger = (value: string | undefined, fallback: number, maximum?: 
 const escapeRegularExpression = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const buildPublicLocationFilter = (query: PublicLocationQuery): Record<string, unknown> => {
-    const filter: Record<string, unknown> = { status: 'approved' };
+    const filter: Record<string, unknown> = { status: 'approved', isDeleted: { $ne: true } };
 
     if (query.q !== undefined) {
         if (query.q.trim().length > 200) {
@@ -660,7 +701,7 @@ export const getPublicLocationById = async (locationId: string) => {
     if (!mongoose.isValidObjectId(locationId)) {
         throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
     }
-    const location = await Location.findOne({ _id: locationId, status: 'approved' });
+    const location = await Location.findOne({ _id: locationId, status: 'approved', isDeleted: { $ne: true } });
     if (!location) {
         throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
     }
@@ -673,7 +714,7 @@ const LOCATION_STATUSES: LocationStatus[] = ['pending', 'approved', 'rejected', 
 export const getAdminLocations = async (query: AdminLocationQuery) => {
     const page = positiveInteger(query.page, 1);
     const pageSize = positiveInteger(query.pageSize, 12, 100);
-    const filter: Record<string, unknown> = {};
+    const filter: Record<string, unknown> = { isDeleted: { $ne: true } };
 
     if (query.status) {
         const status = query.status.trim().toLowerCase() as LocationStatus;
@@ -708,7 +749,7 @@ export const getAdminLocations = async (query: AdminLocationQuery) => {
 export const getMyLocations = async (actor: Actor, query: MyLocationQuery) => {
     const page = positiveInteger(query.page, 1);
     const pageSize = positiveInteger(query.pageSize, 12, 100);
-    const filter: Record<string, unknown> = { createdBy: actor.id };
+    const filter: Record<string, unknown> = { createdBy: actor.id, isDeleted: { $ne: true } };
 
     if (query.status) {
         const status = query.status.trim().toLowerCase() as LocationStatus;
@@ -739,7 +780,7 @@ export const getAdminLocationById = async (locationId: string) => {
     if (!mongoose.isValidObjectId(locationId)) {
         throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
     }
-    const location = await Location.findById(locationId);
+    const location = await Location.findOne({ _id: locationId, isDeleted: { $ne: true } });
     if (!location) {
         throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
     }
@@ -763,6 +804,146 @@ const assertActiveAdmin = async (actor: Actor) => {
     return user;
 };
 
+const parseExpectedUpdatedAt = (value: unknown) => {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'expectedUpdatedAt là thông tin bắt buộc.');
+    }
+    const expectedUpdatedAt = new Date(value);
+    if (Number.isNaN(expectedUpdatedAt.getTime())) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'expectedUpdatedAt không hợp lệ.');
+    }
+    return expectedUpdatedAt;
+};
+
+const throwAdminLocationConflict = async (locationId: string): Promise<never> => {
+    const current = await Location.findOne({ _id: locationId, isDeleted: { $ne: true } })
+        .select({ status: 1, updatedAt: 1 })
+        .lean();
+    if (!current) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    throw new ApiError(
+        409,
+        'STALE_RESOURCE',
+        'Dữ liệu đã được thay đổi. Vui lòng tải lại.',
+        { currentStatus: current.status, currentUpdatedAt: current.updatedAt },
+    );
+};
+
+export const updateAdminLocation = async (
+    locationId: string,
+    input: UpdateLocationInput,
+    actor: Actor,
+) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    const [admin, current, expectedUpdatedAt] = await Promise.all([
+        assertActiveAdmin(actor),
+        Location.findOne({ _id: locationId, isDeleted: { $ne: true } }),
+        Promise.resolve(parseExpectedUpdatedAt(input.expectedUpdatedAt)),
+    ]);
+    if (!current) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+
+    const name = requiredString(input.name, 'Tên địa điểm', 200);
+    const normalizedName = normalizeSearchText(name);
+    const description = requiredString(input.description, 'Mô tả', 5000);
+    const categoryCode = requiredString(input.categoryCode, 'Category', 100).toLowerCase();
+    const category = await Category.findOne({ code: categoryCode, isActive: true })
+        .select({ code: 1, name: 1 });
+    if (!category || !categoryTagWhitelist[categoryCode]) {
+        throw new ApiError(422, 'INVALID_CATEGORY_TAG_COMBINATION', 'Category không tồn tại hoặc đã ngừng hoạt động.');
+    }
+    const tagCodes = await validateTags(categoryCode, input.tagCodes);
+    const aliases = parseAliases(input.aliases, normalizedName);
+    const wardCode = requiredString(input.wardCode, 'Phường/xã', 20);
+    const ward = getWardByCode(wardCode);
+    if (!ward) {
+        throw new ApiError(422, 'INVALID_WARD', 'Mã phường/xã không hợp lệ hoặc đã ngừng hoạt động.');
+    }
+    const addressLine = requiredString(input.addressLine, 'Địa chỉ', 500);
+    const locationNote = optionalString(input.locationNote, 'Ghi chú vị trí', 1000);
+    const latitude = parseCoordinate(input.latitude, 'latitude');
+    const longitude = parseCoordinate(input.longitude, 'longitude');
+    const openingHours = parseOpeningHours(input.openingHours);
+    const images = input.images === undefined
+        ? current.images
+        : parseLocationImages(input.images, admin._id.toString(), current.images);
+    const searchText = normalizeSearchText([
+        name,
+        ...aliases.map(({ value }) => value),
+        category.name,
+        ...tagCodes,
+        addressLine,
+        ward.name,
+        description,
+    ].join(' '));
+
+    const location = await Location.findOneAndUpdate(
+        { _id: locationId, isDeleted: { $ne: true }, updatedAt: expectedUpdatedAt },
+        {
+            $set: {
+                isDeleted: false,
+                name,
+                normalizedName,
+                description,
+                categoryCode,
+                tagCodes,
+                aliases,
+                address: {
+                    wardCode,
+                    wardNameSnapshot: ward.name,
+                    addressLine,
+                    locationNote,
+                },
+                geo: { type: 'Point', coordinates: [longitude, latitude] },
+                images,
+                openingHours,
+                searchText,
+            },
+        },
+        { new: true, runValidators: true },
+    );
+    if (!location) return throwAdminLocationConflict(locationId);
+
+    const keptPublicIds = new Set(location.images.map(({ publicId }) => publicId).filter(Boolean));
+    const removedPublicIds = current.images
+        .map(({ publicId }) => publicId)
+        .filter((publicId): publicId is string => Boolean(publicId) && !keptPublicIds.has(publicId));
+
+    return {
+        location: await toAdminLocationDetail(location),
+        removedPublicIds,
+    };
+};
+
+export const deleteAdminLocation = async (
+    locationId: string,
+    input: DeleteLocationInput,
+    actor: Actor,
+) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    const [admin, expectedUpdatedAt] = await Promise.all([
+        assertActiveAdmin(actor),
+        Promise.resolve(parseExpectedUpdatedAt(input.expectedUpdatedAt)),
+    ]);
+    const deletedAt = new Date();
+    const location = await Location.findOneAndUpdate(
+        { _id: locationId, isDeleted: { $ne: true }, updatedAt: expectedUpdatedAt },
+        { $set: { isDeleted: true, deletedAt, deletedBy: admin._id } },
+        { new: true, runValidators: true },
+    );
+    if (!location) return throwAdminLocationConflict(locationId);
+    await Promise.allSettled([
+        Bookmark.deleteMany({ targetType: 'location', targetId: location._id }),
+    ]);
+    return { deleted: true };
+};
+
 const parseModerationPrecondition = (input: ModerateLocationInput) => {
     if (input.expectedStatus !== 'pending') {
         throw new ApiError(400, 'VALIDATION_ERROR', 'expectedStatus phải là pending.');
@@ -778,7 +959,9 @@ const parseModerationPrecondition = (input: ModerateLocationInput) => {
 };
 
 const throwModerationConflict = async (locationId: string): Promise<never> => {
-    const current = await Location.findById(locationId).select({ status: 1, updatedAt: 1 }).lean();
+    const current = await Location.findOne({ _id: locationId, isDeleted: { $ne: true } })
+        .select({ status: 1, updatedAt: 1 })
+        .lean();
     if (!current) {
         throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
     }
@@ -809,7 +992,7 @@ const moderatePendingLocation = async (
     const reviewedAt = new Date();
 
     const location = await Location.findOneAndUpdate(
-        { _id: locationId, status: 'pending', updatedAt: expectedUpdatedAt },
+        { _id: locationId, isDeleted: { $ne: true }, status: 'pending', updatedAt: expectedUpdatedAt },
         {
             $set: {
                 status: nextStatus,

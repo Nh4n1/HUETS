@@ -37,7 +37,7 @@ describe('location moderation', () => {
         );
 
         expect(updateSpy).toHaveBeenCalledWith(
-            { _id: locationId.toString(), status: 'pending', updatedAt: expectedUpdatedAt },
+            { _id: locationId.toString(), isDeleted: { $ne: true }, status: 'pending', updatedAt: expectedUpdatedAt },
             expect.objectContaining({
                 $set: expect.objectContaining({
                     status: 'approved',
@@ -86,7 +86,7 @@ describe('location moderation', () => {
     it('returns STALE_RESOURCE when the location no longer matches the preconditions', async () => {
         mockActiveAdmin();
         vi.spyOn(Location, 'findOneAndUpdate').mockResolvedValue(null);
-        vi.spyOn(Location, 'findById').mockReturnValue({
+        vi.spyOn(Location, 'findOne').mockReturnValue({
             select: vi.fn().mockReturnValue({
                 lean: vi.fn().mockResolvedValue({ status: 'approved', updatedAt: new Date() }),
             }),

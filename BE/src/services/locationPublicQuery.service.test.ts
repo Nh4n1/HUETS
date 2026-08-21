@@ -3,7 +3,7 @@ import { buildPublicLocationFilter } from './location.service.ts';
 
 describe('public location filters', () => {
     it('always limits results to approved locations', () => {
-        expect(buildPublicLocationFilter({})).toEqual({ status: 'approved' });
+        expect(buildPublicLocationFilter({})).toEqual({ status: 'approved', isDeleted: { $ne: true } });
     });
 
     it('normalizes search, category, ward and unique tag filters', () => {
@@ -14,6 +14,7 @@ describe('public location filters', () => {
             tagCodes: 'WiFi, quiet, wifi',
         })).toEqual({
             status: 'approved',
+            isDeleted: { $ne: true },
             searchText: { $regex: 'ca phe yen tinh', $options: 'i' },
             categoryCode: 'cafe',
             'address.wardCode': '001',

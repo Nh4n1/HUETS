@@ -74,6 +74,9 @@ export interface ILocation extends Document {
     ratingSummary: ILocationRatingSummary;
     status: LocationStatus;
     moderation: ILocationModeration;
+    isDeleted: boolean;
+    deletedAt: Date | null;
+    deletedBy: Types.ObjectId | null;
     searchText: string;
     createdAt: Date;
     updatedAt: Date;
@@ -184,12 +187,15 @@ const locationSchema = new Schema<ILocation>(
             required: true,
         },
         moderation: { type: locationModerationSchema, required: true, default: () => ({}) },
+        isDeleted: { type: Boolean, required: true, default: false },
+        deletedAt: { type: Date, default: null },
+        deletedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
         searchText: { type: String, required: true },
     },
     { timestamps: true, collection: 'locations' },
 );
 
-locationSchema.index({ status: 1, categoryCode: 1, createdAt: -1 });
+locationSchema.index({ isDeleted: 1, status: 1, categoryCode: 1, createdAt: -1 });
 locationSchema.index({ status: 1, 'address.wardCode': 1 });
 locationSchema.index({ status: 1, tagCodes: 1 });
 locationSchema.index({ createdBy: 1, status: 1, updatedAt: -1 });

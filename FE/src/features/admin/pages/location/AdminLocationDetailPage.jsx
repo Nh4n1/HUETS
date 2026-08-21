@@ -20,6 +20,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
   approveLocationApi,
+  deleteAdminLocationApi,
   getAdminLocationByIdApi,
   rejectLocationApi,
 } from '../../api/adminLocationsApi'
@@ -120,6 +121,35 @@ export function AdminLocationDetailPage() {
     })
   }
 
+  function handleDelete() {
+    modal.confirm({
+      title: `Xóa địa điểm "${location.name}"?`,
+      content: 'Địa điểm sẽ không còn hiển thị công khai. Các lịch trình cũ sẽ đánh dấu địa điểm này là không khả dụng.',
+      okText: 'Xóa địa điểm',
+      okButtonProps: { danger: true },
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          setSubmitting(true)
+          await deleteAdminLocationApi(location.id, {
+            expectedUpdatedAt: location.updatedAt,
+          })
+          message.success('Đã xóa địa điểm.')
+          navigate('/admin/locations')
+        } catch (error) {
+          if (error.response?.data?.code === 'STALE_RESOURCE') {
+            message.warning('Địa điểm đã thay đổi. Dữ liệu mới nhất đã được tải lại.')
+            await refreshLocation()
+            return
+          }
+          message.error(error.response?.data?.message ?? 'Không thể xóa địa điểm.')
+        } finally {
+          setSubmitting(false)
+        }
+      },
+    })
+  }
+
   async function handleReject() {
     const values = await rejectForm.validateFields()
     await runModeration(
@@ -160,16 +190,24 @@ export function AdminLocationDetailPage() {
             <Typography.Title level={2}>{location.name}</Typography.Title>
             <Tag color={status.color}>{status.label}</Tag>
           </div>
-          {location.status === 'pending' ? (
-            <div className={styles.headerActions}>
-              <Button danger disabled={submitting} onClick={() => setRejectOpen(true)}>
-                Từ chối
-              </Button>
-              <Button type="primary" loading={submitting} onClick={handleApprove}>
-                Duyệt địa điểm
-              </Button>
-            </div>
-          ) : null}
+          <div className={styles.headerActions}>
+            <Link to={`/admin/locations/${location.id}/edit`}>
+              <Button disabled={submitting}>Chỉnh sửa</Button>
+            </Link>
+            <Button danger disabled={submitting} onClick={handleDelete}>
+              Xóa địa điểm
+            </Button>
+            {location.status === 'pending' ? (
+              <>
+                <Button danger disabled={submitting} onClick={() => setRejectOpen(true)}>
+                  Từ chối
+                </Button>
+                <Button type="primary" loading={submitting} onClick={handleApprove}>
+                  Duyệt địa điểm
+                </Button>
+              </>
+            ) : null}
+          </div>
         </header>
 
         {errorMessage ? <Alert type="error" showIcon message={errorMessage} /> : null}
