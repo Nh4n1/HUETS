@@ -18,6 +18,17 @@ export const getLocationReviews = asyncHandler(
   },
 );
 
+export const getMyLocationReview = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, "UNAUTHORIZED", "Chưa đăng nhập.");
+    return sendSuccess(
+      res,
+      200,
+      await reviewService.getMyLocationReview(param(req.params.locationId), req.user.id),
+    );
+  },
+);
+
 export const saveLocationReview = asyncHandler(
   async (req: Request, res: Response) => {
     if (!req.user) throw new ApiError(401, "UNAUTHORIZED", "Chưa đăng nhập.");
@@ -29,6 +40,17 @@ export const saveLocationReview = asyncHandler(
         req.body,
         req.user.id,
       ),
+    );
+  },
+);
+
+export const deleteMyLocationReview = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, "UNAUTHORIZED", "Chưa đăng nhập.");
+    return sendSuccess(
+      res,
+      200,
+      await reviewService.deleteMyLocationReview(param(req.params.locationId), req.user.id),
     );
   },
 );

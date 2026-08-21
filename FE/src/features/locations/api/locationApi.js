@@ -34,7 +34,17 @@ export async function getLocationReviewsApi(locationId, params = {}) {
   }
 }
 
+export async function getMyLocationReviewApi(locationId) {
+  const response = await httpClient.get(`/locations/${locationId}/reviews/me`)
+  return response.data
+}
+
 export async function saveLocationReviewApi(locationId, data) {
   const response = await httpClient.put(`/locations/${locationId}/reviews/me`, data)
+  return response.data
+}
+
+export async function deleteMyLocationReviewApi(locationId) {
+  const response = await httpClient.delete(`/locations/${locationId}/reviews/me`)
   return response.data
 }

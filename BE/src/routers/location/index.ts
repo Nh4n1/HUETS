@@ -15,11 +15,23 @@ router.post(
 router.get("/", locationController.getPublicLocations);
 router.get("/search", locationController.searchPublicLocations);
 router.get("/:locationId/reviews", locationReviewController.getLocationReviews);
+router.get(
+  "/:locationId/reviews/me",
+  authenticate,
+  authorize("user", "admin"),
+  locationReviewController.getMyLocationReview,
+);
 router.put(
   "/:locationId/reviews/me",
   authenticate,
   authorize("user", "admin"),
   locationReviewController.saveLocationReview,
+);
+router.delete(
+  "/:locationId/reviews/me",
+  authenticate,
+  authorize("user", "admin"),
+  locationReviewController.deleteMyLocationReview,
 );
 router.get("/:locationId", locationController.getPublicLocationById);
 

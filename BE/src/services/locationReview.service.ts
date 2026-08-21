@@ -15,6 +15,19 @@ const ensureApprovedLocation = async (locationId: string) => {
     if (!exists) throw new ApiError(404, 'NOT_FOUND', 'Địa điểm không tồn tại hoặc chưa được công khai.');
 };
 
+const calculateAndStoreRatingSummary = async (locationId: string) => {
+    const [summary] = await LocationReview.aggregate<{ average: number; count: number }>([
+        { $match: { locationId: new mongoose.Types.ObjectId(locationId) } },
+        { $group: { _id: null, average: { $avg: '$rating' }, count: { $sum: 1 } } },
+    ]);
+    const ratingSummary = {
+        average: Math.round((summary?.average ?? 0) * 10) / 10,
+        count: summary?.count ?? 0,
+    };
+    await Location.updateOne({ _id: locationId }, { $set: { ratingSummary } });
+    return ratingSummary;
+};
+
 export const getLocationReviews = async (locationId: string, rawPage?: string, rawPageSize?: string) => {
     await ensureApprovedLocation(locationId);
     const page = rawPage === undefined ? 1 : Number(rawPage);
@@ -50,6 +63,21 @@ export const getLocationReviews = async (locationId: string, rawPage?: string, r
     };
 };
 
+export const getMyLocationReview = async (locationId: string, userId: string) => {
+    await ensureApprovedLocation(locationId);
+    const review = await LocationReview.findOne({ locationId, userId }).lean();
+    if (!review) return null;
+
+    return {
+        id: review._id.toString(),
+        userId: review.userId.toString(),
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt,
+        updatedAt: review.updatedAt,
+    };
+};
+
 export const saveLocationReview = async (
     locationId: string,
     input: { rating?: unknown; comment?: unknown },
@@ -72,12 +100,15 @@ export const saveLocationReview = async (
         { $set: { rating: Number(input.rating), comment } },
         { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
     );
-    const [summary] = await LocationReview.aggregate<{ average: number; count: number }>([
-        { $match: { locationId: new mongoose.Types.ObjectId(locationId) } },
-        { $group: { _id: null, average: { $avg: '$rating' }, count: { $sum: 1 } } },
-    ]);
-    const ratingSummary = { average: Math.round((summary?.average ?? 0) * 10) / 10, count: summary?.count ?? 0 };
-    await Location.updateOne({ _id: locationId }, { $set: { ratingSummary } });
+    const ratingSummary = await calculateAndStoreRatingSummary(locationId);
 
     return { id: review._id.toString(), rating: review.rating, comment: review.comment, updatedAt: review.updatedAt, ratingSummary };
+};
+
+export const deleteMyLocationReview = async (locationId: string, userId: string) => {
+    await ensureApprovedLocation(locationId);
+    const result = await LocationReview.deleteOne({ locationId, userId });
+    const ratingSummary = await calculateAndStoreRatingSummary(locationId);
+
+    return { deleted: result.deletedCount > 0, ratingSummary };
 };

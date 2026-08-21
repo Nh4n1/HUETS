@@ -69,3 +69,21 @@
     justify-self: center;
     margin-top: .5rem;
 }
+
+.formHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: .75rem;
+}
+
+.formHeader h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.communityTitle {
+    margin: 0 0 .75rem;
+    font-size: 1.1rem;
+}

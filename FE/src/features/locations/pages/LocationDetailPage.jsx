@@ -103,7 +103,10 @@ export function LocationDetailPage() {
       </header>
 
       <Image.PreviewGroup>
-        <section className={styles.gallery} aria-label="Ảnh địa điểm">
+        <section
+          className={`${styles.gallery} ${otherImages.length === 0 ? styles.gallerySingleImage : ''}`}
+          aria-label="Ảnh địa điểm"
+        >
           {coverImage ? (
             <Image className={styles.coverImage} src={coverImage.url} alt={`Không gian tại ${location.name}`} />
           ) : (
