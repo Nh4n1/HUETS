@@ -104,6 +104,33 @@
   min-width: 0;
 }
 
+.editButton {
+  margin-left: auto;
+}
+
+.editCard {
+  margin-top: 1.25rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: var(--shadow-sm);
+}
+
+.editCard h3:global(.ant-typography) {
+  margin-top: 0;
+  color: var(--color-text);
+}
+
+.formAlert {
+  margin-bottom: 1rem;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
 .displayName:global(.ant-typography) {
   margin: 0;
   color: var(--color-text);
@@ -305,6 +332,11 @@
   .identity {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .editButton {
+    width: 100%;
+    margin-left: 0;
   }
 
   .avatar {
