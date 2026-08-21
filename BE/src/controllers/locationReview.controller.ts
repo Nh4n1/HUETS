@@ -11,8 +11,13 @@ export const getLocationReviews = asyncHandler(
   async (req: Request, res: Response) => {
     const result = await reviewService.getLocationReviews(
       param(req.params.locationId),
-      typeof req.query.page === "string" ? req.query.page : undefined,
-      typeof req.query.pageSize === "string" ? req.query.pageSize : undefined,
+      {
+        page: typeof req.query.page === "string" ? req.query.page : undefined,
+        pageSize: typeof req.query.pageSize === "string" ? req.query.pageSize : undefined,
+        rating: typeof req.query.rating === "string" ? req.query.rating : undefined,
+        sortBy: typeof req.query.sortBy === "string" ? req.query.sortBy : undefined,
+        hasComment: typeof req.query.hasComment === "string" ? req.query.hasComment : undefined,
+      },
     );
     return sendSuccess(res, 200, result.data, result.meta);
   },

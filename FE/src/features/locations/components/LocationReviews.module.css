@@ -83,7 +83,112 @@
     font-size: 1.1rem;
 }
 
+.editedLabel {
+    color: var(--color-text-muted);
+    font-size: .75rem;
+}
+
 .communityTitle {
-    margin: 0 0 .75rem;
+    margin: 0;
     font-size: 1.1rem;
+}
+
+.statusAlert {
+    margin-bottom: 1rem;
+}
+
+.summary {
+    display: grid;
+    margin-bottom: 1.75rem;
+    padding: 1.25rem;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    grid-template-columns: minmax(8rem, .7fr) minmax(14rem, 2fr);
+    gap: 1.5rem;
+}
+
+.average {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+}
+
+.average strong {
+    color: var(--color-text);
+    font-size: 2.25rem;
+}
+
+.average :global(.ant-rate) {
+    font-size: 1rem;
+}
+
+.average span {
+    color: var(--color-text-muted);
+    font-size: .8rem;
+}
+
+.distribution {
+    display: grid;
+    gap: .35rem;
+}
+
+.distribution button {
+    display: grid;
+    align-items: center;
+    padding: .2rem .4rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    grid-template-columns: 3.5rem 1fr 2rem;
+    gap: .65rem;
+    background: transparent;
+    color: var(--color-text-soft);
+    cursor: pointer;
+    text-align: left;
+}
+
+.distribution button:hover,
+.distribution .distributionActive {
+    background: var(--color-surface-muted);
+    color: var(--color-primary);
+}
+
+.distribution i {
+    height: .45rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--color-border-light);
+}
+
+.distribution b {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #f5b301;
+}
+
+.distribution em {
+    font-style: normal;
+    text-align: right;
+}
+
+.listHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .75rem;
+    gap: 1rem;
+}
+
+.filters {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+
+@media (max-width: 40rem) {
+    .summary { grid-template-columns: 1fr; }
+    .listHeader { align-items: stretch; flex-direction: column; }
+    .filters { align-items: stretch; flex-direction: column; }
 }

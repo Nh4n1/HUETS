@@ -48,7 +48,7 @@ const menuItems = [
   {
     key: '/admin/reviews',
     icon: <StarOutlined />,
-    label: placeholderLink('Quản lý đánh giá'),
+    label: <Link to="/admin/reviews">Quản lý đánh giá</Link>,
   },
   {
     key: '/admin/itineraries',
@@ -83,6 +83,7 @@ function getSelectedKey(pathname) {
   if (pathname.startsWith('/admin/locations/')) return '/admin/locations'
   if (pathname === '/admin/locations') return '/admin/locations'
   if (pathname.startsWith('/admin/itineraries')) return '/admin/itineraries'
+  if (pathname === '/admin/reviews') return '/admin/reviews'
   if (pathname === '/admin/users') return '/admin/users'
   return '/admin'
 }

@@ -155,10 +155,16 @@ export function LocationDetailPage() {
           </section>
           <LocationReviews
             locationId={locationId}
+            ratingSummary={{
+              average: location.averageRating,
+              count: location.reviewCount,
+              distribution: location.ratingDistribution,
+            }}
             onSummaryChange={(summary) => setLocation((current) => ({
               ...current,
               averageRating: summary.average,
               reviewCount: summary.count,
+              ratingDistribution: summary.distribution,
             }))}
           />
         </article>

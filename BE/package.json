@@ -11,6 +11,7 @@
     "seed:references": "node src/database/seed/reference.seed.ts",
     "seed:locations": "node src/database/seed/location.seed.ts",
     "seed:demo": "npm run seed:references && npm run seed:locations",
+    "migrate:location-reviews": "node src/database/migrations/backfillLocationReviewStatus.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
