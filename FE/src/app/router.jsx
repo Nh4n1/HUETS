@@ -13,6 +13,7 @@ import { AdminLocationDetailPage } from '../features/admin/pages/location/AdminL
 import { AdminLocationModerationPage } from '../features/admin/pages/location/AdminLocationModerationPage'
 import { AdminLocationsPage } from '../features/admin/pages/location/AdminLocationsPage'
 import { AdminItinerariesPage } from '../features/admin/pages/itinerary/AdminItinerariesPage'
+import { AdminItineraryDetailPage } from '../features/admin/pages/itinerary/AdminItineraryDetailPage'
 import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOverviewPage'
 import { AdminUsersPage } from '../features/admin/pages/user/AdminUsersPage'
 import { AdminReviewsPage } from '../features/admin/pages/review/AdminReviewsPage'
@@ -165,6 +166,11 @@ export const router = createBrowserRouter([
           {
             path: 'itineraries',
             Component: AdminItinerariesPage,
+          },
+
+          {
+            path: 'itineraries/:itineraryId',
+            Component: AdminItineraryDetailPage,
           },
 
           {

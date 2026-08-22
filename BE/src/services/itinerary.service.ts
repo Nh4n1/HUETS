@@ -490,6 +490,13 @@ export const updateItinerary = async (itineraryId: string, input: UpdateItinerar
     const nextVisibility = input.visibility === undefined
         ? itinerary.visibility
         : parseVisibility(input.visibility);
+    if (itinerary.status === 'hidden' && nextVisibility !== itinerary.visibility) {
+        throw new ApiError(
+            409,
+            'CONFLICT',
+            'Không thể thay đổi quyền riêng tư khi lịch trình đang bị ẩn. Vui lòng chỉnh sửa nội dung và chờ admin hiện lại.',
+        );
+    }
     const nextDays = input.days === undefined
         ? daysFromDocument(itinerary)
         : parseDays(input.days);
@@ -504,7 +511,6 @@ export const updateItinerary = async (itineraryId: string, input: UpdateItinerar
     await itinerary.save();
     return toResponse(itinerary);
 };
-
 export const deleteItinerary = async (itineraryId: string, actor: Actor) => {
     const itinerary = await findOwnedItinerary(itineraryId, actor);
     itinerary.isDeleted = true;
@@ -567,7 +573,6 @@ export interface AdminItineraryQuery {
     page?: string;
     pageSize?: string;
     status?: string;
-    visibility?: string;
     q?: string;
 }
 
@@ -592,7 +597,7 @@ const toAdminItinerarySummary = (itinerary: IItinerary, owner?: { displayName: s
 export const getAdminItineraries = async (query: AdminItineraryQuery) => {
     const page = positiveInteger(query.page, 1);
     const pageSize = positiveInteger(query.pageSize, 12, 100);
-    const filter: Record<string, unknown> = { isDeleted: false };
+    const filter: Record<string, unknown> = { visibility: 'public', isDeleted: false };
 
     if (query.status) {
         const status = query.status.trim().toLowerCase();
@@ -600,13 +605,6 @@ export const getAdminItineraries = async (query: AdminItineraryQuery) => {
             throw new ApiError(400, 'VALIDATION_ERROR', 'Trạng thái Itinerary không hợp lệ.');
         }
         filter.status = status;
-    }
-    if (query.visibility) {
-        const visibility = query.visibility.trim().toLowerCase();
-        if (visibility !== 'public' && visibility !== 'private') {
-            throw new ApiError(400, 'VALIDATION_ERROR', 'visibility không hợp lệ.');
-        }
-        filter.visibility = visibility;
     }
     const escapedQuery = query.q?.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (escapedQuery) filter.title = { $regex: escapedQuery, $options: 'i' };
@@ -628,9 +626,17 @@ export const getAdminItineraries = async (query: AdminItineraryQuery) => {
 
 export const getAdminItineraryById = async (itineraryId: string) => {
     if (!mongoose.isValidObjectId(itineraryId)) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
-    const itinerary = await Itinerary.findOne({ _id: itineraryId, isDeleted: false });
+    const itinerary = await Itinerary.findOne({ _id: itineraryId, visibility: 'public', isDeleted: false });
     if (!itinerary) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
-    return toResponse(itinerary);
+    const owner = await User.findById(itinerary.ownerId).select({ displayName: 1, avatarUrl: 1 }).lean();
+    return {
+        ...await toResponse(itinerary),
+        owner: owner ? {
+            id: owner._id.toString(),
+            displayName: owner.displayName,
+            avatarUrl: owner.avatarUrl ?? null,
+        } : null,
+    };
 };
 
 export const moderateItinerary = async (itineraryId: string, input: ModerateItineraryInput, actor: Actor) => {
@@ -643,23 +649,36 @@ export const moderateItinerary = async (itineraryId: string, input: ModerateItin
     if (input.status === 'hidden' && !reason) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'Cần nhập lý do khi ẩn Itinerary.');
     }
-    const itinerary = await Itinerary.findOne({ _id: itineraryId, isDeleted: false });
+    const itinerary = await Itinerary.findOne({
+        _id: itineraryId,
+        visibility: 'public',
+        isDeleted: false,
+    });
     if (!itinerary) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
+
+    if (itinerary.status === input.status) {
+        throw new ApiError(
+            409,
+            'CONFLICT',
+            input.status === 'hidden'
+                ? 'Lịch trình đã bị ẩn trước đó.'
+                : 'Lịch trình đang được hiển thị.',
+        );
+    }
 
     itinerary.status = input.status;
-    itinerary.moderation = input.status === 'hidden'
-        ? { hiddenBy: new mongoose.Types.ObjectId(actor.id), hiddenAt: new Date(), hiddenReason: reason }
-        : { hiddenBy: null, hiddenAt: null, hiddenReason: null };
+    if (input.status === 'hidden') {
+        itinerary.moderation = {
+            hiddenBy: new mongoose.Types.ObjectId(actor.id),
+            hiddenAt: new Date(),
+            hiddenReason: reason,
+            restoredBy: null,
+            restoredAt: null,
+        };
+    } else {
+        itinerary.moderation.restoredBy = new mongoose.Types.ObjectId(actor.id);
+        itinerary.moderation.restoredAt = new Date();
+    }
     await itinerary.save();
     return toResponse(itinerary);
-};
-
-export const adminDeleteItinerary = async (itineraryId: string, actor: Actor) => {
-    assertActor(actor);
-    if (!mongoose.isValidObjectId(itineraryId)) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
-    const itinerary = await Itinerary.findOne({ _id: itineraryId, isDeleted: false });
-    if (!itinerary) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
-    itinerary.isDeleted = true;
-    itinerary.deletedAt = new Date();
-    await itinerary.save();
 };

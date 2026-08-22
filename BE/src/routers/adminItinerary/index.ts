@@ -8,6 +8,5 @@ router.use(authenticate, authorize('admin'));
 router.get('/', itineraryController.getAdminItineraries);
 router.get('/:id', itineraryController.getAdminItineraryById);
 router.patch('/:id', itineraryController.moderateItinerary);
-router.delete('/:id', itineraryController.adminDeleteItinerary);
 
 export default router;

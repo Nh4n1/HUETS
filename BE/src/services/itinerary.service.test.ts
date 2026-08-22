@@ -6,6 +6,7 @@ import User from '../models/user.model.ts';
 import * as itineraryService from './itinerary.service.ts';
 
 const actor = { id: new Types.ObjectId().toString(), role: 'user' as const };
+const adminActor = { id: new Types.ObjectId().toString(), role: 'admin' as const };
 const locationId = new Types.ObjectId();
 
 const approvedLocationQuery = (locations: Array<Record<string, unknown>>) => ({
@@ -156,5 +157,73 @@ describe('Itinerary service', () => {
             status: 'active',
             isDeleted: false,
         });
+    });
+
+    it('does not expose private itineraries through the admin detail lookup', async () => {
+        const findOne = vi.spyOn(Itinerary, 'findOne').mockResolvedValue(null);
+
+        await expect(itineraryService.getAdminItineraryById(new Types.ObjectId().toString()))
+            .rejects.toMatchObject({ statusCode: 404 });
+
+        expect(findOne).toHaveBeenCalledWith({
+            _id: expect.any(String),
+            visibility: 'public',
+            isDeleted: false,
+        });
+    });
+
+    it('scopes the admin moderation list to public itineraries', async () => {
+        const limit = vi.fn().mockResolvedValue([]);
+        const skip = vi.fn().mockReturnValue({ limit });
+        const sort = vi.fn().mockReturnValue({ skip });
+        const find = vi.spyOn(Itinerary, 'find').mockReturnValue({ sort } as never);
+        const countDocuments = vi.spyOn(Itinerary, 'countDocuments').mockResolvedValue(0);
+        vi.spyOn(User, 'find').mockReturnValue(approvedLocationQuery([]) as never);
+
+        await itineraryService.getAdminItineraries({});
+
+        const expectedFilter = { visibility: 'public', isDeleted: false };
+        expect(find).toHaveBeenCalledWith(expectedFilter);
+        expect(countDocuments).toHaveBeenCalledWith(expectedFilter);
+    });
+
+    it('rejects changing visibility while an itinerary is hidden', async () => {
+        const itinerary = itineraryDocument();
+        itinerary.visibility = 'public';
+        itinerary.status = 'hidden';
+        vi.spyOn(Itinerary, 'findOne').mockResolvedValue(itinerary);
+
+        await expect(itineraryService.updateItinerary(
+            itinerary._id.toString(),
+            { visibility: 'private' },
+            actor,
+        )).rejects.toMatchObject({ statusCode: 409, code: 'CONFLICT' });
+    });
+
+    it('only moderates public itineraries and preserves hide information when restoring', async () => {
+        const itinerary = itineraryDocument();
+        itinerary.visibility = 'public';
+        itinerary.status = 'hidden';
+        itinerary.moderation.hiddenBy = new Types.ObjectId();
+        itinerary.moderation.hiddenAt = new Date('2026-08-20T00:00:00.000Z');
+        itinerary.moderation.hiddenReason = 'Nội dung cần chỉnh sửa';
+        vi.spyOn(Itinerary, 'findOne').mockResolvedValue(itinerary);
+        vi.spyOn(itinerary, 'save').mockResolvedValue(itinerary);
+        vi.spyOn(Location, 'find').mockReturnValue(approvedLocationQuery([]) as never);
+
+        await itineraryService.moderateItinerary(
+            itinerary._id.toString(),
+            { status: 'active' },
+            adminActor,
+        );
+
+        expect(Itinerary.findOne).toHaveBeenCalledWith({
+            _id: itinerary._id.toString(),
+            visibility: 'public',
+            isDeleted: false,
+        });
+        expect(itinerary.moderation.hiddenReason).toBe('Nội dung cần chỉnh sửa');
+        expect(itinerary.moderation.restoredBy?.toString()).toBe(adminActor.id);
+        expect(itinerary.moderation.restoredAt).toBeInstanceOf(Date);
     });
 });

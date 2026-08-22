@@ -262,6 +262,7 @@ export function ItineraryEditorPage() {
       </div>
 
       {error ? <Alert className={styles.editorAlert} showIcon type="error" message={error} closable onClose={() => setError('')} /> : null}
+      {editing && form.status === 'hidden' ? <Alert className={styles.editorAlert} showIcon type="warning" message="Lịch trình đang bị ẩn khỏi cộng đồng" description={form.moderation?.hiddenReason ? `Lý do: ${form.moderation.hiddenReason}. Bạn có thể sửa nội dung nhưng không thể đổi quyền riêng tư.` : 'Bạn có thể sửa nội dung nhưng không thể đổi quyền riêng tư.'} /> : null}
 
       <form className={styles.editorLayout} onSubmit={submit}>
         <section className={styles.editorMain}>
@@ -333,10 +334,10 @@ export function ItineraryEditorPage() {
             <fieldset className={styles.visibilityBlock}>
               <legend>Ai có thể xem?</legend>
               <div className={styles.visibilityChoice}>
-                <button className={form.visibility === 'private' ? styles.selectedVisibility : ''} type="button" aria-pressed={form.visibility === 'private'} onClick={() => updateRoot('visibility', 'private')}><LockOutlined /> Riêng tư</button>
-                <button className={form.visibility === 'public' ? styles.selectedVisibility : ''} type="button" aria-pressed={form.visibility === 'public'} onClick={() => updateRoot('visibility', 'public')}><GlobalOutlined /> Công khai</button>
+                <button disabled={form.status === 'hidden'} className={form.visibility === 'private' ? styles.selectedVisibility : ''} type="button" aria-pressed={form.visibility === 'private'} onClick={() => updateRoot('visibility', 'private')}><LockOutlined /> Riêng tư</button>
+                <button disabled={form.status === 'hidden'} className={form.visibility === 'public' ? styles.selectedVisibility : ''} type="button" aria-pressed={form.visibility === 'public'} onClick={() => updateRoot('visibility', 'public')}><GlobalOutlined /> Công khai</button>
               </div>
-              <small>{form.visibility === 'private' ? 'Chỉ bạn có thể xem.' : 'Mọi người có thể xem và sao chép lịch trình.'}</small>
+              <small>{form.status === 'hidden' ? 'Quyền riêng tư bị khóa cho đến khi admin hiện lại lịch trình.' : form.visibility === 'private' ? 'Chỉ bạn có thể xem.' : 'Mọi người có thể xem và sao chép lịch trình.'}</small>
             </fieldset>
             <div className={styles.summaryBox}>
               <span><CalendarOutlined /> {form.days.length} ngày</span>
