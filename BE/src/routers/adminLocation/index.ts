@@ -11,5 +11,7 @@ router.patch('/:locationId', authorize('admin'), locationController.updateAdminL
 router.delete('/:locationId', authorize('admin'), locationController.deleteAdminLocation);
 router.post('/:locationId/approve', locationController.approveLocation);
 router.post('/:locationId/reject', locationController.rejectLocation);
+router.post('/:locationId/hide', locationController.hideLocation);
+router.post('/:locationId/restore', locationController.restoreLocation);
 
 export default router;

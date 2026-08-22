@@ -47,10 +47,14 @@ const locationDocument = (overrides: Record<string, unknown> = {}) => ({
         hiddenBy: null,
         hiddenAt: null,
         hiddenReason: null,
+        restoredBy: null,
+        restoredAt: null,
     },
     isDeleted: false,
     deletedAt: null,
     deletedBy: null,
+    deletionReason: null,
+    deletedFromStatus: null,
     createdAt: new Date(),
     updatedAt: expectedUpdatedAt,
     ...overrides,
@@ -150,22 +154,54 @@ describe('admin location management', () => {
         mockActiveAdmin();
         const deleteBookmarks = vi.spyOn(Bookmark, 'deleteMany').mockResolvedValue({ deletedCount: 2 } as never);
         const updateSpy = vi.spyOn(Location, 'findOneAndUpdate').mockResolvedValue(
-            locationDocument({ isDeleted: true, deletedBy: adminId }) as never,
+            locationDocument({ status: 'hidden', isDeleted: true, deletedBy: adminId }) as never,
         );
 
         const result = await deleteAdminLocation(
             locationId.toString(),
-            { expectedUpdatedAt: expectedUpdatedAt.toISOString() },
+            {
+                expectedStatus: 'hidden',
+                expectedUpdatedAt: expectedUpdatedAt.toISOString(),
+                reason: '  Dữ liệu thử nghiệm  ',
+            },
             { id: adminId.toString(), role: 'admin' },
         );
 
         expect(updateSpy).toHaveBeenCalledWith(
-            { _id: locationId.toString(), isDeleted: { $ne: true }, updatedAt: expectedUpdatedAt },
-            { $set: { isDeleted: true, deletedAt: expect.any(Date), deletedBy: adminId } },
+            {
+                _id: locationId.toString(),
+                isDeleted: { $ne: true },
+                status: 'hidden',
+                updatedAt: expectedUpdatedAt,
+            },
+            {
+                $set: {
+                    isDeleted: true,
+                    deletedAt: expect.any(Date),
+                    deletedBy: adminId,
+                    deletionReason: 'Dữ liệu thử nghiệm',
+                    deletedFromStatus: 'hidden',
+                    updatedAt: expect.any(Date),
+                },
+            },
             { new: true, runValidators: true },
         );
         expect(result).toEqual({ deleted: true });
         expect(deleteBookmarks).toHaveBeenCalledWith({ targetType: 'location', targetId: locationId });
+    });
+
+    it('does not soft delete a pending or approved location', async () => {
+        mockActiveAdmin();
+
+        await expect(deleteAdminLocation(
+            locationId.toString(),
+            {
+                expectedStatus: 'approved',
+                expectedUpdatedAt: expectedUpdatedAt.toISOString(),
+                reason: 'Không còn sử dụng',
+            },
+            { id: adminId.toString(), role: 'admin' },
+        )).rejects.toMatchObject({ code: 'INVALID_STATUS_TRANSITION' });
     });
 
     it('combines existing images with newly uploaded assets and preserves their order', () => {

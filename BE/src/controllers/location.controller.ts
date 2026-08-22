@@ -162,3 +162,31 @@ export const rejectLocation = asyncHandler(async (req: Request, res: Response) =
     );
     return sendSuccess(res, 200, location);
 });
+
+// [POST] /api/admin/locations/:locationId/hide
+export const hideLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    }
+    const locationId = req.params.locationId;
+    const location = await locationService.hideLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body,
+        req.user,
+    );
+    return sendSuccess(res, 200, location);
+});
+
+// [POST] /api/admin/locations/:locationId/restore
+export const restoreLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    }
+    const locationId = req.params.locationId;
+    const location = await locationService.restoreLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body,
+        req.user,
+    );
+    return sendSuccess(res, 200, location);
+});

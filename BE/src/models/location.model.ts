@@ -64,6 +64,8 @@ export interface ILocationModeration {
     hiddenBy: Types.ObjectId | null;
     hiddenAt: Date | null;
     hiddenReason: string | null;
+    restoredBy: Types.ObjectId | null;
+    restoredAt: Date | null;
 }
 
 export interface ILocation extends Document {
@@ -84,6 +86,8 @@ export interface ILocation extends Document {
     isDeleted: boolean;
     deletedAt: Date | null;
     deletedBy: Types.ObjectId | null;
+    deletionReason: string | null;
+    deletedFromStatus: LocationStatus | null;
     searchText: string;
     createdAt: Date;
     updatedAt: Date;
@@ -184,6 +188,8 @@ const locationModerationSchema = new Schema<ILocationModeration>(
         hiddenBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
         hiddenAt: { type: Date, default: null },
         hiddenReason: { type: String, default: null },
+        restoredBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        restoredAt: { type: Date, default: null },
     },
     { _id: false },
 );
@@ -215,6 +221,12 @@ const locationSchema = new Schema<ILocation>(
         isDeleted: { type: Boolean, required: true, default: false },
         deletedAt: { type: Date, default: null },
         deletedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        deletionReason: { type: String, default: null, trim: true, maxlength: 1000 },
+        deletedFromStatus: {
+            type: String,
+            enum: ['pending', 'approved', 'rejected', 'withdrawn', 'hidden'],
+            default: null,
+        },
         searchText: { type: String, required: true },
     },
     { timestamps: true, collection: 'locations' },

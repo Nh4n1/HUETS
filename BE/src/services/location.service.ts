@@ -93,12 +93,20 @@ export interface ModerateLocationInput {
     reason?: unknown;
 }
 
+export interface ModerateLocationVisibilityInput {
+    expectedStatus?: unknown;
+    expectedUpdatedAt?: unknown;
+    reason?: unknown;
+}
+
 export interface UpdateLocationInput extends CreateLocationInput {
     expectedUpdatedAt?: unknown;
 }
 
 export interface DeleteLocationInput {
+    expectedStatus?: unknown;
     expectedUpdatedAt?: unknown;
+    reason?: unknown;
 }
 
 const requiredString = (value: unknown, field: string, maxLength: number) => {
@@ -504,6 +512,9 @@ const toMyLocationSummary = (location: ILocation, categoryNames: Map<string, str
     ...toLocationSummary(location, categoryNames),
     status: location.status,
     rejectionReason: location.moderation.rejectionReason,
+    hiddenReason: location.moderation.hiddenReason,
+    hiddenAt: location.moderation.hiddenAt,
+    restoredAt: location.moderation.restoredAt,
     submittedAt: location.moderation.submittedAt,
     createdAt: location.createdAt,
     updatedAt: location.updatedAt,
@@ -533,6 +544,8 @@ const toAdminLocationDetail = async (location: ILocation) => {
             hiddenBy: location.moderation.hiddenBy?.toString() ?? null,
             hiddenAt: location.moderation.hiddenAt,
             hiddenReason: location.moderation.hiddenReason,
+            restoredBy: location.moderation.restoredBy?.toString() ?? null,
+            restoredAt: location.moderation.restoredAt,
         },
         duplicateWarning: duplicateCandidates.length > 0,
         duplicateCandidates,
@@ -615,10 +628,14 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
             hiddenBy: null,
             hiddenAt: null,
             hiddenReason: null,
+            restoredBy: null,
+            restoredAt: null,
         },
         isDeleted: false,
         deletedAt: null,
         deletedBy: null,
+        deletionReason: null,
+        deletedFromStatus: null,
         searchText,
     });
 
@@ -940,10 +957,34 @@ export const deleteAdminLocation = async (
         assertActiveAdmin(actor),
         Promise.resolve(parseExpectedUpdatedAt(input.expectedUpdatedAt)),
     ]);
+    const deletableStatuses: LocationStatus[] = ['hidden', 'rejected', 'withdrawn'];
+    if (typeof input.expectedStatus !== 'string' || !deletableStatuses.includes(input.expectedStatus as LocationStatus)) {
+        throw new ApiError(
+            400,
+            'INVALID_STATUS_TRANSITION',
+            'Chỉ có thể xóa địa điểm đã ẩn, bị từ chối hoặc đã rút.',
+        );
+    }
+    const expectedStatus = input.expectedStatus as Extract<LocationStatus, 'hidden' | 'rejected' | 'withdrawn'>;
+    const reason = requiredString(input.reason, 'Lý do xóa', 1000);
     const deletedAt = new Date();
     const location = await Location.findOneAndUpdate(
-        { _id: locationId, isDeleted: { $ne: true }, updatedAt: expectedUpdatedAt },
-        { $set: { isDeleted: true, deletedAt, deletedBy: admin._id } },
+        {
+            _id: locationId,
+            isDeleted: { $ne: true },
+            status: expectedStatus,
+            updatedAt: expectedUpdatedAt,
+        },
+        {
+            $set: {
+                isDeleted: true,
+                deletedAt,
+                deletedBy: admin._id,
+                deletionReason: reason,
+                deletedFromStatus: expectedStatus,
+                updatedAt: deletedAt,
+            },
+        },
         { new: true, runValidators: true },
     );
     if (!location) return throwAdminLocationConflict(locationId);
@@ -1040,3 +1081,86 @@ export const rejectLocation = (
     input: ModerateLocationInput,
     actor: Actor,
 ) => moderatePendingLocation(locationId, input, actor, 'rejected');
+
+const moderateLocationVisibility = async (
+    locationId: string,
+    input: ModerateLocationVisibilityInput,
+    actor: Actor,
+    transition: 'hide' | 'restore',
+) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    const [moderator, expectedUpdatedAt] = await Promise.all([
+        assertActiveModerator(actor),
+        Promise.resolve(parseExpectedUpdatedAt(input.expectedUpdatedAt)),
+    ]);
+    const expectedStatus = transition === 'hide' ? 'approved' : 'hidden';
+    if (input.expectedStatus !== expectedStatus) {
+        throw new ApiError(
+            400,
+            'INVALID_STATUS_TRANSITION',
+            transition === 'hide'
+                ? 'Chỉ có thể ẩn địa điểm đang được công khai.'
+                : 'Chỉ có thể hiện lại địa điểm đang bị ẩn.',
+        );
+    }
+
+    const changedAt = new Date();
+    const nextStatus: Extract<LocationStatus, 'approved' | 'hidden'> = transition === 'hide' ? 'hidden' : 'approved';
+    const visibilityFields = transition === 'hide'
+        ? {
+            'moderation.hiddenBy': moderator._id,
+            'moderation.hiddenAt': changedAt,
+            'moderation.hiddenReason': requiredString(input.reason, 'Lý do ẩn', 1000),
+            'moderation.restoredBy': null,
+            'moderation.restoredAt': null,
+        }
+        : {
+            'moderation.restoredBy': moderator._id,
+            'moderation.restoredAt': changedAt,
+        };
+
+    const location = await Location.findOneAndUpdate(
+        {
+            _id: locationId,
+            isDeleted: { $ne: true },
+            status: expectedStatus,
+            updatedAt: expectedUpdatedAt,
+        },
+        {
+            $set: {
+                status: nextStatus,
+                ...visibilityFields,
+                updatedAt: changedAt,
+            },
+        },
+        { new: true, runValidators: true },
+    );
+    if (!location) return throwModerationConflict(locationId);
+
+    return {
+        id: location._id.toString(),
+        status: location.status,
+        moderation: {
+            hiddenBy: location.moderation.hiddenBy?.toString() ?? null,
+            hiddenAt: location.moderation.hiddenAt,
+            hiddenReason: location.moderation.hiddenReason,
+            restoredBy: location.moderation.restoredBy?.toString() ?? null,
+            restoredAt: location.moderation.restoredAt,
+        },
+        updatedAt: location.updatedAt,
+    };
+};
+
+export const hideLocation = (
+    locationId: string,
+    input: ModerateLocationVisibilityInput,
+    actor: Actor,
+) => moderateLocationVisibility(locationId, input, actor, 'hide');
+
+export const restoreLocation = (
+    locationId: string,
+    input: ModerateLocationVisibilityInput,
+    actor: Actor,
+) => moderateLocationVisibility(locationId, input, actor, 'restore');

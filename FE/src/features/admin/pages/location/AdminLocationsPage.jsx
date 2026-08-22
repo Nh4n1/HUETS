@@ -2,6 +2,8 @@ import {
   DeleteOutlined,
   EditOutlined,
   EnvironmentOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
   MoreOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
@@ -26,7 +28,9 @@ import {
   approveLocationApi,
   deleteAdminLocationApi,
   getAdminLocationsApi,
+  hideLocationApi,
   rejectLocationApi,
+  restoreLocationApi,
 } from "../../api/adminLocationsApi";
 import {
   formatDateTime,
@@ -35,6 +39,7 @@ import {
 import styles from "./AdminLocationsPage.module.css";
 
 const PAGE_SIZE = 12;
+const DELETABLE_STATUSES = new Set(["hidden", "rejected", "withdrawn"]);
 
 export function AdminLocationsPage({
   fixedStatus,
@@ -43,6 +48,8 @@ export function AdminLocationsPage({
   const { message, modal } = App.useApp();
   const { user } = useAuth();
   const [rejectForm] = Form.useForm();
+  const [hideForm] = Form.useForm();
+  const [deleteForm] = Form.useForm();
   const isAdmin = user?.role === "admin";
 
   const [locations, setLocations] = useState([]);
@@ -54,6 +61,8 @@ export function AdminLocationsPage({
   const [searchText, setSearchText] = useState("");
 
   const [rejectTarget, setRejectTarget] = useState(null);
+  const [hideTarget, setHideTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [moderatingId, setModeratingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -112,17 +121,19 @@ export function AdminLocationsPage({
       await request();
       message.success(successMessage);
       await loadLocations();
+      return true;
     } catch (error) {
       if (error.response?.data?.code === "STALE_RESOURCE") {
         message.warning(
           "Địa điểm đã được thay đổi bởi thao tác khác. Danh sách đã được tải lại.",
         );
         await loadLocations();
-        return;
+        return false;
       }
       message.error(
         error.response?.data?.message ?? "Không thể thực hiện kiểm duyệt.",
       );
+      return false;
     } finally {
       setModeratingId(null);
     }
@@ -155,7 +166,7 @@ export function AdminLocationsPage({
   async function handleRejectConfirm() {
     const values = await rejectForm.validateFields();
     const record = rejectTarget;
-    await runModeration(
+    const completed = await runModeration(
       record,
       () =>
         rejectLocationApi(record.id, {
@@ -165,50 +176,75 @@ export function AdminLocationsPage({
         }),
       "Đã từ chối địa điểm.",
     );
-    setRejectTarget(null);
+    if (completed) setRejectTarget(null);
   }
 
-  function handleDelete(record) {
+  function openHideModal(record) {
+    setHideTarget(record);
+    hideForm.resetFields();
+  }
+
+  async function handleHideConfirm() {
+    const values = await hideForm.validateFields();
+    const record = hideTarget;
+    const completed = await runModeration(
+      record,
+      () => hideLocationApi(record.id, {
+        expectedStatus: record.status,
+        expectedUpdatedAt: record.updatedAt,
+        reason: values.reason,
+      }),
+      "Đã ẩn địa điểm khỏi nội dung công khai.",
+    );
+    if (completed) setHideTarget(null);
+  }
+
+  function handleRestore(record) {
     modal.confirm({
-      title: `Xóa "${record.name}" khỏi hệ thống?`,
-      content: (
-        <div className={styles.deleteConfirmContent}>
-          {record.status === "pending" ? (
-            <Alert
-              showIcon
-              type="warning"
-              message="Nếu địa điểm chỉ không đạt yêu cầu kiểm duyệt, hãy dùng Từ chối để lưu kết quả và lý do."
-            />
-          ) : null}
-          <p>
-            Xóa sẽ loại địa điểm khỏi danh sách quản trị, ngừng hiển thị công khai
-            và xóa các bookmark liên quan. Hiện chưa có chức năng khôi phục trên giao diện.
-          </p>
-        </div>
-      ),
-      okText: "Xóa khỏi hệ thống",
-      okButtonProps: { danger: true },
+      title: `Hiện lại địa điểm "${record.name}"?`,
+      content: "Địa điểm sẽ xuất hiện trở lại trên trang công khai và có thể được thêm vào lịch trình.",
+      okText: "Hiện lại",
       cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          setDeletingId(record.id);
-          await deleteAdminLocationApi(record.id, {
-            expectedUpdatedAt: record.updatedAt,
-          });
-          message.success("Đã xóa địa điểm khỏi hệ thống.");
-          await loadLocations();
-        } catch (error) {
-          if (error.response?.data?.code === "STALE_RESOURCE") {
-            message.warning("Địa điểm đã thay đổi. Danh sách đã được tải lại.");
-            await loadLocations();
-            return;
-          }
-          message.error(error.response?.data?.message ?? "Không thể xóa địa điểm.");
-        } finally {
-          setDeletingId(null);
-        }
-      },
+      onOk: () => runModeration(
+        record,
+        () => restoreLocationApi(record.id, {
+          expectedStatus: record.status,
+          expectedUpdatedAt: record.updatedAt,
+        }),
+        "Đã hiện lại địa điểm.",
+      ),
     });
+  }
+
+  function openDeleteModal(record) {
+    setDeleteTarget(record);
+    deleteForm.resetFields();
+  }
+
+  async function handleDeleteConfirm() {
+    const values = await deleteForm.validateFields();
+    const record = deleteTarget;
+    try {
+      setDeletingId(record.id);
+      await deleteAdminLocationApi(record.id, {
+        expectedStatus: record.status,
+        expectedUpdatedAt: record.updatedAt,
+        reason: values.reason,
+      });
+      message.success("Đã xóa địa điểm khỏi hệ thống.");
+      setDeleteTarget(null);
+      await loadLocations();
+    } catch (error) {
+      if (error.response?.data?.code === "STALE_RESOURCE") {
+        message.warning("Địa điểm đã thay đổi. Danh sách đã được tải lại.");
+        setDeleteTarget(null);
+        await loadLocations();
+        return;
+      }
+      message.error(error.response?.data?.message ?? "Không thể xóa địa điểm.");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   const columns = [
@@ -304,6 +340,28 @@ export function AdminLocationsPage({
               </Button>
             </>
           ) : null}
+          {record.status === "approved" ? (
+            <Button
+              size="small"
+              icon={<EyeInvisibleOutlined />}
+              disabled={moderatingId !== null}
+              onClick={() => openHideModal(record)}
+            >
+              Ẩn
+            </Button>
+          ) : null}
+          {record.status === "hidden" ? (
+            <Button
+              size="small"
+              type="primary"
+              icon={<EyeOutlined />}
+              loading={moderatingId === record.id}
+              disabled={moderatingId !== null && moderatingId !== record.id}
+              onClick={() => handleRestore(record)}
+            >
+              Hiện lại
+            </Button>
+          ) : null}
           <Link to={`/admin/locations/${record.id}`}>
             <Button size="small">Chi tiết</Button>
           </Link>
@@ -312,28 +370,30 @@ export function AdminLocationsPage({
               <Link to={`/admin/locations/${record.id}/edit`}>
                 <Button size="small" icon={<EditOutlined />}>Chỉnh sửa</Button>
               </Link>
-              <Dropdown
-                trigger={["click"]}
-                menu={{
-                  items: [{
-                    key: "delete",
-                    danger: true,
-                    icon: <DeleteOutlined />,
-                    label: "Xóa khỏi hệ thống",
-                    onClick: () => handleDelete(record),
-                  }],
-                }}
-              >
-                <Button
-                  size="small"
-                  icon={<MoreOutlined />}
-                  loading={deletingId === record.id}
-                  disabled={deletingId !== null && deletingId !== record.id}
-                  aria-label={`Thao tác khác với ${record.name}`}
+              {DELETABLE_STATUSES.has(record.status) ? (
+                <Dropdown
+                  trigger={["click"]}
+                  menu={{
+                    items: [{
+                      key: "delete",
+                      danger: true,
+                      icon: <DeleteOutlined />,
+                      label: "Xóa khỏi hệ thống",
+                      onClick: () => openDeleteModal(record),
+                    }],
+                  }}
                 >
-                  Khác
-                </Button>
-              </Dropdown>
+                  <Button
+                    size="small"
+                    icon={<MoreOutlined />}
+                    loading={deletingId === record.id}
+                    disabled={deletingId !== null && deletingId !== record.id}
+                    aria-label={`Thao tác khác với ${record.name}`}
+                  >
+                    Khác
+                  </Button>
+                </Dropdown>
+              ) : null}
             </>
           ) : null}
         </Space>
@@ -499,6 +559,69 @@ export function AdminLocationsPage({
               rows={4}
               placeholder="Mô tả thông tin cần người đóng góp chỉnh sửa"
             />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={hideTarget ? `Ẩn địa điểm "${hideTarget.name}"` : "Ẩn địa điểm"}
+        open={Boolean(hideTarget)}
+        okText="Xác nhận ẩn"
+        cancelText="Hủy"
+        okButtonProps={{
+          danger: true,
+          loading: moderatingId === hideTarget?.id,
+        }}
+        onOk={handleHideConfirm}
+        onCancel={() => setHideTarget(null)}
+      >
+        <Alert
+          className={styles.rejectExplanation}
+          showIcon
+          type="warning"
+          message="Địa điểm sẽ ngừng xuất hiện công khai. Bookmark, đánh giá và tham chiếu trong lịch trình vẫn được giữ."
+        />
+        <Form form={hideForm} layout="vertical">
+          <Form.Item
+            name="reason"
+            label="Lý do ẩn"
+            rules={[
+              { required: true, whitespace: true, message: "Vui lòng nhập lý do ẩn địa điểm." },
+              { max: 1000, message: "Lý do không được vượt quá 1000 ký tự." },
+            ]}
+          >
+            <Input.TextArea rows={4} placeholder="Mô tả vấn đề cần xác minh hoặc chỉnh sửa" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={deleteTarget ? `Xóa "${deleteTarget.name}" khỏi hệ thống` : "Xóa địa điểm"}
+        open={Boolean(deleteTarget)}
+        okText="Xóa khỏi hệ thống"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true, loading: deletingId === deleteTarget?.id }}
+        onOk={handleDeleteConfirm}
+        onCancel={() => setDeleteTarget(null)}
+      >
+        <div className={styles.deleteConfirmContent}>
+          <Alert
+            showIcon
+            type="error"
+            message="Chỉ sử dụng khi địa điểm cần được loại khỏi dữ liệu vận hành. Hiện chưa có chức năng khôi phục trên giao diện."
+          />
+          <p>Bookmark liên quan sẽ bị xóa; đánh giá và tham chiếu lịch trình được giữ để truy vết.</p>
+        </div>
+        <Form form={deleteForm} layout="vertical">
+          <Form.Item
+            name="reason"
+            label="Lý do xóa"
+            rules={[
+              { required: true, whitespace: true, message: "Vui lòng nhập lý do xóa địa điểm." },
+              { max: 1000, message: "Lý do không được vượt quá 1000 ký tự." },
+            ]}
+          >
+            <Input.TextArea rows={3} placeholder="Ví dụ: dữ liệu thử nghiệm hoặc bản ghi trùng lặp" />
           </Form.Item>
         </Form>
       </Modal>

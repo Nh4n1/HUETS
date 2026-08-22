@@ -25,6 +25,16 @@ export async function rejectLocationApi(locationId, payload) {
   return response.data
 }
 
+export async function hideLocationApi(locationId, payload) {
+  const response = await httpClient.post(`/admin/locations/${locationId}/hide`, payload)
+  return response.data
+}
+
+export async function restoreLocationApi(locationId, payload) {
+  const response = await httpClient.post(`/admin/locations/${locationId}/restore`, payload)
+  return response.data
+}
+
 export async function updateAdminLocationApi(locationId, payload) {
   const response = await httpClient.patch(`/admin/locations/${locationId}`, payload)
   return response.data
