@@ -18,6 +18,7 @@ import { AdminItineraryDetailPage } from '../features/admin/pages/itinerary/Admi
 import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOverviewPage'
 import { AdminUsersPage } from '../features/admin/pages/user/AdminUsersPage'
 import { AdminReviewsPage } from '../features/admin/pages/review/AdminReviewsPage'
+import { AdminReportsPage } from '../features/reports/pages/AdminReportsPage'
 
 import { HomePage } from '../pages/HomePage'
 
@@ -185,6 +186,11 @@ export const router = createBrowserRouter([
           {
             path: 'reviews',
             Component: AdminReviewsPage,
+          },
+
+          {
+            path: 'reports',
+            Component: AdminReportsPage,
           },
         ],
       },

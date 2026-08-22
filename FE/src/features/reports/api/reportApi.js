@@ -1,14 +1,26 @@
 import { httpClient } from '../../../shared/api/httpClient'
+import { normalizeReportPayload } from '../reportDomain'
 
-// BE: POST /api/reports  body { targetType, targetId, reasonCode, detail }
-// -> 201 { id, reporterId, targetType, targetId, reasonCode, detail, status, createdAt }
-export async function createReportApi({ targetType, targetId, reasonCode, detail }) {
-  const response = await httpClient.post('/reports', {
-    targetType,
-    targetId,
-    reasonCode,
-    detail,
-  })
+export async function createReportApi(input) {
+  const response = await httpClient.post('/reports', normalizeReportPayload(input))
+
+  return response.data
+}
+
+export async function getAdminReportsApi(query = {}) {
+  const response = await httpClient.get('/admin/reports', { params: query })
+
+  return response.data
+}
+
+export async function getAdminReportByIdApi(reportId) {
+  const response = await httpClient.get(`/admin/reports/${reportId}`)
+
+  return response.data
+}
+
+export async function updateAdminReportStatusApi(reportId, payload) {
+  const response = await httpClient.patch(`/admin/reports/${reportId}/status`, payload)
 
   return response.data
 }

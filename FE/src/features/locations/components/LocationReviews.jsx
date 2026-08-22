@@ -1,4 +1,4 @@
-import { FlagOutlined, UserOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined, FlagOutlined, UserOutlined } from '@ant-design/icons'
 import {
   Alert,
   Avatar,
@@ -14,7 +14,7 @@ import {
   message,
 } from 'antd'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../auth/context/useAuth'
 import { ReportModal } from '../../reports/components/ReportModal'
 import {
@@ -30,6 +30,8 @@ const EMPTY_DISTRIBUTION = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
 
 export function LocationReviews({ locationId, ratingSummary, onSummaryChange }) {
   const { user, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+  const routerLocation = useLocation()
   const [form] = Form.useForm()
   const [reviews, setReviews] = useState([])
   const [ownReview, setOwnReview] = useState(null)
@@ -40,8 +42,18 @@ export function LocationReviews({ locationId, ratingSummary, onSummaryChange }) 
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [reportingReviewId, setReportingReviewId] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [reportingReview, setReportingReview] = useState(null)
+  const [reportedReviewIds, setReportedReviewIds] = useState(() => new Set())
+
+  const openReviewReport = (review) => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: routerLocation } })
+      return
+    }
+    if (review.userId === user?.id || reportedReviewIds.has(review.id)) return
+    setReportingReview(review)
+  }
 
   const queryFor = (page) => ({
     page,
@@ -282,16 +294,17 @@ export function LocationReviews({ locationId, ratingSummary, onSummaryChange }) 
                     {new Date(review.updatedAt).toLocaleDateString('vi-VN')}
                     {review.isEdited ? ' · Đã chỉnh sửa' : ''}
                   </time>
-                  {isAuthenticated && review.userId !== user?.id ? (
-                    <Tooltip title="Báo cáo đánh giá này">
+                  {review.userId !== user?.id ? (
+                    <Tooltip title={reportedReviewIds.has(review.id) ? 'Đã gửi báo cáo' : 'Báo cáo đánh giá này'}>
                       <Button
                         type="text"
                         size="small"
                         className={styles.reportButton}
-                        icon={<FlagOutlined />}
-                        onClick={() => setReportingReviewId(review.id)}
+                        disabled={reportedReviewIds.has(review.id)}
+                        icon={reportedReviewIds.has(review.id) ? <CheckCircleOutlined /> : <FlagOutlined />}
+                        onClick={() => openReviewReport(review)}
                       >
-                        Báo cáo
+                        {reportedReviewIds.has(review.id) ? 'Đã báo cáo' : 'Báo cáo'}
                       </Button>
                     </Tooltip>
                   ) : null}
@@ -307,11 +320,17 @@ export function LocationReviews({ locationId, ratingSummary, onSummaryChange }) 
       </div>
 
       <ReportModal
-        open={Boolean(reportingReviewId)}
+        open={Boolean(reportingReview)}
         targetType="locationReview"
-        targetId={reportingReviewId}
-        contextLabel="Báo cáo đánh giá vi phạm quy định cộng đồng."
-        onClose={() => setReportingReviewId(null)}
+        targetId={reportingReview?.id}
+        contextLabel={reportingReview
+          ? `Đánh giá của ${reportingReview.author.displayName}: "${reportingReview.comment?.slice(0, 90) || 'Không có nhận xét'}${reportingReview.comment?.length > 90 ? '…' : ''}"`
+          : undefined}
+        onClose={() => setReportingReview(null)}
+        onSubmitted={() => {
+          if (!reportingReview) return
+          setReportedReviewIds((current) => new Set(current).add(reportingReview.id))
+        }}
       />
     </section>
   )

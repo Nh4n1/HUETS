@@ -27,6 +27,9 @@ export type ApiErrorCode =
     | 'CANNOT_MANAGE_SELF'
     | 'CANNOT_MANAGE_ADMIN'
     | 'CONFLICT'
+    | 'REPORT_ALREADY_EXISTS'
+    | 'REPORT_NOT_FOUND'
+    | 'CANNOT_REPORT_OWN_CONTENT'
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
     | 'NOT_FOUND';

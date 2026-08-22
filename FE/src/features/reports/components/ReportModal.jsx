@@ -1,31 +1,35 @@
-import { Alert, Form, Input, Modal, Radio, message } from 'antd'
+import { Alert, App, Form, Input, Modal, Radio, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { createReportApi } from '../api/reportApi'
+import {
+  getReportErrorFeedback,
+  REPORT_DETAIL_MAX_LENGTH,
+  REPORT_REASON_OPTIONS,
+  REPORT_TARGETS,
+  validateReportDetail,
+} from '../reportDomain'
 import styles from './ReportModal.module.css'
 
-const REASON_OPTIONS = [
-  { value: 'spam', label: 'Spam / quảng cáo' },
-  { value: 'inappropriate', label: 'Nội dung không phù hợp' },
-  { value: 'incorrect_info', label: 'Thông tin sai lệch' },
-  { value: 'offensive', label: 'Ngôn từ xúc phạm, gây khó chịu' },
-  { value: 'other', label: 'Lý do khác' },
-]
-
-const TARGET_TITLES = {
-  location: 'Báo cáo địa điểm',
-  locationReview: 'Báo cáo đánh giá',
-  itinerary: 'Báo cáo lịch trình',
-}
-
-export function ReportModal({ open, targetType, targetId, contextLabel, onClose }) {
+export function ReportModal({
+  open,
+  targetType,
+  targetId,
+  contextLabel,
+  onClose,
+  onSubmitted,
+  onUnavailable,
+}) {
+  const { message } = App.useApp()
   const [form] = Form.useForm()
   const [submitting, setSubmitting] = useState(false)
+  const reasonCode = Form.useWatch('reasonCode', form)
+  const hasValidTarget = Boolean(REPORT_TARGETS[targetType] && targetId)
 
   useEffect(() => {
     if (open) {
       form.resetFields()
     }
-  }, [open, form])
+  }, [open, targetId, targetType, form])
 
   const handleCancel = () => {
     if (submitting) return
@@ -33,23 +37,32 @@ export function ReportModal({ open, targetType, targetId, contextLabel, onClose 
   }
 
   const handleSubmit = async (values) => {
+    if (submitting) return
+    if (!hasValidTarget) {
+      message.error('Không xác định được nội dung cần báo cáo.')
+      return
+    }
+
     setSubmitting(true)
     try {
-      await createReportApi({
+      const report = await createReportApi({
         targetType,
         targetId,
         reasonCode: values.reasonCode,
         detail: values.detail,
       })
-      message.success('Cảm ơn bạn đã báo cáo. Đội ngũ HUETS sẽ xem xét sớm nhất có thể.')
+      message.success('Cảm ơn bạn. Báo cáo đã được ghi nhận và sẽ được xem xét.')
+      onSubmitted?.(report)
       onClose?.()
     } catch (error) {
-      if (error.response?.status === 409) {
-        message.info(error.response?.data?.message ?? 'Bạn đã báo cáo nội dung này rồi.')
-        onClose?.()
-        return
+      const feedback = getReportErrorFeedback(error)
+      message.open({ type: feedback.type, content: feedback.message })
+
+      if (feedback.markSubmitted) {
+        onSubmitted?.({ targetType, targetId, duplicate: true })
       }
-      message.error(error.response?.data?.message ?? 'Không thể gửi báo cáo. Vui lòng thử lại.')
+      if (feedback.disableTarget) onUnavailable?.()
+      if (feedback.closeModal) onClose?.()
     } finally {
       setSubmitting(false)
     }
@@ -57,35 +70,69 @@ export function ReportModal({ open, targetType, targetId, contextLabel, onClose 
 
   return (
     <Modal
-      title={TARGET_TITLES[targetType] ?? 'Báo cáo nội dung'}
+      title={REPORT_TARGETS[targetType]?.title ?? 'Báo cáo nội dung'}
       open={open}
       onCancel={handleCancel}
       onOk={() => form.submit()}
       okText="Gửi báo cáo"
       cancelText="Hủy"
-      okButtonProps={{ danger: true, loading: submitting }}
+      okButtonProps={{ danger: true, loading: submitting, disabled: !hasValidTarget || !reasonCode }}
       cancelButtonProps={{ disabled: submitting }}
-      destroyOnClose
+      closable={!submitting}
+      keyboard={!submitting}
+      maskClosable={!submitting}
+      destroyOnHidden
     >
       {contextLabel ? (
-        <Alert type="warning" showIcon message={contextLabel} className={styles.contextAlert} />
+        <Alert
+          type="warning"
+          showIcon
+          message={contextLabel}
+          description="Chỉ báo cáo nội dung vi phạm. Các báo cáo không chính xác có thể làm chậm quá trình xử lý."
+          className={styles.contextAlert}
+        />
       ) : null}
-      <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ reasonCode: 'spam' }}>
+      <Form form={form} layout="vertical" onFinish={handleSubmit} preserve={false}>
         <Form.Item
           name="reasonCode"
           label="Lý do báo cáo"
           rules={[{ required: true, message: 'Vui lòng chọn lý do.' }]}
         >
-          <Radio.Group options={REASON_OPTIONS} className={styles.reasonGroup} />
+          <Radio.Group className={styles.reasonGroup} aria-label="Lý do báo cáo">
+            {REPORT_REASON_OPTIONS.map((option) => (
+              <Radio className={styles.reasonOption} value={option.value} key={option.value}>
+                {option.label}
+              </Radio>
+            ))}
+          </Radio.Group>
         </Form.Item>
-        <Form.Item name="detail" label="Mô tả thêm (không bắt buộc)">
+        <Form.Item
+          name="detail"
+          label={reasonCode === 'other' ? 'Mô tả thêm (bắt buộc)' : 'Mô tả thêm (không bắt buộc)'}
+          dependencies={['reasonCode']}
+          rules={[
+            ({ getFieldValue }) => ({
+              validator: (_, value) => {
+                const validationMessage = validateReportDetail(getFieldValue('reasonCode'), value)
+                return validationMessage
+                  ? Promise.reject(new Error(validationMessage))
+                  : Promise.resolve()
+              },
+            }),
+          ]}
+        >
           <Input.TextArea
-            rows={3}
-            maxLength={500}
+            rows={4}
+            maxLength={REPORT_DETAIL_MAX_LENGTH}
             showCount
-            placeholder="Cho chúng tôi biết thêm chi tiết về vấn đề bạn gặp phải..."
+            placeholder={reasonCode === 'other'
+              ? 'Mô tả rõ vấn đề để đội ngũ có thể xem xét...'
+              : 'Cung cấp thêm chi tiết giúp chúng tôi xử lý chính xác hơn...'}
           />
         </Form.Item>
+        <Typography.Paragraph type="secondary" className={styles.privacyNote}>
+          Danh tính người báo cáo không hiển thị cho chủ nội dung.
+        </Typography.Paragraph>
       </Form>
     </Modal>
   )

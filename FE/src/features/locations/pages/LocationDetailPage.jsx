@@ -1,5 +1,6 @@
 import {
   ArrowLeftOutlined,
+  CheckCircleOutlined,
   ClockCircleOutlined,
   EnvironmentOutlined,
   FlagOutlined,
@@ -38,7 +39,11 @@ export function LocationDetailPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const [reportOpen, setReportOpen] = useState(false)
+  const [reportedLocationIds, setReportedLocationIds] = useState(() => new Set())
+  const [unavailableReportIds, setUnavailableReportIds] = useState(() => new Set())
   const requestKey = `${locationId}|${reloadKey}`
+  const hasReported = reportedLocationIds.has(locationId)
+  const reportUnavailable = unavailableReportIds.has(locationId)
 
   const handleReportClick = () => {
     if (!isAuthenticated) {
@@ -114,8 +119,12 @@ export function LocationDetailPage() {
             unsavedLabel="Lưu địa điểm"
             className={styles.bookmarkAction}
           />
-          <Button icon={<FlagOutlined />} onClick={handleReportClick}>
-            Báo cáo
+          <Button
+            icon={hasReported ? <CheckCircleOutlined /> : <FlagOutlined />}
+            disabled={hasReported || reportUnavailable}
+            onClick={handleReportClick}
+          >
+            {hasReported ? 'Đã báo cáo' : reportUnavailable ? 'Không thể báo cáo' : 'Báo cáo'}
           </Button>
         </div>
       </header>
@@ -216,6 +225,8 @@ export function LocationDetailPage() {
         targetId={location.id}
         contextLabel={`Báo cáo địa điểm "${location.name}"`}
         onClose={() => setReportOpen(false)}
+        onSubmitted={() => setReportedLocationIds((current) => new Set(current).add(locationId))}
+        onUnavailable={() => setUnavailableReportIds((current) => new Set(current).add(locationId))}
       />
     </main>
   )

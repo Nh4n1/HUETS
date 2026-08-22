@@ -1,6 +1,7 @@
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
+  CheckCircleOutlined,
   ClockCircleOutlined,
   CopyOutlined,
   DeleteOutlined,
@@ -28,19 +29,22 @@ export function ItineraryDetailPage({ publicView = false }) {
   const { itineraryId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const [itinerary, setItinerary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [copying, setCopying] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [reportedItineraryIds, setReportedItineraryIds] = useState(() => new Set())
+  const hasReported = reportedItineraryIds.has(itineraryId)
 
   const handleReportClick = () => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: location } })
       return
     }
+    if (itinerary?.owner?.id === user?.id || hasReported) return
     setReportOpen(true)
   }
 
@@ -101,7 +105,14 @@ export function ItineraryDetailPage({ publicView = false }) {
             <Dropdown
               menu={{
                 onClick: ({ key }) => { if (key === 'report') handleReportClick() },
-                items: [{ key: 'report', icon: <FlagOutlined />, label: 'Báo cáo' }],
+                items: [{
+                  key: 'report',
+                  icon: hasReported ? <CheckCircleOutlined /> : <FlagOutlined />,
+                  disabled: hasReported || itinerary.owner?.id === user?.id,
+                  label: itinerary.owner?.id === user?.id
+                    ? 'Không thể báo cáo lịch trình của bạn'
+                    : hasReported ? 'Đã báo cáo' : 'Báo cáo',
+                }],
               }}
             >
               <Button aria-label="Thêm hành động" icon={<EllipsisOutlined />} />
@@ -189,6 +200,7 @@ export function ItineraryDetailPage({ publicView = false }) {
           targetId={itinerary.id}
           contextLabel={`Báo cáo lịch trình "${itinerary.title}"`}
           onClose={() => setReportOpen(false)}
+          onSubmitted={() => setReportedItineraryIds((current) => new Set(current).add(itineraryId))}
         />
       ) : null}
     </main>
