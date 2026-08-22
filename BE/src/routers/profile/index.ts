@@ -8,7 +8,7 @@ const router = Router();
 
 router.get('/', authenticate, getMe);
 router.patch('/', authenticate, updateMe);
-router.get('/bookmarks', authenticate, authorize('user', 'admin'), getMyBookmarks);
-router.get('/reviews', authenticate, authorize('user', 'admin'), getMyLocationReviews);
+router.get('/bookmarks', authenticate, authorize('user', 'mod', 'admin'), getMyBookmarks);
+router.get('/reviews', authenticate, authorize('user', 'mod', 'admin'), getMyLocationReviews);
 
 export default router;

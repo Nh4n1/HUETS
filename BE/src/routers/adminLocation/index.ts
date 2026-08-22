@@ -4,7 +4,7 @@ import { authenticate, authorize } from '../../middlewares/auth.middleware.ts';
 
 const router = Router();
 
-router.use(authenticate, authorize('admin'));
+router.use(authenticate, authorize('mod', 'admin'));
 router.get('/moderation', locationController.getAdminLocations);
 router.get('/:locationId', locationController.getAdminLocationById);
 router.post('/:locationId/approve', locationController.approveLocation);

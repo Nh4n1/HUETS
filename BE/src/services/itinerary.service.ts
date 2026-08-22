@@ -7,7 +7,7 @@ import { ApiError } from '../utils/apiError.ts';
 
 interface Actor {
     id: string;
-    role: 'user' | 'admin';
+    role: 'user' | 'mod' | 'admin';
 }
 
 interface ItemInput {

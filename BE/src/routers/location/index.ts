@@ -9,7 +9,7 @@ export const ownerLocationRouter = Router();
 router.post(
   "/",
   authenticate,
-  authorize("user", "admin"),
+  authorize("user", "mod", "admin"),
   locationController.createLocation,
 );
 router.get("/", locationController.getPublicLocations);
@@ -18,19 +18,19 @@ router.get("/:locationId/reviews", locationReviewController.getLocationReviews);
 router.get(
   "/:locationId/reviews/me",
   authenticate,
-  authorize("user", "admin"),
+  authorize("user", "mod", "admin"),
   locationReviewController.getMyLocationReview,
 );
 router.put(
   "/:locationId/reviews/me",
   authenticate,
-  authorize("user", "admin"),
+  authorize("user", "mod", "admin"),
   locationReviewController.saveLocationReview,
 );
 router.delete(
   "/:locationId/reviews/me",
   authenticate,
-  authorize("user", "admin"),
+  authorize("user", "mod", "admin"),
   locationReviewController.deleteMyLocationReview,
 );
 router.get("/:locationId", locationController.getPublicLocationById);
@@ -39,7 +39,7 @@ router.get("/:locationId", locationController.getPublicLocationById);
 ownerLocationRouter.get(
   "/",
   authenticate,
-  authorize("user", "admin"),
+  authorize("user", "mod", "admin"),
   locationController.getMyLocations,
 );
 

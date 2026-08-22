@@ -23,6 +23,8 @@ export type ApiErrorCode =
     | 'BOOKMARK_ALREADY_EXISTS'
     | 'BOOKMARK_NOT_FOUND'
     | 'CANNOT_LOCK_SELF'
+    | 'CANNOT_MANAGE_SELF'
+    | 'CANNOT_MANAGE_ADMIN'
     | 'CONFLICT'
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
