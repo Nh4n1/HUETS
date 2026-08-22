@@ -11,9 +11,36 @@ export const getLocationReviews = asyncHandler(
   async (req: Request, res: Response) => {
     const result = await reviewService.getLocationReviews(
       param(req.params.locationId),
-      typeof req.query.page === "string" ? req.query.page : undefined,
-      typeof req.query.pageSize === "string" ? req.query.pageSize : undefined,
+      {
+        page: typeof req.query.page === "string" ? req.query.page : undefined,
+        pageSize: typeof req.query.pageSize === "string" ? req.query.pageSize : undefined,
+        rating: typeof req.query.rating === "string" ? req.query.rating : undefined,
+        sortBy: typeof req.query.sortBy === "string" ? req.query.sortBy : undefined,
+        hasComment: typeof req.query.hasComment === "string" ? req.query.hasComment : undefined,
+      },
     );
+    return sendSuccess(res, 200, result.data, result.meta);
+  },
+);
+
+export const getMyLocationReview = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, "UNAUTHORIZED", "Chưa đăng nhập.");
+    return sendSuccess(
+      res,
+      200,
+      await reviewService.getMyLocationReview(param(req.params.locationId), req.user.id),
+    );
+  },
+);
+
+export const getMyLocationReviews = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, "UNAUTHORIZED", "Chưa đăng nhập.");
+    const result = await reviewService.getMyLocationReviews(req.user.id, {
+      page: typeof req.query.page === "string" ? req.query.page : undefined,
+      pageSize: typeof req.query.pageSize === "string" ? req.query.pageSize : undefined,
+    });
     return sendSuccess(res, 200, result.data, result.meta);
   },
 );
@@ -29,6 +56,17 @@ export const saveLocationReview = asyncHandler(
         req.body,
         req.user.id,
       ),
+    );
+  },
+);
+
+export const deleteMyLocationReview = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, "UNAUTHORIZED", "Chưa đăng nhập.");
+    return sendSuccess(
+      res,
+      200,
+      await reviewService.deleteMyLocationReview(param(req.params.locationId), req.user.id),
     );
   },
 );

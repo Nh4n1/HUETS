@@ -103,7 +103,10 @@ export function LocationDetailPage() {
       </header>
 
       <Image.PreviewGroup>
-        <section className={styles.gallery} aria-label="Ảnh địa điểm">
+        <section
+          className={`${styles.gallery} ${otherImages.length === 0 ? styles.gallerySingleImage : ''}`}
+          aria-label="Ảnh địa điểm"
+        >
           {coverImage ? (
             <Image className={styles.coverImage} src={coverImage.url} alt={`Không gian tại ${location.name}`} />
           ) : (
@@ -152,10 +155,16 @@ export function LocationDetailPage() {
           </section>
           <LocationReviews
             locationId={locationId}
+            ratingSummary={{
+              average: location.averageRating,
+              count: location.reviewCount,
+              distribution: location.ratingDistribution,
+            }}
             onSummaryChange={(summary) => setLocation((current) => ({
               ...current,
               averageRating: summary.average,
               reviewCount: summary.count,
+              ratingDistribution: summary.distribution,
             }))}
           />
         </article>

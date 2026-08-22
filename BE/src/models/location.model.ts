@@ -46,6 +46,13 @@ export interface ILocationOpeningHours {
 export interface ILocationRatingSummary {
     average: number;
     count: number;
+    distribution: {
+        1: number;
+        2: number;
+        3: number;
+        4: number;
+        5: number;
+    };
 }
 
 export interface ILocationModeration {
@@ -149,6 +156,20 @@ const locationRatingSummarySchema = new Schema<ILocationRatingSummary>(
     {
         average: { type: Number, required: true, default: 0, min: 0, max: 5 },
         count: { type: Number, required: true, default: 0, min: 0 },
+        distribution: {
+            type: new Schema(
+                {
+                    1: { type: Number, required: true, default: 0, min: 0 },
+                    2: { type: Number, required: true, default: 0, min: 0 },
+                    3: { type: Number, required: true, default: 0, min: 0 },
+                    4: { type: Number, required: true, default: 0, min: 0 },
+                    5: { type: Number, required: true, default: 0, min: 0 },
+                },
+                { _id: false },
+            ),
+            required: true,
+            default: () => ({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }),
+        },
     },
     { _id: false },
 );
@@ -180,7 +201,11 @@ const locationSchema = new Schema<ILocation>(
         geo: { type: locationGeoSchema, required: true },
         images: { type: [locationImageSchema], required: true },
         openingHours: { type: locationOpeningHoursSchema, required: true, default: () => ({ status: 'unknown', periods: [] }) },
-        ratingSummary: { type: locationRatingSummarySchema, required: true, default: () => ({ average: 0, count: 0 }) },
+        ratingSummary: {
+            type: locationRatingSummarySchema,
+            required: true,
+            default: () => ({ average: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }),
+        },
         status: {
             type: String,
             enum: ['pending', 'approved', 'rejected', 'withdrawn', 'hidden'],

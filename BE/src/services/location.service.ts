@@ -462,6 +462,7 @@ const toLocationSummary = (location: ILocation, categoryNames: Map<string, strin
     coverImageUrl: [...location.images].sort((left, right) => left.position - right.position)[0]?.url ?? null,
     averageRating: location.ratingSummary.average,
     reviewCount: location.ratingSummary.count,
+    ratingDistribution: location.ratingSummary.distribution ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
     tagCodes: location.tagCodes,
 });
 
@@ -603,7 +604,7 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
         geo: { type: 'Point', coordinates: [longitude, latitude] },
         images,
         openingHours,
-        ratingSummary: { average: 0, count: 0 },
+        ratingSummary: { average: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } },
         status,
         moderation: {
             reviewedBy: status === 'approved' ? user._id : null,
