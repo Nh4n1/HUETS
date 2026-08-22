@@ -93,9 +93,7 @@ export function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
-  const [openKeys, setOpenKeys] = useState(
-    location.pathname.startsWith('/admin/locations') ? [LOCATIONS_GROUP_KEY] : [],
-  )
+  const isLocationsSection = location.pathname.startsWith('/admin/locations')
 
   const selectedKeys = useMemo(() => [getSelectedKey(location.pathname)], [location.pathname])
   const visibleMenuItems = useMemo(
@@ -148,13 +146,13 @@ export function AdminLayout() {
         </div>
         {collapsed ? null : <div className={styles.menuLabel}>Điều hướng</div>}
         <Menu
+          key={location.pathname}
           className={styles.menu}
           theme="dark"
           mode="inline"
           items={visibleMenuItems}
           selectedKeys={selectedKeys}
-          openKeys={openKeys}
-          onOpenChange={setOpenKeys}
+          defaultOpenKeys={isLocationsSection ? [LOCATIONS_GROUP_KEY] : []}
           onClick={() => {
             if (isMobile) setCollapsed(true)
           }}

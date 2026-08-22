@@ -92,8 +92,8 @@
 .locationCell {
   display: grid;
   min-width: 0;
-  grid-template-columns: 3.25rem minmax(0, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.6rem;
   align-items: center;
 }
 
@@ -105,9 +105,9 @@
 
 .thumbnail,
 .thumbnailFallback {
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 0.65rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
 }
 
 .thumbnail {
@@ -126,6 +126,7 @@
   overflow: hidden;
   color: var(--color-text);
   font-weight: 700;
+  font-size: 0.86rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -137,7 +138,7 @@
 .locationAddress {
   overflow: hidden;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -150,7 +151,35 @@
 }
 
 .tableCard :global(.ant-table-tbody > tr > td) {
+  padding: 0.5rem 0.65rem !important;
   vertical-align: middle;
+}
+
+.rowActions {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.actionMenuButton {
+  display: inline-grid;
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 50%;
+  place-items: center;
+}
+
+.actionMenuButton:hover {
+  color: var(--color-primary) !important;
+  background: var(--color-primary-soft) !important;
+}
+
+.tableCard :global(.ant-table-cell-fix-right) {
+  box-shadow: -6px 0 12px rgb(68 48 33 / 5%);
 }
 
 .tableCard :global(.ant-pagination) {

@@ -283,9 +283,14 @@ export function AdminLocationDetailPage() {
           <Descriptions bordered column={{ xs: 1, md: 2 }}>
             <Descriptions.Item label="Danh mục">{location.category?.name}</Descriptions.Item>
             <Descriptions.Item label="Người đóng góp">
-              {location.contributor
-                ? `${location.contributor.displayName} (${location.contributor.email})`
-                : 'Không xác định'}
+              {location.contributor ? (
+                <Space direction="vertical" size={0}>
+                  <Typography.Text strong>{location.contributor.displayName}</Typography.Text>
+                  <Typography.Text type="secondary" copyable>
+                    {location.contributor.email}
+                  </Typography.Text>
+                </Space>
+              ) : 'Không xác định'}
             </Descriptions.Item>
             <Descriptions.Item label="Địa chỉ" span={2}>{location.formattedAddress}</Descriptions.Item>
             <Descriptions.Item label="Ghi chú vị trí" span={2}>
