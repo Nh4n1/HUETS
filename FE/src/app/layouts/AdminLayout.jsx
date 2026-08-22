@@ -19,6 +19,7 @@ import { useAuth } from '../../features/auth/context/useAuth'
 import styles from './AdminLayout.module.css'
 
 const LOCATIONS_GROUP_KEY = 'locations'
+const ADMIN_ONLY_MENU_KEYS = new Set(['/admin/users', '/admin/settings'])
 
 // Sidebar items without a real page yet link nowhere ('#') until their feature is built.
 function placeholderLink(label) {
@@ -99,6 +100,10 @@ export function AdminLayout() {
   )
 
   const selectedKeys = useMemo(() => [getSelectedKey(location.pathname)], [location.pathname])
+  const visibleMenuItems = useMemo(
+    () => menuItems.filter((item) => user?.role === 'admin' || !ADMIN_ONLY_MENU_KEYS.has(item.key)),
+    [user?.role],
+  )
 
   const handleLogout = async () => {
     try {
@@ -127,7 +132,7 @@ export function AdminLayout() {
         <Menu
           theme="dark"
           mode="inline"
-          items={menuItems}
+          items={visibleMenuItems}
           selectedKeys={selectedKeys}
           openKeys={openKeys}
           onOpenChange={setOpenKeys}

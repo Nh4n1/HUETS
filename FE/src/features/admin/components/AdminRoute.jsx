@@ -14,9 +14,14 @@ export function AdminRoute() {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  if (user?.role !== 'admin') {
+  if (!['mod', 'admin'].includes(user?.role)) {
     return <Navigate to="/" replace />
   }
 
   return <Outlet />
+}
+
+export function AdminOnlyRoute() {
+  const { user } = useAuth()
+  return user?.role === 'admin' ? <Outlet /> : <Navigate to="/admin" replace />
 }

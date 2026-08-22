@@ -7,7 +7,7 @@ import { RegisterPage } from '../features/auth/pages/RegisterPage'
 
 import { SavedContentPage } from '../features/bookmarks/pages/SavedContentPage'
 
-import { AdminRoute } from '../features/admin/components/AdminRoute'
+import { AdminOnlyRoute, AdminRoute } from '../features/admin/components/AdminRoute'
 import { AdminCreateLocationPage } from '../features/admin/pages/location/AdminCreateLocationPage'
 import { AdminLocationDetailPage } from '../features/admin/pages/location/AdminLocationDetailPage'
 import { AdminLocationModerationPage } from '../features/admin/pages/location/AdminLocationModerationPage'
@@ -174,8 +174,8 @@ export const router = createBrowserRouter([
           },
 
           {
-            path: 'users',
-            Component: AdminUsersPage,
+            Component: AdminOnlyRoute,
+            children: [{ path: 'users', Component: AdminUsersPage }],
           },
 
           {
