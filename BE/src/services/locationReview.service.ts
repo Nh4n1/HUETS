@@ -39,7 +39,7 @@ const ensureValidLocationId = (locationId: string) => {
 
 const ensureApprovedLocation = async (locationId: string) => {
     ensureValidLocationId(locationId);
-    const exists = await Location.exists({ _id: locationId, status: 'approved' });
+    const exists = await Location.exists({ _id: locationId, status: 'approved', isDeleted: { $ne: true } });
     if (!exists) throw new ApiError(404, 'NOT_FOUND', 'Địa điểm không tồn tại hoặc chưa được công khai.');
 };
 

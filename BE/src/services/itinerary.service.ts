@@ -228,7 +228,7 @@ const isoDayOfWeek = (startDate: Date, dayNumber: number) => {
 
 const assertLocationsAndOpeningHours = async (days: ValidatedDay[], startDate: Date | null) => {
     const ids = [...new Set(days.flatMap((day) => day.items.map((item) => item.locationId.toString())))];
-    const locations = await Location.find({ _id: { $in: ids } })
+    const locations = await Location.find({ _id: { $in: ids }, isDeleted: { $ne: true } })
         .select({ _id: 1, name: 1, status: 1, openingHours: 1 })
         .lean();
     const locationMap = new Map(locations.map((location) => [location._id.toString(), location]));
@@ -304,7 +304,7 @@ const daysFromDocument = (itinerary: IItinerary): ValidatedDay[] => itinerary.da
 
 const locationMapFor = async (itinerary: IItinerary) => {
     const ids = [...new Set(itinerary.days.flatMap((day) => day.items.map((item) => item.locationId.toString())))];
-    const locations = await Location.find({ _id: { $in: ids } })
+    const locations = await Location.find({ _id: { $in: ids }, isDeleted: { $ne: true } })
         .select({ name: 1, status: 1, address: 1, images: 1 })
         .lean();
     return new Map(locations.map((location) => [location._id.toString(), location]));
@@ -375,7 +375,7 @@ export const getPublicItineraries = async (query: PublicItineraryQuery) => {
     const page = positiveInteger(query.page, 1);
     const pageSize = positiveInteger(query.pageSize, 12, 50);
     const days = query.days === undefined ? undefined : positiveInteger(query.days, 1, MAX_ITINERARY_DAYS);
-    const approvedLocationIds = await Location.distinct('_id', { status: 'approved' });
+    const approvedLocationIds = await Location.distinct('_id', { status: 'approved', isDeleted: { $ne: true } });
     const escapedQuery = query.q?.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const filter: Record<string, unknown> = {
         visibility: 'public' as const,
@@ -386,6 +386,7 @@ export const getPublicItineraries = async (query: PublicItineraryQuery) => {
     if (escapedQuery) {
         const matchingLocationIds = await Location.distinct('_id', {
             status: 'approved',
+            isDeleted: { $ne: true },
             $or: [
                 { name: { $regex: escapedQuery, $options: 'i' } },
                 { 'address.addressLine': { $regex: escapedQuery, $options: 'i' } },
@@ -534,6 +535,7 @@ export const copyPublicItinerary = async (itineraryId: string, actor: Actor) => 
     const approvedLocations = await Location.find({
         _id: { $in: locationIds },
         status: 'approved',
+        isDeleted: { $ne: true },
     }).select({ _id: 1 }).lean();
     const approvedIds = new Set(approvedLocations.map((location) => location._id.toString()));
     const days: ValidatedDay[] = source.days
@@ -681,4 +683,14 @@ export const moderateItinerary = async (itineraryId: string, input: ModerateItin
     }
     await itinerary.save();
     return toResponse(itinerary);
+};
+
+export const adminDeleteItinerary = async (itineraryId: string, actor: Actor) => {
+    assertActor(actor);
+    if (!mongoose.isValidObjectId(itineraryId)) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
+    const itinerary = await Itinerary.findOne({ _id: itineraryId, isDeleted: false });
+    if (!itinerary) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy Itinerary.');
+    itinerary.isDeleted = true;
+    itinerary.deletedAt = new Date();
+    await itinerary.save();
 };

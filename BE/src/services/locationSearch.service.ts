@@ -39,10 +39,10 @@ const normalizedTagPhrases = tagGroups.flatMap((group) => group.tags)
     .filter((tag) => tag.isActive).map((tag) => normalizeSearchText(tag.name));
 
 const findExactMatch = async (normalizedQuery: string): Promise<ExactMatch | null> => {
-    const exactName = await Location.findOne({ status: 'approved', normalizedName: normalizedQuery })
+    const exactName = await Location.findOne({ status: 'approved', isDeleted: { $ne: true }, normalizedName: normalizedQuery })
         .select({ _id: 1 }).lean();
     if (exactName) return { type: 'name' };
-    const exactAlias = await Location.findOne({ status: 'approved', 'aliases.normalizedValue': normalizedQuery })
+    const exactAlias = await Location.findOne({ status: 'approved', isDeleted: { $ne: true }, 'aliases.normalizedValue': normalizedQuery })
         .select({ _id: 1 }).lean();
     return exactAlias ? { type: 'alias' } : null;
 };

@@ -53,6 +53,11 @@
   min-width: 12rem;
 }
 
+.reloadButton {
+  height: auto;
+  align-self: stretch;
+}
+
 .tableCard {
   overflow: hidden;
   border: 1px solid var(--color-border-light);
