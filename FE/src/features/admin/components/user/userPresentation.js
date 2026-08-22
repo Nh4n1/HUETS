@@ -5,6 +5,7 @@ export const USER_STATUS = {
 
 export const USER_ROLE = {
   user: { label: 'Người dùng', color: 'default' },
+  mod: { label: 'Kiểm duyệt viên', color: 'blue' },
   admin: { label: 'Quản trị viên', color: 'gold' },
 }
 

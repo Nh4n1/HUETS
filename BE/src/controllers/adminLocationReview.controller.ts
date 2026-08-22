@@ -12,6 +12,8 @@ export const getReviews = asyncHandler(async (req: Request, res: Response) => {
         page: typeof req.query.page === 'string' ? req.query.page : undefined,
         pageSize: typeof req.query.pageSize === 'string' ? req.query.pageSize : undefined,
         status: typeof req.query.status === 'string' ? req.query.status : undefined,
+        rating: typeof req.query.rating === 'string' ? req.query.rating : undefined,
+        q: typeof req.query.q === 'string' ? req.query.q : undefined,
     });
     return sendSuccess(res, 200, result.data, result.meta);
 });

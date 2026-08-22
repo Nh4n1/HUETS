@@ -120,6 +120,7 @@
 .visibilityBlock { display: grid; padding: 0; gap: .5rem; border: 0; }
 .visibilityBlock legend { margin-bottom: .5rem; color: var(--color-text-soft); font-size: .82rem; font-weight: 700; }
 .visibilityChoice { display: grid; padding: .25rem; grid-template-columns: 1fr 1fr; gap: .25rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-muted); }
+.visibilityChoice button:disabled { cursor: not-allowed; opacity: .55; }
 .visibilityBlock small { color: var(--color-text-muted); }
 .dayTabs { display: flex; overflow-x: auto; margin: 0 0 1.5rem; gap: .5rem; scrollbar-width: thin; }
 .dayTabs a { min-height: 2.75rem; padding: .65rem 1rem; white-space: nowrap; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: white; font-weight: 700; }

@@ -5,11 +5,12 @@ export async function getAdminItinerariesApi(query = {}) {
   return response.data
 }
 
-export async function moderateItineraryApi(itineraryId, payload) {
-  const response = await httpClient.patch(`/admin/itineraries/${itineraryId}`, payload)
+export async function getAdminItineraryApi(itineraryId) {
+  const response = await httpClient.get(`/admin/itineraries/${itineraryId}`)
   return response.data
 }
 
-export async function deleteAdminItineraryApi(itineraryId) {
-  await httpClient.delete(`/admin/itineraries/${itineraryId}`)
+export async function moderateItineraryApi(itineraryId, payload) {
+  const response = await httpClient.patch(`/admin/itineraries/${itineraryId}`, payload)
+  return response.data
 }

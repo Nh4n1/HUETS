@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 import type { Document } from 'mongoose';
 
-export type UserRole = 'user' | 'admin';
+export type UserRole = 'user' | 'mod' | 'admin';
 export type UserStatus = 'active' | 'locked';
 
 export interface IUser extends Document {
@@ -26,8 +26,8 @@ const userSchema = new Schema<IUser>(
         displayName: { type: String, required: true, trim: true, minlength: 2, maxlength: 80 },
         avatarUrl: { type: String },
         bio: { type: String, maxlength: 500 },
-        role: { type: String, enum: ['user', 'admin'], default: 'user' },
-                status: { type: String, enum: ['active', 'locked'], default: 'active' },
+        role: { type: String, enum: ['user', 'mod', 'admin'], default: 'user' },
+        status: { type: String, enum: ['active', 'locked'], default: 'active' },
         lockReason: { type: String, default: null },
     },
     { timestamps: true, collection: 'users' },

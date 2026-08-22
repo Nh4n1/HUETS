@@ -1,0 +1,141 @@
+.page {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.pageHeader {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.5rem, 3vw, 2rem);
+  border: 1px solid var(--color-border-light);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 91% 12%, rgb(214 168 75 / 22%), transparent 30%),
+    linear-gradient(135deg, #fff, var(--color-surface-muted));
+  box-shadow: 0 12px 34px rgb(68 48 33 / 7%);
+}
+
+.pageHeader::after {
+  position: absolute;
+  right: 2.5rem;
+  bottom: -4.5rem;
+  width: 10rem;
+  height: 10rem;
+  border: 1px solid rgb(124 63 32 / 8%);
+  border-radius: 50%;
+  content: '';
+}
+
+.pageHeader > div { position: relative; z-index: 1; }
+.pageHeader h2 { margin: .35rem 0 .35rem !important; color: var(--color-text); font-size: clamp(1.65rem, 3vw, 2rem) !important; }
+.pageHeader p { max-width: 50rem; margin: 0; color: var(--color-text-muted); line-height: 1.6; }
+
+.eyebrow {
+  color: var(--color-primary);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.toolbar {
+  display: flex;
+  min-height: 5rem;
+  padding: .9rem 1rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: .9rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--color-surface);
+  box-shadow: 0 5px 18px rgb(68 48 33 / 4%);
+}
+
+.filters {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex: 1;
+  gap: .7rem;
+}
+
+.search {
+  width: min(100%, 20rem);
+  height: 2.5rem;
+  align-self: center;
+}
+
+.search:global(.ant-input-affix-wrapper) { border-radius: .65rem; }
+.search :global(.ant-input-prefix) { margin-inline-end: .55rem; color: var(--color-text-muted); }
+.select { width: 11rem; flex: 0 0 auto; }
+.resultCount { flex: 0 0 auto; white-space: nowrap; }
+.resultCount strong { color: var(--color-primary); font-weight: 800; }
+.alert { margin: 0; }
+
+.contentCard {
+  overflow: hidden;
+  border: 1px solid var(--color-border-light);
+  border-radius: .9rem;
+  background: var(--color-surface);
+  box-shadow: 0 10px 28px rgb(68 48 33 / 6%);
+}
+
+.table :global(.ant-table-thead > tr > th) {
+  padding-block: .85rem;
+  color: var(--color-text-soft);
+  background: #f8f3ed;
+  font-size: .74rem;
+  font-weight: 750;
+}
+
+.table :global(.ant-table-tbody > tr > td) {
+  height: 4.25rem;
+  padding-block: .85rem;
+  color: var(--color-text-soft);
+  vertical-align: middle;
+}
+
+.table :global(.ant-table-tbody > tr:hover > td) { background: #fffaf5 !important; }
+.table :global(.ant-pagination) { margin: 1rem; }
+.hiddenRow > td { background: #fffcf7; }
+
+.titleLink { color: var(--color-text); font-weight: 700; }
+.titleLink:hover { color: var(--color-primary); }
+.ownerText { color: var(--color-text-soft); }
+.statusTag { margin: 0; border-radius: var(--radius-pill); font-weight: 650; }
+
+.tripStats { display: inline-flex; align-items: center; gap: .35rem; color: var(--color-text-muted); white-space: nowrap; }
+.tripStats strong { color: var(--color-text-soft); font-weight: 700; }
+.tripStats i { width: 3px; height: 3px; border-radius: 50%; background: var(--color-border); }
+
+.hiddenReason {
+  display: -webkit-box;
+  overflow: hidden;
+  max-width: 14rem;
+  color: var(--color-warning);
+  font-size: .8rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.emptyReason { color: var(--color-text-muted); }
+.actions { white-space: nowrap; }
+.detailButton { padding-inline: .35rem; color: var(--color-info); font-weight: 700; }
+.actionButton { min-width: 3rem; border-color: #dfd3c8; font-weight: 650; }
+.actionButton:hover { border-color: var(--color-primary) !important; color: var(--color-primary) !important; }
+
+@media (max-width: 48rem) {
+  .page { gap: .85rem; }
+  .pageHeader { padding: 1.2rem; }
+  .toolbar { align-items: stretch; flex-direction: column; }
+  .filters { align-items: stretch; flex-direction: column; }
+  .search, .select { width: 100%; }
+  .resultCount { align-self: flex-end; }
+}
+
+@media (max-width: 30rem) {
+  .pageHeader h2 { font-size: 1.45rem !important; }
+  .resultCount { align-self: flex-start; }
+  .table :global(.ant-pagination-total-text) { display: none; }
+}

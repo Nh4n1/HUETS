@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Location from '../models/location.model.ts';
 import LocationReview from '../models/locationReview.model.ts';
+import User from '../models/user.model.ts';
 import type { LocationReviewStatus } from '../models/locationReview.model.ts';
 import { ApiError } from '../utils/apiError.ts';
 
@@ -21,6 +22,8 @@ interface AdminReviewQuery {
     page?: string | undefined;
     pageSize?: string | undefined;
     status?: string | undefined;
+    rating?: string | undefined;
+    q?: string | undefined;
 }
 
 interface MyReviewQuery {
@@ -293,11 +296,32 @@ export const getAdminLocationReviews = async (query: AdminReviewQuery = {}) => {
     if (query.status !== undefined && !['active', 'deleted', 'hidden'].includes(query.status)) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'Trạng thái đánh giá không hợp lệ.');
     }
-    const filter = query.status === 'active'
-        ? publicStatusFilter
+    const rating = query.rating === undefined ? undefined : Number(query.rating);
+    if (rating !== undefined && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'Bộ lọc số sao phải là số nguyên từ 1 đến 5.');
+    }
+    const filter: Record<string, unknown> = query.status === 'active'
+        ? { ...publicStatusFilter }
         : query.status
             ? { status: query.status as LocationReviewStatus }
             : {};
+    if (rating !== undefined) filter.rating = rating;
+
+    const q = query.q?.trim() ?? '';
+    if (q.length > 200) throw new ApiError(400, 'VALIDATION_ERROR', 'Từ khóa tìm kiếm quá dài.');
+    if (q) {
+        const escapedQuery = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = new RegExp(escapedQuery, 'i');
+        const [locations, users] = await Promise.all([
+            Location.find({ name: pattern }).select('_id').lean(),
+            User.find({ $or: [{ displayName: pattern }, { email: pattern }] }).select('_id').lean(),
+        ]);
+        filter.$or = [
+            { comment: pattern },
+            { locationId: { $in: locations.map((location) => location._id) } },
+            { userId: { $in: users.map((user) => user._id) } },
+        ];
+    }
     const [reviews, total] = await Promise.all([
         LocationReview.find(filter)
             .sort({ updatedAt: -1, _id: -1 })
@@ -309,22 +333,29 @@ export const getAdminLocationReviews = async (query: AdminReviewQuery = {}) => {
         LocationReview.countDocuments(filter),
     ]);
     return {
-        data: reviews.map((review) => {
+        data: reviews.flatMap((review) => {
             const author = review.userId as unknown as {
-                _id: mongoose.Types.ObjectId; displayName: string; email: string;
-            };
-            const location = review.locationId as unknown as { _id: mongoose.Types.ObjectId; name: string };
-            return {
+                _id: mongoose.Types.ObjectId; displayName: string; email: string; avatarUrl?: string;
+            } | null;
+            const location = review.locationId as unknown as { _id: mongoose.Types.ObjectId; name: string } | null;
+            if (!author || !location) return [];
+            return [{
                 id: review._id.toString(),
-                author: { id: author._id.toString(), displayName: author.displayName, email: author.email },
+                author: {
+                    id: author._id.toString(),
+                    displayName: author.displayName,
+                    email: author.email,
+                    avatarUrl: author.avatarUrl ?? null,
+                },
                 location: { id: location._id.toString(), name: location.name },
                 rating: review.rating,
                 comment: review.comment,
                 status: review.status ?? 'active',
                 isEdited: Boolean(review.editedAt),
                 hiddenReason: review.hiddenReason ?? null,
+                createdAt: review.createdAt,
                 updatedAt: review.updatedAt,
-            };
+            }];
         }),
         meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     };

@@ -1,10 +1,11 @@
 import jwt from 'jsonwebtoken';
 import type { SignOptions } from 'jsonwebtoken';
 import authConfig from '../config/config.auth.ts';
+import type { UserRole } from '../models/user.model.ts';
 
 export interface AccessTokenPayload {
     sub: string;
-    role: 'user' | 'admin';
+    role: UserRole;
 }
 
 export const signAccessToken = (payload: AccessTokenPayload) =>

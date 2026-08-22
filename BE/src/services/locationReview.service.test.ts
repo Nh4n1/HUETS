@@ -2,8 +2,10 @@ import mongoose from 'mongoose';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Location from '../models/location.model.ts';
 import LocationReview from '../models/locationReview.model.ts';
+import User from '../models/user.model.ts';
 import {
     deleteMyLocationReview,
+    getAdminLocationReviews,
     getMyLocationReview,
     getMyLocationReviews,
     saveLocationReview,
@@ -255,5 +257,44 @@ describe('locationReview.service', () => {
         );
         expect(result.status).toBe('hidden');
         expect(result.ratingSummary.count).toBe(2);
+    });
+
+    it('filters the admin review list by rating and related location or user text', async () => {
+        const locationLookup = {
+            select: vi.fn().mockReturnThis(),
+            lean: vi.fn().mockResolvedValue([{ _id: locationId }]),
+        };
+        const userLookup = {
+            select: vi.fn().mockReturnThis(),
+            lean: vi.fn().mockResolvedValue([{ _id: userId }]),
+        };
+        vi.spyOn(Location, 'find').mockReturnValue(locationLookup as never);
+        vi.spyOn(User, 'find').mockReturnValue(userLookup as never);
+
+        const listQuery = {
+            sort: vi.fn().mockReturnThis(),
+            skip: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            populate: vi.fn().mockReturnThis(),
+            lean: vi.fn().mockResolvedValue([]),
+        };
+        const findReviews = vi.spyOn(LocationReview, 'find').mockReturnValue(listQuery as never);
+        vi.spyOn(LocationReview, 'countDocuments').mockResolvedValue(0);
+
+        await getAdminLocationReviews({ q: 'Đại Nội', rating: '5', status: 'hidden' });
+
+        expect(Location.find).toHaveBeenCalledWith({ name: expect.any(RegExp) });
+        expect(User.find).toHaveBeenCalledWith({
+            $or: [{ displayName: expect.any(RegExp) }, { email: expect.any(RegExp) }],
+        });
+        expect(findReviews).toHaveBeenCalledWith({
+            status: 'hidden',
+            rating: 5,
+            $or: [
+                { comment: expect.any(RegExp) },
+                { locationId: { $in: [locationId] } },
+                { userId: { $in: [userId] } },
+            ],
+        });
     });
 });

@@ -26,7 +26,7 @@ const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 interface Actor {
     id: string;
-    role: 'user' | 'admin';
+    role: 'user' | 'mod' | 'admin';
 }
 
 interface OpeningRangeInput {
@@ -576,7 +576,7 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
     const images = parseLocationImages(input.images, user._id.toString());
     const duplicateCandidates = await findDuplicateCandidates(normalizedName, longitude, latitude);
     const now = new Date();
-    const status = user.role === 'admin' ? 'approved' : 'pending';
+    const status = user.role === 'admin' || user.role === 'mod' ? 'approved' : 'pending';
     const searchText = normalizeSearchText([
         name,
         ...aliases.map(({ value }) => value),
@@ -788,7 +788,7 @@ export const getAdminLocationById = async (locationId: string) => {
     return toAdminLocationDetail(location);
 };
 
-const assertActiveAdmin = async (actor: Actor) => {
+const assertActiveModerator = async (actor: Actor) => {
     if (!mongoose.isValidObjectId(actor.id)) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Tài khoản không hợp lệ.');
     }
@@ -799,8 +799,16 @@ const assertActiveAdmin = async (actor: Actor) => {
     if (user.status === 'locked') {
         throw new ApiError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa.');
     }
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'mod') {
         throw new ApiError(403, 'FORBIDDEN', 'Bạn không có quyền kiểm duyệt địa điểm.');
+    }
+    return user;
+};
+
+const assertActiveAdmin = async (actor: Actor) => {
+    const user = await assertActiveModerator(actor);
+    if (user.role !== 'admin') {
+        throw new ApiError(403, 'FORBIDDEN', 'Bạn không có quyền quản lý địa điểm.');
     }
     return user;
 };
@@ -984,7 +992,7 @@ const moderatePendingLocation = async (
         throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
     }
     const [admin, expectedUpdatedAt] = await Promise.all([
-        assertActiveAdmin(actor),
+        assertActiveModerator(actor),
         Promise.resolve(parseModerationPrecondition(input)),
     ]);
     const reason = nextStatus === 'rejected'

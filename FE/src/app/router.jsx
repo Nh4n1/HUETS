@@ -7,13 +7,14 @@ import { RegisterPage } from '../features/auth/pages/RegisterPage'
 
 import { SavedContentPage } from '../features/bookmarks/pages/SavedContentPage'
 
-import { AdminRoute } from '../features/admin/components/AdminRoute'
+import { AdminOnlyRoute, AdminRoute } from '../features/admin/components/AdminRoute'
 import { AdminCreateLocationPage } from '../features/admin/pages/location/AdminCreateLocationPage'
 import { AdminLocationDetailPage } from '../features/admin/pages/location/AdminLocationDetailPage'
 import { AdminEditLocationPage } from '../features/admin/pages/location/AdminEditLocationPage'
 import { AdminLocationModerationPage } from '../features/admin/pages/location/AdminLocationModerationPage'
 import { AdminLocationsPage } from '../features/admin/pages/location/AdminLocationsPage'
 import { AdminItinerariesPage } from '../features/admin/pages/itinerary/AdminItinerariesPage'
+import { AdminItineraryDetailPage } from '../features/admin/pages/itinerary/AdminItineraryDetailPage'
 import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOverviewPage'
 import { AdminUsersPage } from '../features/admin/pages/user/AdminUsersPage'
 import { AdminReviewsPage } from '../features/admin/pages/review/AdminReviewsPage'
@@ -174,8 +175,13 @@ export const router = createBrowserRouter([
           },
 
           {
-            path: 'users',
-            Component: AdminUsersPage,
+            path: 'itineraries/:itineraryId',
+            Component: AdminItineraryDetailPage,
+          },
+
+          {
+            Component: AdminOnlyRoute,
+            children: [{ path: 'users', Component: AdminUsersPage }],
           },
 
           {

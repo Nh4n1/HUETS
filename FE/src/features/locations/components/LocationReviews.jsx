@@ -152,7 +152,6 @@ export function LocationReviews({ locationId, ratingSummary, onSummaryChange }) 
     }
   }
 
-  const communityReviews = reviews.filter((review) => review.userId !== user?.id)
   const distribution = ratingSummary?.distribution ?? EMPTY_DISTRIBUTION
   const reviewCount = ratingSummary?.count ?? 0
 
@@ -261,14 +260,17 @@ export function LocationReviews({ locationId, ratingSummary, onSummaryChange }) 
         </div>
       </div>
       <div className={styles.list} aria-busy={loading}>
-        {!loading && communityReviews.length === 0
+        {!loading && reviews.length === 0
           ? <Empty description="Không có đánh giá phù hợp" />
-          : communityReviews.map((review) => (
+          : reviews.map((review) => (
             <article key={review.id} className={styles.item}>
               <Avatar src={review.author.avatarUrl} icon={<UserOutlined />} />
               <div>
                 <div className={styles.itemHeader}>
-                  <strong>{review.author.displayName}</strong>
+                  <strong>
+                    {review.author.displayName}
+                    {review.userId === user?.id ? ' (Bạn)' : ''}
+                  </strong>
                   <Rate disabled value={review.rating} />
                 </div>
                 {review.comment ? <p>{review.comment}</p> : null}

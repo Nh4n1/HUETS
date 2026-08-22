@@ -37,6 +37,8 @@ export interface IItineraryModeration {
     hiddenBy: Types.ObjectId | null;
     hiddenAt: Date | null;
     hiddenReason: string | null;
+    restoredBy: Types.ObjectId | null;
+    restoredAt: Date | null;
 }
 
 export interface IItinerary extends Document {
@@ -100,6 +102,8 @@ const itineraryModerationSchema = new Schema<IItineraryModeration>(
         hiddenBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
         hiddenAt: { type: Date, default: null },
         hiddenReason: { type: String, default: null, trim: true },
+        restoredBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        restoredAt: { type: Date, default: null },
     },
     { _id: false },
 );
