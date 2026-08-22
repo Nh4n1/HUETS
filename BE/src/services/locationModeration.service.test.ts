@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import Location from '../models/location.model.ts';
 import User from '../models/user.model.ts';
 import { ApiError } from '../utils/apiError.ts';
-import { approveLocation, rejectLocation } from './location.service.ts';
+import { approveLocation, hideLocation, rejectLocation, restoreLocation } from './location.service.ts';
 
 const adminId = new mongoose.Types.ObjectId();
 const locationId = new mongoose.Types.ObjectId();
@@ -97,6 +97,89 @@ describe('location moderation', () => {
             { expectedStatus: 'pending', expectedUpdatedAt: expectedUpdatedAt.toISOString() },
             { id: adminId.toString(), role: 'admin' },
         )).rejects.toMatchObject<ApiError>({ statusCode: 409, code: 'STALE_RESOURCE' });
+    });
+
+    it('hides an approved location and records the moderator and reason', async () => {
+        mockActiveAdmin();
+        const updatedLocation = {
+            _id: locationId,
+            status: 'hidden',
+            moderation: {
+                hiddenBy: adminId,
+                hiddenAt: new Date(),
+                hiddenReason: 'Cần xác minh thông tin',
+                restoredBy: null,
+                restoredAt: null,
+            },
+            updatedAt: new Date(),
+        };
+        const updateSpy = vi.spyOn(Location, 'findOneAndUpdate').mockResolvedValue(updatedLocation as never);
+
+        const result = await hideLocation(
+            locationId.toString(),
+            {
+                expectedStatus: 'approved',
+                expectedUpdatedAt: expectedUpdatedAt.toISOString(),
+                reason: '  Cần xác minh thông tin  ',
+            },
+            { id: adminId.toString(), role: 'admin' },
+        );
+
+        expect(updateSpy).toHaveBeenCalledWith(
+            { _id: locationId.toString(), isDeleted: { $ne: true }, status: 'approved', updatedAt: expectedUpdatedAt },
+            expect.objectContaining({
+                $set: expect.objectContaining({
+                    status: 'hidden',
+                    'moderation.hiddenBy': adminId,
+                    'moderation.hiddenReason': 'Cần xác minh thông tin',
+                    'moderation.restoredBy': null,
+                }),
+            }),
+            { new: true, runValidators: true },
+        );
+        expect(result.status).toBe('hidden');
+    });
+
+    it('restores a hidden location and preserves the hiding audit fields', async () => {
+        mockActiveAdmin();
+        const hiddenAt = new Date('2026-08-05T01:00:00.000Z');
+        const updatedLocation = {
+            _id: locationId,
+            status: 'approved',
+            moderation: {
+                hiddenBy: adminId,
+                hiddenAt,
+                hiddenReason: 'Cần xác minh thông tin',
+                restoredBy: adminId,
+                restoredAt: new Date(),
+            },
+            updatedAt: new Date(),
+        };
+        const updateSpy = vi.spyOn(Location, 'findOneAndUpdate').mockResolvedValue(updatedLocation as never);
+
+        const result = await restoreLocation(
+            locationId.toString(),
+            { expectedStatus: 'hidden', expectedUpdatedAt: expectedUpdatedAt.toISOString() },
+            { id: adminId.toString(), role: 'admin' },
+        );
+
+        const update = updateSpy.mock.calls[0]?.[1] as { $set: Record<string, unknown> };
+        expect(update.$set).toMatchObject({
+            status: 'approved',
+            'moderation.restoredBy': adminId,
+        });
+        expect(update.$set).not.toHaveProperty('moderation.hiddenReason');
+        expect(result.moderation.hiddenReason).toBe('Cần xác minh thông tin');
+    });
+
+    it('rejects invalid visibility transitions', async () => {
+        mockActiveAdmin();
+
+        await expect(hideLocation(
+            locationId.toString(),
+            { expectedStatus: 'pending', expectedUpdatedAt: expectedUpdatedAt.toISOString(), reason: 'Lý do' },
+            { id: adminId.toString(), role: 'admin' },
+        )).rejects.toMatchObject({ code: 'INVALID_STATUS_TRANSITION' });
     });
 
     it('rejects moderation by a non-admin account even if the token role is stale', async () => {

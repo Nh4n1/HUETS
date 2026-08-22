@@ -5,9 +5,9 @@ import {
   DashboardOutlined,
   EnvironmentOutlined,
   FlagOutlined,
+  HomeOutlined,
   SettingOutlined,
   StarOutlined,
-  TagsOutlined,
   TeamOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -67,11 +67,6 @@ const menuItems = [
     label: <Link to="/admin/users">Quản lý người dùng</Link>,
   },
   {
-    key: '/admin/categories',
-    icon: <TagsOutlined />,
-    label: placeholderLink('Quản lý danh mục & thẻ'),
-  },
-  {
     key: '/admin/settings',
     icon: <SettingOutlined />,
     label: placeholderLink('Cài đặt hệ thống'),
@@ -85,7 +80,9 @@ function getSelectedKey(pathname) {
   if (pathname === '/admin/locations') return '/admin/locations'
   if (pathname.startsWith('/admin/itineraries')) return '/admin/itineraries'
   if (pathname === '/admin/reviews') return '/admin/reviews'
+  if (pathname === '/admin/reports') return '/admin/reports'
   if (pathname === '/admin/users') return '/admin/users'
+  if (pathname === '/admin/settings') return '/admin/settings'
   return '/admin'
 }
 
@@ -94,6 +91,7 @@ export function AdminLayout() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [openKeys, setOpenKeys] = useState(
     location.pathname.startsWith('/admin/locations') ? [LOCATIONS_GROUP_KEY] : [],
@@ -104,6 +102,15 @@ export function AdminLayout() {
     () => menuItems.filter((item) => user?.role === 'admin' || !ADMIN_ONLY_MENU_KEYS.has(item.key)),
     [user?.role],
   )
+
+  const handleBreakpoint = (broken) => {
+    setIsMobile(broken)
+    setCollapsed(broken)
+  }
+
+  const toggleSidebar = () => {
+    setCollapsed((previous) => !previous)
+  }
 
   const handleLogout = async () => {
     try {
@@ -118,26 +125,56 @@ export function AdminLayout() {
   return (
     <Layout className={styles.layout}>
       <Layout.Sider
+        className={styles.sidebar}
+        width={264}
+        collapsedWidth={isMobile ? 0 : 80}
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        onBreakpoint={setCollapsed}
+        onBreakpoint={handleBreakpoint}
         trigger={null}
         breakpoint="lg"
       >
         <div className={styles.brand}>
-          <AppstoreOutlined />
-          {collapsed ? null : <span>HueTrip Admin</span>}
+          <span className={styles.brandMark} aria-hidden="true">
+            <AppstoreOutlined />
+          </span>
+          {collapsed ? null : (
+            <span className={styles.brandText}>
+              <strong>HueTrip</strong>
+              <small>Không gian quản trị</small>
+            </span>
+          )}
         </div>
+        {collapsed ? null : <div className={styles.menuLabel}>Điều hướng</div>}
         <Menu
+          className={styles.menu}
           theme="dark"
           mode="inline"
           items={visibleMenuItems}
           selectedKeys={selectedKeys}
           openKeys={openKeys}
           onOpenChange={setOpenKeys}
+          onClick={() => {
+            if (isMobile) setCollapsed(true)
+          }}
         />
+        <div className={styles.sidebarFooter}>
+          <Link to="/" className={styles.homeLink} title="Về trang chủ">
+            <HomeOutlined />
+            {collapsed ? null : <span>Về trang chủ</span>}
+          </Link>
+        </div>
       </Layout.Sider>
+
+      {isMobile && !collapsed ? (
+        <button
+          type="button"
+          className={styles.sidebarBackdrop}
+          aria-label="Đóng menu quản trị"
+          onClick={() => setCollapsed(true)}
+        />
+      ) : null}
 
       <Layout>
         <Layout.Header className={styles.header}>
@@ -146,7 +183,8 @@ export function AdminLayout() {
             className={styles.collapseButton}
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             aria-label={collapsed ? 'Mở menu quản trị' : 'Thu gọn menu quản trị'}
-            onClick={() => setCollapsed((previous) => !previous)}
+            aria-expanded={!collapsed}
+            onClick={toggleSidebar}
           >
             <span>{collapsed ? 'Mở menu' : 'Thu gọn menu'}</span>
           </Button>

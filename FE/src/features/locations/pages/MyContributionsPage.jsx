@@ -123,6 +123,15 @@ export function MyContributionsPage() {
                         description={location.rejectionReason}
                       />
                     ) : null}
+                    {location.status === 'hidden' && location.hiddenReason ? (
+                      <Alert
+                        type="warning"
+                        showIcon
+                        style={{ marginTop: 8 }}
+                        message="Địa điểm đang bị ẩn"
+                        description={location.hiddenReason}
+                      />
+                    ) : null}
                   </div>
 
                   {location.status === 'approved' ? (

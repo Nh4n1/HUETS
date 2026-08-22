@@ -165,11 +165,6 @@ export const router = createBrowserRouter([
           },
 
           {
-            path: 'locations/:locationId/edit',
-            Component: AdminEditLocationPage,
-          },
-
-          {
             path: 'itineraries',
             Component: AdminItinerariesPage,
           },
@@ -181,7 +176,10 @@ export const router = createBrowserRouter([
 
           {
             Component: AdminOnlyRoute,
-            children: [{ path: 'users', Component: AdminUsersPage }],
+            children: [
+              { path: 'locations/:locationId/edit', Component: AdminEditLocationPage },
+              { path: 'users', Component: AdminUsersPage },
+            ],
           },
 
           {
