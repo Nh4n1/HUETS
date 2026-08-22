@@ -49,10 +49,29 @@ export function AdminReviewsPage() {
     return () => { active = false }
   }, [page, rating, reloadKey, search, status])
 
-  function updateFilter(setter, value) {
+  function updateFilter(setter, currentValue, value) {
+    if (currentValue === value && page === 1) return
     setLoading(true)
     setPage(1)
     setter(value)
+  }
+
+  function applySearch() {
+    const value = searchInput.trim()
+    if (value === search && page === 1) return
+    setLoading(true)
+    setPage(1)
+    setSearch(value)
+  }
+
+  function handleSearchInputChange(event) {
+    const value = event.target.value
+    setSearchInput(value)
+    if (value === '' && search !== '') {
+      setLoading(true)
+      setPage(1)
+      setSearch('')
+    }
   }
 
   function resetFilters() {
@@ -108,7 +127,7 @@ export function AdminReviewsPage() {
 
   const columns = [
     {
-      title: 'Bài viết / địa điểm', key: 'location', width: 210,
+      title: 'Địa điểm', key: 'location', width: 210,
       render: (_, record) => (
         <div className={styles.locationCell}>
           <Link to={`/locations/${record.location.id}`} target="_blank" rel="noreferrer">{record.location.name}</Link>
@@ -179,9 +198,23 @@ export function AdminReviewsPage() {
 
       <section className={styles.toolbar} aria-label="Bộ lọc đánh giá">
         <div className={styles.filters}>
-          <Input.Search className={styles.search} allowClear prefix={<SearchOutlined />} placeholder="Tìm địa điểm, người dùng hoặc nội dung" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onSearch={(value) => updateFilter(setSearch, value.trim())} />
-          <Select value={rating} className={styles.select} onChange={(value) => updateFilter(setRating, value)} options={[{ value: '', label: 'Tất cả số sao' }, ...[5, 4, 3, 2, 1].map((value) => ({ value: String(value), label: `${value} sao` }))]} />
-          <Select value={status} className={styles.select} onChange={(value) => updateFilter(setStatus, value)} options={[
+          <div className={styles.search}>
+            <Input
+              className={styles.searchInput}
+              placeholder="Tìm địa điểm, người dùng hoặc nội dung"
+              value={searchInput}
+              onChange={handleSearchInputChange}
+              onPressEnter={applySearch}
+            />
+            <Button
+              className={styles.searchButton}
+              icon={<SearchOutlined />}
+              aria-label="Tìm kiếm đánh giá"
+              onClick={applySearch}
+            />
+          </div>
+          <Select value={rating} className={styles.select} onChange={(value) => updateFilter(setRating, rating, value)} options={[{ value: '', label: 'Tất cả số sao' }, ...[5, 4, 3, 2, 1].map((value) => ({ value: String(value), label: `${value} sao` }))]} />
+          <Select value={status} className={styles.select} onChange={(value) => updateFilter(setStatus, status, value)} options={[
             { value: '', label: 'Tất cả trạng thái' },
             { value: 'active', label: 'Đang hiển thị' },
             { value: 'hidden', label: 'Đã ẩn' },
