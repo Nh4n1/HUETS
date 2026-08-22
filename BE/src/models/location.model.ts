@@ -46,6 +46,13 @@ export interface ILocationOpeningHours {
 export interface ILocationRatingSummary {
     average: number;
     count: number;
+    distribution: {
+        1: number;
+        2: number;
+        3: number;
+        4: number;
+        5: number;
+    };
 }
 
 export interface ILocationModeration {
@@ -57,6 +64,8 @@ export interface ILocationModeration {
     hiddenBy: Types.ObjectId | null;
     hiddenAt: Date | null;
     hiddenReason: string | null;
+    restoredBy: Types.ObjectId | null;
+    restoredAt: Date | null;
 }
 
 export interface ILocation extends Document {
@@ -74,6 +83,11 @@ export interface ILocation extends Document {
     ratingSummary: ILocationRatingSummary;
     status: LocationStatus;
     moderation: ILocationModeration;
+    isDeleted: boolean;
+    deletedAt: Date | null;
+    deletedBy: Types.ObjectId | null;
+    deletionReason: string | null;
+    deletedFromStatus: LocationStatus | null;
     searchText: string;
     createdAt: Date;
     updatedAt: Date;
@@ -146,6 +160,20 @@ const locationRatingSummarySchema = new Schema<ILocationRatingSummary>(
     {
         average: { type: Number, required: true, default: 0, min: 0, max: 5 },
         count: { type: Number, required: true, default: 0, min: 0 },
+        distribution: {
+            type: new Schema(
+                {
+                    1: { type: Number, required: true, default: 0, min: 0 },
+                    2: { type: Number, required: true, default: 0, min: 0 },
+                    3: { type: Number, required: true, default: 0, min: 0 },
+                    4: { type: Number, required: true, default: 0, min: 0 },
+                    5: { type: Number, required: true, default: 0, min: 0 },
+                },
+                { _id: false },
+            ),
+            required: true,
+            default: () => ({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }),
+        },
     },
     { _id: false },
 );
@@ -160,6 +188,8 @@ const locationModerationSchema = new Schema<ILocationModeration>(
         hiddenBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
         hiddenAt: { type: Date, default: null },
         hiddenReason: { type: String, default: null },
+        restoredBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        restoredAt: { type: Date, default: null },
     },
     { _id: false },
 );
@@ -177,19 +207,32 @@ const locationSchema = new Schema<ILocation>(
         geo: { type: locationGeoSchema, required: true },
         images: { type: [locationImageSchema], required: true },
         openingHours: { type: locationOpeningHoursSchema, required: true, default: () => ({ status: 'unknown', periods: [] }) },
-        ratingSummary: { type: locationRatingSummarySchema, required: true, default: () => ({ average: 0, count: 0 }) },
+        ratingSummary: {
+            type: locationRatingSummarySchema,
+            required: true,
+            default: () => ({ average: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }),
+        },
         status: {
             type: String,
             enum: ['pending', 'approved', 'rejected', 'withdrawn', 'hidden'],
             required: true,
         },
         moderation: { type: locationModerationSchema, required: true, default: () => ({}) },
+        isDeleted: { type: Boolean, required: true, default: false },
+        deletedAt: { type: Date, default: null },
+        deletedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        deletionReason: { type: String, default: null, trim: true, maxlength: 1000 },
+        deletedFromStatus: {
+            type: String,
+            enum: ['pending', 'approved', 'rejected', 'withdrawn', 'hidden'],
+            default: null,
+        },
         searchText: { type: String, required: true },
     },
     { timestamps: true, collection: 'locations' },
 );
 
-locationSchema.index({ status: 1, categoryCode: 1, createdAt: -1 });
+locationSchema.index({ isDeleted: 1, status: 1, categoryCode: 1, createdAt: -1 });
 locationSchema.index({ status: 1, 'address.wardCode': 1 });
 locationSchema.index({ status: 1, tagCodes: 1 });
 locationSchema.index({ createdBy: 1, status: 1, updatedAt: -1 });

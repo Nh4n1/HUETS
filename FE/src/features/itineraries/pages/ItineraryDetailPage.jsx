@@ -135,6 +135,15 @@ export function ItineraryDetailPage({ publicView = false }) {
         </div>
       </header>
 
+      {!publicView && itinerary.status === 'hidden' ? (
+        <Alert
+          showIcon
+          type="warning"
+          message="Lịch trình đã bị ẩn khỏi cộng đồng"
+          description={itinerary.moderation?.hiddenReason ? `Lý do: ${itinerary.moderation.hiddenReason}. Bạn vẫn có thể chỉnh sửa nội dung, nhưng chỉ admin mới có thể hiện lại lịch trình.` : 'Bạn vẫn có thể chỉnh sửa nội dung, nhưng chỉ admin mới có thể hiện lại lịch trình.'}
+        />
+      ) : null}
+
       <nav className={styles.dayTabs} aria-label="Chọn ngày">
         {itinerary.days.map((day) => <a href={`#day-${day.dayNumber}`} key={day.dayNumber}>Ngày {day.dayNumber}</a>)}
       </nav>

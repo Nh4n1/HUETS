@@ -5,12 +5,12 @@ import {
   DashboardOutlined,
   EnvironmentOutlined,
   FlagOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
+  HomeOutlined,
   SettingOutlined,
   StarOutlined,
-  TagsOutlined,
   TeamOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons'
 import { Button, Layout, Menu, Space, Typography } from 'antd'
 import { useMemo, useState } from 'react'
@@ -19,6 +19,7 @@ import { useAuth } from '../../features/auth/context/useAuth'
 import styles from './AdminLayout.module.css'
 
 const LOCATIONS_GROUP_KEY = 'locations'
+const ADMIN_ONLY_MENU_KEYS = new Set(['/admin/users', '/admin/settings'])
 
 // Sidebar items without a real page yet link nowhere ('#') until their feature is built.
 function placeholderLink(label) {
@@ -48,12 +49,12 @@ const menuItems = [
   {
     key: '/admin/reviews',
     icon: <StarOutlined />,
-    label: placeholderLink('Quản lý đánh giá'),
+    label: <Link to="/admin/reviews">Quản lý đánh giá</Link>,
   },
   {
     key: '/admin/itineraries',
     icon: <CalendarOutlined />,
-    label: placeholderLink('Quản lý lịch trình'),
+    label: <Link to="/admin/itineraries">Quản lý lịch trình</Link>,
   },
   {
     key: '/admin/reports',
@@ -63,12 +64,7 @@ const menuItems = [
   {
     key: '/admin/users',
     icon: <TeamOutlined />,
-    label: placeholderLink('Quản lý người dùng'),
-  },
-  {
-    key: '/admin/categories',
-    icon: <TagsOutlined />,
-    label: placeholderLink('Quản lý danh mục & thẻ'),
+    label: <Link to="/admin/users">Quản lý người dùng</Link>,
   },
   {
     key: '/admin/settings',
@@ -82,6 +78,11 @@ function getSelectedKey(pathname) {
   if (pathname === '/admin/locations/pending') return '/admin/locations/pending'
   if (pathname.startsWith('/admin/locations/')) return '/admin/locations'
   if (pathname === '/admin/locations') return '/admin/locations'
+  if (pathname.startsWith('/admin/itineraries')) return '/admin/itineraries'
+  if (pathname === '/admin/reviews') return '/admin/reviews'
+  if (pathname === '/admin/reports') return '/admin/reports'
+  if (pathname === '/admin/users') return '/admin/users'
+  if (pathname === '/admin/settings') return '/admin/settings'
   return '/admin'
 }
 
@@ -90,12 +91,26 @@ export function AdminLayout() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [openKeys, setOpenKeys] = useState(
     location.pathname.startsWith('/admin/locations') ? [LOCATIONS_GROUP_KEY] : [],
   )
 
   const selectedKeys = useMemo(() => [getSelectedKey(location.pathname)], [location.pathname])
+  const visibleMenuItems = useMemo(
+    () => menuItems.filter((item) => user?.role === 'admin' || !ADMIN_ONLY_MENU_KEYS.has(item.key)),
+    [user?.role],
+  )
+
+  const handleBreakpoint = (broken) => {
+    setIsMobile(broken)
+    setCollapsed(broken)
+  }
+
+  const toggleSidebar = () => {
+    setCollapsed((previous) => !previous)
+  }
 
   const handleLogout = async () => {
     try {
@@ -110,25 +125,56 @@ export function AdminLayout() {
   return (
     <Layout className={styles.layout}>
       <Layout.Sider
+        className={styles.sidebar}
+        width={264}
+        collapsedWidth={isMobile ? 0 : 80}
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
+        onBreakpoint={handleBreakpoint}
         trigger={null}
         breakpoint="lg"
       >
         <div className={styles.brand}>
-          <AppstoreOutlined />
-          {collapsed ? null : <span>HueTrip Admin</span>}
+          <span className={styles.brandMark} aria-hidden="true">
+            <AppstoreOutlined />
+          </span>
+          {collapsed ? null : (
+            <span className={styles.brandText}>
+              <strong>HueTrip</strong>
+              <small>Không gian quản trị</small>
+            </span>
+          )}
         </div>
+        {collapsed ? null : <div className={styles.menuLabel}>Điều hướng</div>}
         <Menu
+          className={styles.menu}
           theme="dark"
           mode="inline"
-          items={menuItems}
+          items={visibleMenuItems}
           selectedKeys={selectedKeys}
           openKeys={openKeys}
           onOpenChange={setOpenKeys}
+          onClick={() => {
+            if (isMobile) setCollapsed(true)
+          }}
         />
+        <div className={styles.sidebarFooter}>
+          <Link to="/" className={styles.homeLink} title="Về trang chủ">
+            <HomeOutlined />
+            {collapsed ? null : <span>Về trang chủ</span>}
+          </Link>
+        </div>
       </Layout.Sider>
+
+      {isMobile && !collapsed ? (
+        <button
+          type="button"
+          className={styles.sidebarBackdrop}
+          aria-label="Đóng menu quản trị"
+          onClick={() => setCollapsed(true)}
+        />
+      ) : null}
 
       <Layout>
         <Layout.Header className={styles.header}>
@@ -136,13 +182,17 @@ export function AdminLayout() {
             type="text"
             className={styles.collapseButton}
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed((previous) => !previous)}
-          />
+            aria-label={collapsed ? 'Mở menu quản trị' : 'Thu gọn menu quản trị'}
+            aria-expanded={!collapsed}
+            onClick={toggleSidebar}
+          >
+            <span>{collapsed ? 'Mở menu' : 'Thu gọn menu'}</span>
+          </Button>
 
-          <Space size="middle">
+          <Space className={styles.userActions} size="middle">
             <Link to="/">Về trang chủ</Link>
-            <BellOutlined />
-            <Typography.Text>{user?.displayName}</Typography.Text>
+            <BellOutlined aria-label="Thông báo" />
+            <Typography.Text className={styles.userName}>{user?.displayName}</Typography.Text>
             <Button size="small" loading={loggingOut} onClick={handleLogout}>
               Đăng xuất
             </Button>

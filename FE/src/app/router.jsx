@@ -7,17 +7,24 @@ import { RegisterPage } from '../features/auth/pages/RegisterPage'
 
 import { SavedContentPage } from '../features/bookmarks/pages/SavedContentPage'
 
-import { AdminRoute } from '../features/admin/components/AdminRoute'
+import { AdminOnlyRoute, AdminRoute } from '../features/admin/components/AdminRoute'
 import { AdminCreateLocationPage } from '../features/admin/pages/location/AdminCreateLocationPage'
 import { AdminLocationDetailPage } from '../features/admin/pages/location/AdminLocationDetailPage'
+import { AdminEditLocationPage } from '../features/admin/pages/location/AdminEditLocationPage'
 import { AdminLocationModerationPage } from '../features/admin/pages/location/AdminLocationModerationPage'
 import { AdminLocationsPage } from '../features/admin/pages/location/AdminLocationsPage'
+import { AdminItinerariesPage } from '../features/admin/pages/itinerary/AdminItinerariesPage'
+import { AdminItineraryDetailPage } from '../features/admin/pages/itinerary/AdminItineraryDetailPage'
 import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOverviewPage'
+import { AdminUsersPage } from '../features/admin/pages/user/AdminUsersPage'
+import { AdminReviewsPage } from '../features/admin/pages/review/AdminReviewsPage'
 
 import { HomePage } from '../pages/HomePage'
 
 import { LocationDetailPage } from '../features/locations/pages/LocationDetailPage'
 import { LocationsPage } from '../features/locations/pages/LocationsPage'
+import { ContributeLocationPage } from '../features/locations/pages/ContributeLocationPage'
+import { MyContributionsPage } from '../features/locations/pages/MyContributionsPage'
 
 import { ItinerariesPage } from '../features/itineraries/pages/ItinerariesPage'
 import { ItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
@@ -90,6 +97,16 @@ export const router = createBrowserRouter([
           },
 
           {
+            path: 'locations/contribute',
+            Component: ContributeLocationPage,
+          },
+
+          {
+            path: 'locations/mine',
+            Component: MyContributionsPage,
+          },
+
+          {
             path: 'itineraries/mine',
             Component: ItinerariesPage,
           },
@@ -145,6 +162,29 @@ export const router = createBrowserRouter([
           {
             path: 'locations/:locationId',
             Component: AdminLocationDetailPage,
+          },
+
+          {
+            path: 'itineraries',
+            Component: AdminItinerariesPage,
+          },
+
+          {
+            path: 'itineraries/:itineraryId',
+            Component: AdminItineraryDetailPage,
+          },
+
+          {
+            Component: AdminOnlyRoute,
+            children: [
+              { path: 'locations/:locationId/edit', Component: AdminEditLocationPage },
+              { path: 'users', Component: AdminUsersPage },
+            ],
+          },
+
+          {
+            path: 'reviews',
+            Component: AdminReviewsPage,
           },
         ],
       },

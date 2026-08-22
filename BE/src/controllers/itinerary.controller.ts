@@ -36,7 +36,6 @@ export const getPublicItineraryById = asyncHandler(async (req: Request, res: Res
     sendSuccess(res, 200, await itineraryService.getPublicItineraryById(idFrom(req))));
 
 export const createItinerary = asyncHandler(async (req: Request, res: Response) => {
-    console.log('[createItinerary] body received from FE:', JSON.stringify(req.body, null, 2));
     const payload = await itineraryService.createItinerary(req.body, actorFrom(req));
     return sendSuccess(res, 201, payload);
 });
@@ -56,3 +55,22 @@ export const deleteItinerary = asyncHandler(async (req: Request, res: Response) 
 
 export const copyPublicItinerary = asyncHandler(async (req: Request, res: Response) =>
     sendSuccess(res, 201, await itineraryService.copyPublicItinerary(idFrom(req), actorFrom(req))));
+export const getAdminItineraries = asyncHandler(async (req: Request, res: Response) => {
+    const query: itineraryService.AdminItineraryQuery = {};
+    const page = queryString(req.query.page);
+    const pageSize = queryString(req.query.pageSize);
+    const status = queryString(req.query.status);
+    const q = queryString(req.query.q);
+    if (page) query.page = page;
+    if (pageSize) query.pageSize = pageSize;
+    if (status) query.status = status;
+    if (q) query.q = q;
+    const result = await itineraryService.getAdminItineraries(query);
+    return sendSuccess(res, 200, result.data, result.meta);
+});
+
+export const getAdminItineraryById = asyncHandler(async (req: Request, res: Response) =>
+    sendSuccess(res, 200, await itineraryService.getAdminItineraryById(idFrom(req))));
+
+export const moderateItinerary = asyncHandler(async (req: Request, res: Response) =>
+    sendSuccess(res, 200, await itineraryService.moderateItinerary(idFrom(req), req.body, actorFrom(req))));

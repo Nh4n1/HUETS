@@ -3,6 +3,7 @@ import * as locationService from '../services/location.service.ts';
 import { ApiError } from '../utils/apiError.ts';
 import { asyncHandler } from '../utils/asyncHandler.ts';
 import { sendSuccess } from '../utils/response.ts';
+import { deleteLocationImage } from '../services/upload.service.ts';
 
 const queryString = (value: unknown) => typeof value === 'string' ? value : undefined;
 
@@ -56,6 +57,24 @@ export const getPublicLocationById = asyncHandler(async (req: Request, res: Resp
     return sendSuccess(res, 200, location);
 });
 
+// [GET] /api/me/locations
+export const getMyLocations = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    }
+    const query: locationService.MyLocationQuery = {};
+    const page = queryString(req.query.page);
+    const pageSize = queryString(req.query.pageSize);
+    const status = queryString(req.query.status);
+
+    if (page) query.page = page;
+    if (pageSize) query.pageSize = pageSize;
+    if (status) query.status = status;
+
+    const result = await locationService.getMyLocations(req.user, query);
+    return sendSuccess(res, 200, result.data, result.meta);
+});
+
 // [GET] /api/admin/locations/moderation
 export const getAdminLocations = asyncHandler(async (req: Request, res: Response) => {
     const query: locationService.AdminLocationQuery = {};
@@ -84,6 +103,38 @@ export const getAdminLocationById = asyncHandler(async (req: Request, res: Respo
     return sendSuccess(res, 200, location);
 });
 
+// [PATCH] /api/admin/locations/:locationId
+export const updateAdminLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    }
+    const locationId = req.params.locationId;
+    const result = await locationService.updateAdminLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body,
+        req.user,
+    );
+
+    await Promise.allSettled(
+        result.removedPublicIds.map((publicId) => deleteLocationImage(publicId)),
+    );
+    return sendSuccess(res, 200, result.location);
+});
+
+// [DELETE] /api/admin/locations/:locationId
+export const deleteAdminLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    }
+    const locationId = req.params.locationId;
+    const result = await locationService.deleteAdminLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body ?? {},
+        req.user,
+    );
+    return sendSuccess(res, 200, result);
+});
+
 // [POST] /api/admin/locations/:locationId/approve
 export const approveLocation = asyncHandler(async (req: Request, res: Response) => {
     if (!req.user) {
@@ -105,6 +156,34 @@ export const rejectLocation = asyncHandler(async (req: Request, res: Response) =
     }
     const locationId = req.params.locationId;
     const location = await locationService.rejectLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body,
+        req.user,
+    );
+    return sendSuccess(res, 200, location);
+});
+
+// [POST] /api/admin/locations/:locationId/hide
+export const hideLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    }
+    const locationId = req.params.locationId;
+    const location = await locationService.hideLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body,
+        req.user,
+    );
+    return sendSuccess(res, 200, location);
+});
+
+// [POST] /api/admin/locations/:locationId/restore
+export const restoreLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    }
+    const locationId = req.params.locationId;
+    const location = await locationService.restoreLocation(
         Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
         req.body,
         req.user,

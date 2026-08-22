@@ -5,6 +5,7 @@ import {
   DownOutlined,
   EnvironmentOutlined,
   MenuOutlined,
+  PlusCircleOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { Avatar, Button, Dropdown, Layout } from 'antd'
@@ -54,9 +55,14 @@ export function AppLayout() {
         icon: <CalendarOutlined />,
         label: <Link to="/itineraries/mine">Lịch trình của tôi</Link>,
       },
+      {
+        key: 'contribute-location',
+        icon: <PlusCircleOutlined />,
+        label: <Link to="/locations/contribute">Đóng góp địa điểm</Link>,
+      },
     ]
 
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'mod') {
       items.push({
         key: 'admin',
         icon: <CompassOutlined />,
@@ -85,8 +91,8 @@ export function AppLayout() {
 
           <nav className={styles.desktopNav} aria-label="Điều hướng chính">
             <NavLink to="/">Trang chủ</NavLink>
-            <Link to="/explore">Khám phá</Link>
-            <Link to="/itineraries">Lịch trình</Link>
+            <NavLink to="/explore">Khám phá</NavLink>
+            <NavLink to="/itineraries">Lịch trình</NavLink>
           </nav>
 
           <div className={styles.headerActions}>
@@ -141,7 +147,8 @@ export function AppLayout() {
               <>
                 <Link to="/profile">Hồ sơ của tôi</Link>
                 <Link to="/itineraries/mine">Lịch trình của tôi</Link>
-                {user.role === 'admin' ? <Link to="/admin">Trang quản trị</Link> : null}
+                <Link to="/locations/contribute">Đóng góp địa điểm</Link>
+                {user.role === 'admin' || user.role === 'mod' ? <Link to="/admin">Trang quản trị</Link> : null}
                 <Button type="text" danger loading={loggingOut} onClick={handleLogout}>
                   Đăng xuất
                 </Button>
@@ -181,7 +188,7 @@ export function AppLayout() {
             <h2>Tài khoản</h2>
             {user ? <Link to="/profile">Hồ sơ của tôi</Link> : <Link to="/login">Đăng nhập</Link>}
             {user ? null : <Link to="/register">Tạo tài khoản</Link>}
-            {user?.role === 'admin' ? <Link to="/admin">Trang quản trị</Link> : null}
+            {user?.role === 'admin' || user?.role === 'mod' ? <Link to="/admin">Trang quản trị</Link> : null}
           </div>
 
           <div className={styles.footerColumn}>

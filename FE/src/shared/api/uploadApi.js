@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { httpClient } from '../../../shared/api/httpClient'
+import { httpClient } from './httpClient'
 
 export async function getUploadSignatureApi() {
   const response = await httpClient.get('/uploads/location-images/signature')

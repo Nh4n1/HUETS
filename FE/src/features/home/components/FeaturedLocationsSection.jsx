@@ -1,4 +1,4 @@
-import { CompassOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, CompassOutlined } from '@ant-design/icons'
 import { Button } from 'antd'
 import styles from '../../../pages/HomePage.module.css'
 import { LocationCard } from './LocationCard'
@@ -17,6 +17,13 @@ export function FeaturedLocationsSection({
           <span className={styles.sectionEyebrow}>Được chia sẻ gần đây</span>
           <h2 id="featured-heading">Điểm đến đáng ghé</h2>
         </div>
+        <Button
+          type="text"
+          className={styles.showAllButton}
+          onClick={onShowAll}
+        >
+          Khám phá tất cả <ArrowRightOutlined />
+        </Button>
       </div>
 
       {loadStatus === 'loading' ? (

@@ -25,6 +25,8 @@ export function itineraryToForm(itinerary) {
     description: itinerary.description ?? '',
     startDate: dateInputValue(itinerary.startDate),
     visibility: itinerary.visibility ?? 'private',
+    status: itinerary.status ?? 'active',
+    moderation: itinerary.moderation ?? null,
     days: itinerary.days?.map((day) => ({
       items: [...day.items]
         .sort((left, right) => left.order - right.order)

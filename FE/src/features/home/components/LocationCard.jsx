@@ -1,10 +1,9 @@
 import {
+  ArrowRightOutlined,
   EnvironmentOutlined,
   StarFilled,
 } from '@ant-design/icons'
 import { Link } from 'react-router'
-import { BookmarkButton } from '../../bookmarks/components/BookmarkButton'
-import { createLocationBookmark } from '../../bookmarks/utils/bookmarkMappers'
 import {
   getRatingLabel,
   getTagLabel,
@@ -79,15 +78,13 @@ export function LocationCard({ location }) {
                 ))}
             </div>
           ) : null}
+
+          <span className={styles.cardAction} aria-hidden="true">
+            Xem địa điểm <ArrowRightOutlined />
+          </span>
         </div>
       </Link>
 
-      <BookmarkButton
-        bookmark={
-          createLocationBookmark(location)
-        }
-        className={styles.locationBookmark}
-      />
     </article>
   )
 }

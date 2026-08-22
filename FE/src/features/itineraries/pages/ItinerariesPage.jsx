@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { deleteItineraryApi, getItinerariesApi, updateItineraryApi } from '../api/itineraryApi'
 import { ItineraryHubHeader } from '../components/ItineraryHubHeader'
-import { formToItineraryPayload, itineraryToForm } from '../itineraryForm'
 import styles from './Itinerary.module.css'
 
 const errorMessage = (error, fallback) => error.response?.data?.message ?? fallback
@@ -43,7 +42,7 @@ export function ItinerariesPage() {
   const toggleVisibility = async (itinerary) => {
     const nextVisibility = itinerary.visibility === 'public' ? 'private' : 'public'
     try {
-      const updated = await updateItineraryApi(itinerary.id, formToItineraryPayload({ ...itineraryToForm(itinerary), visibility: nextVisibility }))
+      const updated = await updateItineraryApi(itinerary.id, { visibility: nextVisibility })
       setItineraries((current) => current.map((item) => item.id === itinerary.id ? updated : item))
       message.success(nextVisibility === 'public' ? 'Đã chuyển sang công khai.' : 'Đã chuyển sang riêng tư.')
     } catch (requestError) {
@@ -74,16 +73,18 @@ export function ItinerariesPage() {
               <div className={styles.cardBody}>
                 <div className={styles.cardTopline}>
                   <Tag color={itinerary.visibility === 'public' ? 'green' : 'default'} icon={itinerary.visibility === 'public' ? <GlobalOutlined /> : <LockOutlined />}>{itinerary.visibility === 'public' ? 'Công khai' : 'Riêng tư'}</Tag>
+                  {itinerary.status === 'hidden' ? <Tag color="orange">Đã bị ẩn</Tag> : null}
                   <span>Cập nhật {new Date(itinerary.updatedAt).toLocaleDateString('vi-VN')}</span>
                 </div>
                 <h2>{itinerary.title}</h2>
                 <p className={styles.cardDescription}>{itinerary.description || 'Một hành trình khám phá Huế đang chờ bạn.'}</p>
+                {itinerary.status === 'hidden' && itinerary.moderation?.hiddenReason ? <Alert showIcon type="warning" message={`Lý do ẩn: ${itinerary.moderation.hiddenReason}`} /> : null}
                 <div className={styles.cardStats}><span><CalendarOutlined /> {itinerary.days.length} ngày</span><span><EnvironmentOutlined /> {countItems(itinerary)} điểm dừng</span></div>
                 <div className={styles.cardActions}>
                   <Link to={`/itineraries/mine/${itinerary.id}`}><Button type="primary" icon={<EyeOutlined />}>Xem</Button></Link>
                   <Dropdown trigger={['click']} menu={{ onClick: ({ key }) => { if (key === 'visibility') toggleVisibility(itinerary); if (key === 'delete') deleteItinerary(itinerary) }, items: [
                     { key: 'edit', icon: <EditOutlined />, label: <Link to={`/itineraries/mine/${itinerary.id}/edit`}>Chỉnh sửa</Link> },
-                    { key: 'visibility', icon: itinerary.visibility === 'public' ? <LockOutlined /> : <GlobalOutlined />, label: itinerary.visibility === 'public' ? 'Chuyển sang riêng tư' : 'Chuyển sang công khai' },
+                    { key: 'visibility', disabled: itinerary.status === 'hidden', icon: itinerary.visibility === 'public' ? <LockOutlined /> : <GlobalOutlined />, label: itinerary.status === 'hidden' ? 'Không thể đổi khi đang bị ẩn' : itinerary.visibility === 'public' ? 'Chuyển sang riêng tư' : 'Chuyển sang công khai' },
                     { type: 'divider' },
                     { key: 'delete', danger: true, icon: <DeleteOutlined />, label: 'Xóa' },
                   ] }}><Button type="text" aria-label={`Thêm hành động cho ${itinerary.title}`} icon={<EllipsisOutlined />} /></Dropdown>

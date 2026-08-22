@@ -18,16 +18,21 @@ import {
 } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { useAuth } from '../../../auth/context/useAuth'
 import {
   approveLocationApi,
+  deleteAdminLocationApi,
   getAdminLocationByIdApi,
+  hideLocationApi,
   rejectLocationApi,
+  restoreLocationApi,
 } from '../../api/adminLocationsApi'
-import { LocationMapPicker } from '../../components/location/LocationMapPicker'
+import { LocationMapPicker } from '../../../locations/components/LocationMapPicker'
 import {
   formatDateTime,
   LOCATION_STATUS,
 } from '../../components/location/locationPresentation'
+import styles from '../AdminPage.module.css'
 
 function openingHoursLabel(openingHours) {
   if (!openingHours || openingHours.status === 'unknown') return 'Chưa xác định'
@@ -44,11 +49,16 @@ export function AdminLocationDetailPage() {
   const { locationId } = useParams()
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
+  const { user } = useAuth()
   const [rejectForm] = Form.useForm()
+  const [hideForm] = Form.useForm()
+  const [deleteForm] = Form.useForm()
   const [location, setLocation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
+  const [hideOpen, setHideOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
@@ -85,12 +95,12 @@ export function AdminLocationDetailPage() {
     }
   }
 
-  async function runModeration(request, successMessage) {
+  async function runModeration(request, successMessage, redirectTo = '/admin/locations/pending') {
     try {
       setSubmitting(true)
       await request()
       message.success(successMessage)
-      navigate('/admin/locations/pending')
+      navigate(redirectTo)
     } catch (error) {
       if (error.response?.data?.code === 'STALE_RESOURCE') {
         message.warning('Địa điểm đã được thay đổi. Dữ liệu mới nhất đã được tải lại.')
@@ -119,6 +129,30 @@ export function AdminLocationDetailPage() {
     })
   }
 
+  async function handleDelete() {
+    const values = await deleteForm.validateFields()
+    try {
+      setSubmitting(true)
+      await deleteAdminLocationApi(location.id, {
+        expectedStatus: location.status,
+        expectedUpdatedAt: location.updatedAt,
+        reason: values.reason,
+      })
+      message.success('Đã xóa địa điểm khỏi hệ thống.')
+      navigate('/admin/locations')
+    } catch (error) {
+      if (error.response?.data?.code === 'STALE_RESOURCE') {
+        message.warning('Địa điểm đã thay đổi. Dữ liệu mới nhất đã được tải lại.')
+        setDeleteOpen(false)
+        await refreshLocation()
+        return
+      }
+      message.error(error.response?.data?.message ?? 'Không thể xóa địa điểm.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   async function handleReject() {
     const values = await rejectForm.validateFields()
     await runModeration(
@@ -133,13 +167,43 @@ export function AdminLocationDetailPage() {
     rejectForm.resetFields()
   }
 
+  async function handleHide() {
+    const values = await hideForm.validateFields()
+    await runModeration(
+      () => hideLocationApi(location.id, {
+        expectedStatus: location.status,
+        expectedUpdatedAt: location.updatedAt,
+        reason: values.reason,
+      }),
+      'Đã ẩn địa điểm khỏi nội dung công khai.',
+      '/admin/locations',
+    )
+  }
+
+  function handleRestore() {
+    modal.confirm({
+      title: `Hiện lại địa điểm "${location.name}"?`,
+      content: 'Địa điểm sẽ xuất hiện trở lại trên trang công khai và có thể được thêm vào lịch trình.',
+      okText: 'Hiện lại',
+      cancelText: 'Hủy',
+      onOk: () => runModeration(
+        () => restoreLocationApi(location.id, {
+          expectedStatus: location.status,
+          expectedUpdatedAt: location.updatedAt,
+        }),
+        'Đã hiện lại địa điểm.',
+        '/admin/locations',
+      ),
+    })
+  }
+
   if (loading) {
     return <Spin fullscreen tip="Đang tải địa điểm..." />
   }
 
   if (!location) {
     return (
-      <main className="page-container">
+      <main className={`${styles.page} page-container`}>
         <Alert type="error" showIcon message={errorMessage || 'Không tìm thấy địa điểm.'} />
       </main>
     )
@@ -151,25 +215,49 @@ export function AdminLocationDetailPage() {
   }
 
   return (
-    <main className="page-container">
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+    <main className={`${styles.page} page-container`}>
+      <div className={styles.detailStack}>
+        <header className={styles.pageHeader}>
           <div>
-            <Link to="/admin/locations/pending">← Quay lại hàng chờ</Link>
-            <Typography.Title level={2} style={{ marginBottom: 0 }}>{location.name}</Typography.Title>
+            <Link className={styles.backLink} to="/admin/locations/pending">← Quay lại hàng chờ</Link>
+            <Typography.Title level={2}>{location.name}</Typography.Title>
             <Tag color={status.color}>{status.label}</Tag>
           </div>
-          {location.status === 'pending' ? (
-            <Space>
-              <Button danger disabled={submitting} onClick={() => setRejectOpen(true)}>
-                Từ chối
+          <div className={styles.headerActions}>
+              {user?.role === 'admin' ? (
+                <>
+                  <Link to={`/admin/locations/${location.id}/edit`}>
+                    <Button disabled={submitting}>Chỉnh sửa</Button>
+                  </Link>
+                  {['hidden', 'rejected', 'withdrawn'].includes(location.status) ? (
+                    <Button danger disabled={submitting} onClick={() => setDeleteOpen(true)}>
+                      Xóa khỏi hệ thống
+                    </Button>
+                  ) : null}
+                </>
+              ) : null}
+            {location.status === 'pending' ? (
+              <>
+                <Button danger disabled={submitting} onClick={() => setRejectOpen(true)}>
+                  Từ chối
+                </Button>
+                <Button type="primary" loading={submitting} onClick={handleApprove}>
+                  Duyệt địa điểm
+                </Button>
+              </>
+            ) : null}
+            {location.status === 'approved' ? (
+              <Button disabled={submitting} onClick={() => setHideOpen(true)}>
+                Ẩn địa điểm
               </Button>
-              <Button type="primary" loading={submitting} onClick={handleApprove}>
-                Duyệt địa điểm
+            ) : null}
+            {location.status === 'hidden' ? (
+              <Button type="primary" loading={submitting} onClick={handleRestore}>
+                Hiện lại
               </Button>
-            </Space>
-          ) : null}
-        </div>
+            ) : null}
+          </div>
+        </header>
 
         {errorMessage ? <Alert type="error" showIcon message={errorMessage} /> : null}
         {location.duplicateWarning ? (
@@ -178,6 +266,16 @@ export function AdminLocationDetailPage() {
             showIcon
             message="Có địa điểm có khả năng bị trùng"
             description="Hãy đối chiếu tên và vị trí trước khi duyệt."
+          />
+        ) : null}
+        {location.status === 'hidden' ? (
+          <Alert
+            type="warning"
+            showIcon
+            message="Địa điểm đang bị ẩn khỏi nội dung công khai"
+            description={location.moderation?.hiddenReason
+              ? `Lý do: ${location.moderation.hiddenReason}`
+              : undefined}
           />
         ) : null}
 
@@ -209,6 +307,21 @@ export function AdminLocationDetailPage() {
             {location.moderation?.rejectionReason ? (
               <Descriptions.Item label="Lý do từ chối" span={2}>
                 {location.moderation.rejectionReason}
+              </Descriptions.Item>
+            ) : null}
+            {location.moderation?.hiddenReason ? (
+              <Descriptions.Item label="Lý do ẩn gần nhất" span={2}>
+                {location.moderation.hiddenReason}
+              </Descriptions.Item>
+            ) : null}
+            {location.moderation?.hiddenAt ? (
+              <Descriptions.Item label="Ẩn lúc">
+                {formatDateTime(location.moderation.hiddenAt)}
+              </Descriptions.Item>
+            ) : null}
+            {location.moderation?.restoredAt ? (
+              <Descriptions.Item label="Hiện lại lúc">
+                {formatDateTime(location.moderation.restoredAt)}
               </Descriptions.Item>
             ) : null}
           </Descriptions>
@@ -275,7 +388,7 @@ export function AdminLocationDetailPage() {
             />
           </Card>
         ) : null}
-      </Space>
+      </div>
 
       <Modal
         title="Từ chối địa điểm"
@@ -289,6 +402,12 @@ export function AdminLocationDetailPage() {
           rejectForm.resetFields()
         }}
       >
+        <Alert
+          showIcon
+          type="info"
+          message="Từ chối là một kết quả kiểm duyệt, không xóa địa điểm. Người đóng góp vẫn xem được địa điểm và lý do bên dưới."
+          style={{ marginBottom: 16 }}
+        />
         <Form form={rejectForm} layout="vertical">
           <Form.Item
             name="reason"
@@ -299,6 +418,73 @@ export function AdminLocationDetailPage() {
             ]}
           >
             <Input.TextArea rows={4} placeholder="Mô tả thông tin cần người đóng góp chỉnh sửa" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={`Ẩn địa điểm "${location.name}"`}
+        open={hideOpen}
+        okText="Xác nhận ẩn"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true, loading: submitting }}
+        onOk={handleHide}
+        onCancel={() => {
+          setHideOpen(false)
+          hideForm.resetFields()
+        }}
+      >
+        <Alert
+          showIcon
+          type="warning"
+          message="Địa điểm sẽ ngừng xuất hiện công khai. Bookmark, đánh giá và tham chiếu trong lịch trình vẫn được giữ."
+          style={{ marginBottom: 16 }}
+        />
+        <Form form={hideForm} layout="vertical">
+          <Form.Item
+            name="reason"
+            label="Lý do ẩn"
+            rules={[
+              { required: true, whitespace: true, message: 'Vui lòng nhập lý do ẩn địa điểm.' },
+              { max: 1000, message: 'Lý do không được vượt quá 1000 ký tự.' },
+            ]}
+          >
+            <Input.TextArea rows={4} placeholder="Mô tả vấn đề cần xác minh hoặc chỉnh sửa" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={`Xóa "${location.name}" khỏi hệ thống`}
+        open={deleteOpen}
+        okText="Xóa khỏi hệ thống"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true, loading: submitting }}
+        onOk={handleDelete}
+        onCancel={() => {
+          setDeleteOpen(false)
+          deleteForm.resetFields()
+        }}
+      >
+        <Alert
+          showIcon
+          type="error"
+          message="Chỉ sử dụng khi địa điểm cần được loại khỏi dữ liệu vận hành. Hiện chưa có chức năng khôi phục trên giao diện."
+          style={{ marginBottom: 12 }}
+        />
+        <Typography.Paragraph type="secondary">
+          Bookmark liên quan sẽ bị xóa; đánh giá và tham chiếu lịch trình được giữ để truy vết.
+        </Typography.Paragraph>
+        <Form form={deleteForm} layout="vertical">
+          <Form.Item
+            name="reason"
+            label="Lý do xóa"
+            rules={[
+              { required: true, whitespace: true, message: 'Vui lòng nhập lý do xóa địa điểm.' },
+              { max: 1000, message: 'Lý do không được vượt quá 1000 ký tự.' },
+            ]}
+          >
+            <Input.TextArea rows={3} placeholder="Ví dụ: dữ liệu thử nghiệm hoặc bản ghi trùng lặp" />
           </Form.Item>
         </Form>
       </Modal>

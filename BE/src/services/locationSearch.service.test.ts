@@ -46,6 +46,7 @@ describe('location search service', () => {
 
         expect(findOne).toHaveBeenCalledWith({
             status: 'approved',
+            isDeleted: { $ne: true },
             normalizedName: 'ca phe muoi',
         });
         expect(findOne).toHaveBeenCalledTimes(1);
@@ -63,6 +64,7 @@ describe('location search service', () => {
 
         expect(findOne).toHaveBeenLastCalledWith({
             status: 'approved',
+            isDeleted: { $ne: true },
             'aliases.normalizedValue': 'ten goi khac',
         });
     });

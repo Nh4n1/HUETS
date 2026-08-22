@@ -2,7 +2,10 @@ import {
   BookFilled,
   BookOutlined,
 } from '@ant-design/icons'
-import { Button } from 'antd'
+import {
+  Button,
+  Tooltip,
+} from 'antd'
 import {
   useLocation,
   useNavigate,
@@ -15,6 +18,8 @@ export function BookmarkButton({
   bookmark,
   className = '',
   showLabel = false,
+  savedLabel = 'Đã lưu',
+  unsavedLabel = 'Lưu',
 }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -52,29 +57,35 @@ export function BookmarkButton({
     toggleBookmark(bookmark)
   }
 
+  const tooltipTitle = saved
+    ? 'Bỏ lưu nội dung'
+    : 'Lưu nội dung'
+
   return (
-    <Button
-      type={saved ? 'primary' : 'default'}
-      shape={showLabel ? 'default' : 'circle'}
-      className={`${styles.button} ${className}`}
-      icon={
-        saved
-          ? <BookFilled />
-          : <BookOutlined />
-      }
-      aria-label={
-        saved
-          ? 'Bỏ lưu'
-          : 'Lưu nội dung'
-      }
-      aria-pressed={saved}
-      onClick={handleClick}
-    >
-      {showLabel
-        ? saved
-          ? 'Đã lưu'
-          : 'Lưu'
-        : null}
-    </Button>
+    <Tooltip title={tooltipTitle}>
+      <Button
+        type={saved ? 'primary' : 'default'}
+        shape={showLabel ? 'default' : 'circle'}
+        className={`${styles.button} ${className}`}
+        icon={
+          saved
+            ? <BookFilled />
+            : <BookOutlined />
+        }
+        aria-label={
+          saved
+            ? `Bỏ ${savedLabel.replace(/^Đã\s+/u, '').toLocaleLowerCase('vi')}`
+            : unsavedLabel
+        }
+        aria-pressed={saved}
+        onClick={handleClick}
+      >
+        {showLabel
+          ? saved
+            ? savedLabel
+            : unsavedLabel
+          : null}
+      </Button>
+    </Tooltip>
   )
 }

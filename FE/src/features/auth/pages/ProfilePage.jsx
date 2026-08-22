@@ -1,13 +1,12 @@
-import {
-  BookOutlined,
-  CheckCircleOutlined,
-  IdcardOutlined,
-  MailOutlined,
-  SafetyCertificateOutlined,
-  UserOutlined,
-} from '@ant-design/icons'
-import { Avatar, Card, Tag, Typography } from 'antd'
-import { Link } from 'react-router'
+import { App, Form } from 'antd'
+import { useState } from 'react'
+import { updateProfileApi } from '../api/authApi'
+import { ProfileDetails } from '../components/profile/ProfileDetails'
+import { ProfileEditForm } from '../components/profile/ProfileEditForm'
+import { ProfileHero } from '../components/profile/ProfileHero'
+import { ProfileIdentityCard } from '../components/profile/ProfileIdentityCard'
+import { ProfilePersonalLinks } from '../components/profile/ProfilePersonalLinks'
+import { ProfileReviews } from '../components/profile/ProfileReviews'
 import { useAuth } from '../context/useAuth'
 import styles from './ProfilePage.module.css'
 
@@ -23,255 +22,75 @@ const STATUS_LABELS = {
 
 export function ProfilePage() {
   const { user } = useAuth()
+  const { message } = App.useApp()
+  const [form] = Form.useForm()
+  const [profile, setProfile] = useState(user)
+  const [isEditing, setIsEditing] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
-  if (!user) return null
+  if (!profile) return null
 
-  const roleLabel =
-    ROLE_LABELS[user.role] ?? user.role
+  function startEditing() {
+    form.setFieldsValue({ displayName: profile.displayName, bio: profile.bio ?? '' })
+    setErrorMessage('')
+    setIsEditing(true)
+  }
 
-  const statusLabel =
-    STATUS_LABELS[user.status] ?? user.status
+  function cancelEditing() {
+    form.resetFields()
+    setErrorMessage('')
+    setIsEditing(false)
+  }
 
-  const isActive =
-    user.status === 'active'
+  async function handleUpdate(values) {
+    try {
+      setSubmitting(true)
+      setErrorMessage('')
+      const updatedProfile = await updateProfileApi(values)
+      setProfile(updatedProfile)
+      setIsEditing(false)
+      message.success('Cập nhật hồ sơ thành công.')
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message ?? 'Không thể cập nhật hồ sơ.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
-  const hasBio =
-    Boolean(user.bio?.trim())
+  const roleLabel = ROLE_LABELS[profile.role] ?? profile.role
+  const statusLabel = STATUS_LABELS[profile.status] ?? profile.status
+  const isActive = profile.status === 'active'
 
   return (
     <main className={styles.page}>
-      <section
-        className={styles.hero}
-        aria-labelledby="profile-title"
-      >
-        <div className={styles.heroContent}>
-          <span className={styles.eyebrow}>
-            Tài khoản HueTrip
-          </span>
-
-          <Typography.Title
-            id="profile-title"
-            level={1}
-            className={styles.title}
-          >
-            Hồ sơ của tôi
-          </Typography.Title>
-
-          <p className={styles.lead}>
-            Thông tin đang được sử dụng cho tài khoản
-            và các hoạt động của bạn trên HueTrip.
-          </p>
-        </div>
-      </section>
-
+      <ProfileHero />
       <div className={styles.content}>
-        {/* =========================
-            THÔNG TIN CHÍNH
-        ========================== */}
-        <Card
-          className={styles.identityCard}
-          bordered={false}
-        >
-          <div className={styles.identity}>
-            <Avatar
-              className={styles.avatar}
-              size={104}
-              src={user.avatarUrl}
-              icon={<UserOutlined />}
-              alt={`Ảnh đại diện của ${user.displayName}`}
-            />
-
-            <div className={styles.identityText}>
-              <Typography.Title
-                level={2}
-                className={styles.displayName}
-              >
-                {user.displayName}
-              </Typography.Title>
-
-              <div className={styles.emailLine}>
-                <MailOutlined aria-hidden="true" />
-                <span>{user.email}</span>
-              </div>
-
-              <div
-                className={styles.badges}
-                aria-label="Thông tin tài khoản"
-              >
-                <Tag
-                  className={styles.roleTag}
-                  icon={
-                    <SafetyCertificateOutlined />
-                  }
-                >
-                  {roleLabel}
-                </Tag>
-
-                <Tag
-                  className={
-                    isActive
-                      ? styles.activeTag
-                      : styles.lockedTag
-                  }
-                  icon={
-                    <CheckCircleOutlined />
-                  }
-                >
-                  {statusLabel}
-                </Tag>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* =========================
-            GIỚI THIỆU + TÀI KHOẢN
-        ========================== */}
-        <div className={styles.detailsGrid}>
-          <Card
-            className={styles.detailCard}
-            bordered={false}
-          >
-            <div className={styles.cardHeading}>
-              <span
-                className={styles.headingIcon}
-                aria-hidden="true"
-              >
-                <UserOutlined />
-              </span>
-
-              <div>
-                <Typography.Title level={3}>
-                  Giới thiệu
-                </Typography.Title>
-
-                <p>
-                  Thông tin ngắn hiển thị trong hồ sơ
-                  của bạn.
-                </p>
-              </div>
-            </div>
-
-            {hasBio ? (
-              <p className={styles.bio}>
-                {user.bio}
-              </p>
-            ) : (
-              <div className={styles.emptyBio}>
-                Chưa có phần giới thiệu.
-              </div>
-            )}
-          </Card>
-
-          <Card
-            className={styles.detailCard}
-            bordered={false}
-          >
-            <div className={styles.cardHeading}>
-              <span
-                className={styles.headingIcon}
-                aria-hidden="true"
-              >
-                <IdcardOutlined />
-              </span>
-
-              <div>
-                <Typography.Title level={3}>
-                  Thông tin tài khoản
-                </Typography.Title>
-
-                <p>
-                  Các thông tin cơ bản gắn với tài
-                  khoản HueTrip.
-                </p>
-              </div>
-            </div>
-
-            <dl className={styles.accountList}>
-              <div className={styles.accountRow}>
-                <dt>Email</dt>
-                <dd>{user.email}</dd>
-              </div>
-
-              <div className={styles.accountRow}>
-                <dt>Vai trò</dt>
-                <dd>{roleLabel}</dd>
-              </div>
-
-              <div className={styles.accountRow}>
-                <dt>Trạng thái</dt>
-
-                <dd
-                  className={
-                    isActive
-                      ? styles.statusActive
-                      : styles.statusLocked
-                  }
-                >
-                  <span
-                    className={styles.statusDot}
-                    aria-hidden="true"
-                  />
-
-                  {statusLabel}
-                </dd>
-              </div>
-            </dl>
-          </Card>
-        </div>
-
-        {/* =========================
-            FE-02 - BOOKMARK
-        ========================== */}
-        <Card
-          className={styles.personalCard}
-          bordered={false}
-        >
-          <div className={styles.personalHeader}>
-            <div>
-              <Typography.Title level={3}>
-                Khu vực cá nhân
-              </Typography.Title>
-
-              <p>
-                Truy cập nhanh các nội dung thuộc
-                tài khoản của bạn.
-              </p>
-            </div>
-          </div>
-
-          <Link
-            to="/saved"
-            className={styles.personalItem}
-          >
-            <span
-              className={styles.personalIcon}
-              aria-hidden="true"
-            >
-              <BookOutlined />
-            </span>
-
-            <span
-              className={styles.personalContent}
-            >
-              <strong>
-                Nội dung đã lưu
-              </strong>
-
-              <small>
-                Xem các địa điểm và lịch trình
-                bạn đã bookmark.
-              </small>
-            </span>
-
-            <span
-              className={styles.personalArrow}
-              aria-hidden="true"
-            >
-              →
-            </span>
-          </Link>
-        </Card>
+        <ProfileIdentityCard
+          profile={profile}
+          roleLabel={roleLabel}
+          statusLabel={statusLabel}
+          isActive={isActive}
+          isEditing={isEditing}
+          onEdit={startEditing}
+        />
+        {isEditing ? (
+          <ProfileEditForm
+            form={form}
+            submitting={submitting}
+            errorMessage={errorMessage}
+            onCancel={cancelEditing}
+            onSubmit={handleUpdate}
+          />
+        ) : null}
+        <ProfileDetails
+          profile={profile}
+          roleLabel={roleLabel}
+          statusLabel={statusLabel}
+          isActive={isActive}
+        />
+        <ProfileReviews />
+        <ProfilePersonalLinks />
       </div>
     </main>
   )
