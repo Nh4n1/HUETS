@@ -1,8 +1,15 @@
-import { DeleteOutlined, EditOutlined, EnvironmentOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EnvironmentOutlined,
+  MoreOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import {
   Alert,
   App,
   Button,
+  Dropdown,
   Form,
   Input,
   Modal,
@@ -14,6 +21,7 @@ import {
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
+import { useAuth } from "../../../auth/context/useAuth";
 import {
   approveLocationApi,
   deleteAdminLocationApi,
@@ -33,7 +41,9 @@ export function AdminLocationsPage({
   title = "Quản lý địa điểm",
 }) {
   const { message, modal } = App.useApp();
+  const { user } = useAuth();
   const [rejectForm] = Form.useForm();
+  const isAdmin = user?.role === "admin";
 
   const [locations, setLocations] = useState([]);
   const [total, setTotal] = useState(0);
@@ -160,9 +170,23 @@ export function AdminLocationsPage({
 
   function handleDelete(record) {
     modal.confirm({
-      title: `Xóa địa điểm "${record.name}"?`,
-      content: "Địa điểm sẽ không còn hiển thị công khai hoặc trong danh sách quản trị.",
-      okText: "Xóa địa điểm",
+      title: `Xóa "${record.name}" khỏi hệ thống?`,
+      content: (
+        <div className={styles.deleteConfirmContent}>
+          {record.status === "pending" ? (
+            <Alert
+              showIcon
+              type="warning"
+              message="Nếu địa điểm chỉ không đạt yêu cầu kiểm duyệt, hãy dùng Từ chối để lưu kết quả và lý do."
+            />
+          ) : null}
+          <p>
+            Xóa sẽ loại địa điểm khỏi danh sách quản trị, ngừng hiển thị công khai
+            và xóa các bookmark liên quan. Hiện chưa có chức năng khôi phục trên giao diện.
+          </p>
+        </div>
+      ),
+      okText: "Xóa khỏi hệ thống",
       okButtonProps: { danger: true },
       cancelText: "Hủy",
       onOk: async () => {
@@ -171,7 +195,7 @@ export function AdminLocationsPage({
           await deleteAdminLocationApi(record.id, {
             expectedUpdatedAt: record.updatedAt,
           });
-          message.success("Đã xóa địa điểm.");
+          message.success("Đã xóa địa điểm khỏi hệ thống.");
           await loadLocations();
         } catch (error) {
           if (error.response?.data?.code === "STALE_RESOURCE") {
@@ -255,7 +279,7 @@ export function AdminLocationsPage({
     {
       title: "Thao tác",
       key: "actions",
-      width: 360,
+      width: 310,
       fixed: "right",
       render: (_, record) => (
         <Space size={6} wrap>
@@ -283,19 +307,35 @@ export function AdminLocationsPage({
           <Link to={`/admin/locations/${record.id}`}>
             <Button size="small">Chi tiết</Button>
           </Link>
-          <Link to={`/admin/locations/${record.id}/edit`}>
-            <Button size="small" icon={<EditOutlined />}>Chỉnh sửa</Button>
-          </Link>
-          <Button
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            loading={deletingId === record.id}
-            disabled={deletingId !== null && deletingId !== record.id}
-            onClick={() => handleDelete(record)}
-          >
-            Xóa
-          </Button>
+          {isAdmin ? (
+            <>
+              <Link to={`/admin/locations/${record.id}/edit`}>
+                <Button size="small" icon={<EditOutlined />}>Chỉnh sửa</Button>
+              </Link>
+              <Dropdown
+                trigger={["click"]}
+                menu={{
+                  items: [{
+                    key: "delete",
+                    danger: true,
+                    icon: <DeleteOutlined />,
+                    label: "Xóa khỏi hệ thống",
+                    onClick: () => handleDelete(record),
+                  }],
+                }}
+              >
+                <Button
+                  size="small"
+                  icon={<MoreOutlined />}
+                  loading={deletingId === record.id}
+                  disabled={deletingId !== null && deletingId !== record.id}
+                  aria-label={`Thao tác khác với ${record.name}`}
+                >
+                  Khác
+                </Button>
+              </Dropdown>
+            </>
+          ) : null}
         </Space>
       ),
     },
@@ -436,6 +476,12 @@ export function AdminLocationsPage({
         onOk={handleRejectConfirm}
         onCancel={() => setRejectTarget(null)}
       >
+        <Alert
+          className={styles.rejectExplanation}
+          showIcon
+          type="info"
+          message="Từ chối là một kết quả kiểm duyệt, không xóa địa điểm. Người đóng góp vẫn xem được địa điểm và lý do bên dưới."
+        />
         <Form form={rejectForm} layout="vertical">
           <Form.Item
             name="reason"

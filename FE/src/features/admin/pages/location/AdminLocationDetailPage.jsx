@@ -18,6 +18,7 @@ import {
 } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { useAuth } from '../../../auth/context/useAuth'
 import {
   approveLocationApi,
   deleteAdminLocationApi,
@@ -46,6 +47,7 @@ export function AdminLocationDetailPage() {
   const { locationId } = useParams()
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
+  const { user } = useAuth()
   const [rejectForm] = Form.useForm()
   const [location, setLocation] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -123,9 +125,25 @@ export function AdminLocationDetailPage() {
 
   function handleDelete() {
     modal.confirm({
-      title: `Xóa địa điểm "${location.name}"?`,
-      content: 'Địa điểm sẽ không còn hiển thị công khai. Các lịch trình cũ sẽ đánh dấu địa điểm này là không khả dụng.',
-      okText: 'Xóa địa điểm',
+      title: `Xóa "${location.name}" khỏi hệ thống?`,
+      content: (
+        <div>
+          {location.status === 'pending' ? (
+            <Alert
+              showIcon
+              type="warning"
+              message="Nếu địa điểm chỉ không đạt yêu cầu kiểm duyệt, hãy dùng Từ chối để lưu kết quả và lý do."
+              style={{ marginBottom: 12 }}
+            />
+          ) : null}
+          <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+            Địa điểm sẽ bị loại khỏi danh sách quản trị và ngừng hiển thị công khai.
+            Các bookmark liên quan sẽ bị xóa; lịch trình cũ sẽ đánh dấu địa điểm là không khả dụng.
+            Hiện chưa có chức năng khôi phục trên giao diện.
+          </Typography.Paragraph>
+        </div>
+      ),
+      okText: 'Xóa khỏi hệ thống',
       okButtonProps: { danger: true },
       cancelText: 'Hủy',
       onOk: async () => {
@@ -134,7 +152,7 @@ export function AdminLocationDetailPage() {
           await deleteAdminLocationApi(location.id, {
             expectedUpdatedAt: location.updatedAt,
           })
-          message.success('Đã xóa địa điểm.')
+          message.success('Đã xóa địa điểm khỏi hệ thống.')
           navigate('/admin/locations')
         } catch (error) {
           if (error.response?.data?.code === 'STALE_RESOURCE') {
@@ -191,12 +209,16 @@ export function AdminLocationDetailPage() {
             <Tag color={status.color}>{status.label}</Tag>
           </div>
           <div className={styles.headerActions}>
-            <Link to={`/admin/locations/${location.id}/edit`}>
-              <Button disabled={submitting}>Chỉnh sửa</Button>
-            </Link>
-            <Button danger disabled={submitting} onClick={handleDelete}>
-              Xóa địa điểm
-            </Button>
+              {user?.role === 'admin' ? (
+                <>
+                  <Link to={`/admin/locations/${location.id}/edit`}>
+                    <Button disabled={submitting}>Chỉnh sửa</Button>
+                  </Link>
+                  <Button danger disabled={submitting} onClick={handleDelete}>
+                    Xóa khỏi hệ thống
+                  </Button>
+                </>
+              ) : null}
             {location.status === 'pending' ? (
               <>
                 <Button danger disabled={submitting} onClick={() => setRejectOpen(true)}>
@@ -328,6 +350,12 @@ export function AdminLocationDetailPage() {
           rejectForm.resetFields()
         }}
       >
+        <Alert
+          showIcon
+          type="info"
+          message="Từ chối là một kết quả kiểm duyệt, không xóa địa điểm. Người đóng góp vẫn xem được địa điểm và lý do bên dưới."
+          style={{ marginBottom: 16 }}
+        />
         <Form form={rejectForm} layout="vertical">
           <Form.Item
             name="reason"
