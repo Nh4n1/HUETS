@@ -23,6 +23,11 @@ interface AdminReviewQuery {
     status?: string | undefined;
 }
 
+interface MyReviewQuery {
+    page?: string | undefined;
+    pageSize?: string | undefined;
+}
+
 const ensureValidLocationId = (locationId: string) => {
     if (!mongoose.isValidObjectId(locationId)) {
         throw new ApiError(404, 'NOT_FOUND', 'Địa điểm không tồn tại.');
@@ -155,6 +160,57 @@ export const getMyLocationReview = async (locationId: string, userId: string) =>
         hiddenReason: review.hiddenReason ?? null,
         createdAt: review.createdAt,
         updatedAt: review.updatedAt,
+    };
+};
+
+export const getMyLocationReviews = async (userId: string, query: MyReviewQuery = {}) => {
+    const page = positiveInteger(query.page, 1);
+    const pageSize = positiveInteger(query.pageSize, 10, 50);
+    const filter = { userId, status: { $ne: 'deleted' as const } };
+
+    const [reviews, total] = await Promise.all([
+        LocationReview.find(filter)
+            .sort({ updatedAt: -1, _id: -1 })
+            .skip((page - 1) * pageSize)
+            .limit(pageSize)
+            .populate('locationId', 'name images status')
+            .lean(),
+        LocationReview.countDocuments(filter),
+    ]);
+
+    const data = reviews.flatMap((review) => {
+        const location = review.locationId as unknown as {
+            _id: mongoose.Types.ObjectId;
+            name: string;
+            images?: Array<{ url: string; position: number }>;
+            status: string;
+        } | null;
+        if (!location) return [];
+
+        const coverImageUrl = [...(location.images ?? [])]
+            .sort((left, right) => left.position - right.position)[0]?.url ?? null;
+        return [{
+            id: review._id.toString(),
+            location: {
+                id: location._id.toString(),
+                name: location.name,
+                coverImageUrl,
+                status: location.status,
+            },
+            rating: review.rating,
+            comment: review.comment,
+            status: review.status ?? 'active',
+            isEdited: Boolean(review.editedAt),
+            editedAt: review.editedAt ?? null,
+            hiddenReason: review.hiddenReason ?? null,
+            createdAt: review.createdAt,
+            updatedAt: review.updatedAt,
+        }];
+    });
+
+    return {
+        data,
+        meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     };
 };
 

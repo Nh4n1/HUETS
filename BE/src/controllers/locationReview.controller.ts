@@ -34,6 +34,17 @@ export const getMyLocationReview = asyncHandler(
   },
 );
 
+export const getMyLocationReviews = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, "UNAUTHORIZED", "Chưa đăng nhập.");
+    const result = await reviewService.getMyLocationReviews(req.user.id, {
+      page: typeof req.query.page === "string" ? req.query.page : undefined,
+      pageSize: typeof req.query.pageSize === "string" ? req.query.pageSize : undefined,
+    });
+    return sendSuccess(res, 200, result.data, result.meta);
+  },
+);
+
 export const saveLocationReview = asyncHandler(
   async (req: Request, res: Response) => {
     if (!req.user) throw new ApiError(401, "UNAUTHORIZED", "Chưa đăng nhập.");

@@ -25,6 +25,14 @@ export async function updateProfileApi(data) {
   return response.data
 }
 
+export async function getMyReviewsApi(params = {}) {
+  const response = await httpClient.get('/me/reviews', { params })
+  return {
+    data: response.data.data,
+    meta: response.data.meta,
+  }
+}
+
 export async function logoutApi() {
   try {
     await httpClient.post('/auth/logout')

@@ -40,5 +40,6 @@ locationReviewSchema.index({ locationId: 1, userId: 1 }, { unique: true });
 locationReviewSchema.index({ locationId: 1, updatedAt: -1 });
 locationReviewSchema.index({ locationId: 1, status: 1, updatedAt: -1 });
 locationReviewSchema.index({ status: 1, updatedAt: -1 });
+locationReviewSchema.index({ userId: 1, status: 1, updatedAt: -1 });
 
 export default mongoose.model<ILocationReview>('LocationReview', locationReviewSchema);

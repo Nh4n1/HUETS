@@ -5,6 +5,7 @@ import LocationReview from '../models/locationReview.model.ts';
 import {
     deleteMyLocationReview,
     getMyLocationReview,
+    getMyLocationReviews,
     saveLocationReview,
     setLocationReviewVisibility,
 } from './locationReview.service.ts';
@@ -66,6 +67,65 @@ describe('locationReview.service', () => {
         vi.spyOn(LocationReview, 'findOne').mockReturnValue({ lean: vi.fn().mockResolvedValue(null) } as never);
 
         await expect(getMyLocationReview(locationId.toString(), userId.toString())).resolves.toBeNull();
+    });
+
+    it('returns the current user reviews with location snapshots and pagination', async () => {
+        const updatedAt = new Date('2026-08-21T10:00:00.000Z');
+        const reviews = [{
+            _id: reviewId,
+            locationId: {
+                _id: locationId,
+                name: 'Đại Nội Huế',
+                status: 'approved',
+                images: [
+                    { url: 'second.jpg', position: 2 },
+                    { url: 'cover.jpg', position: 0 },
+                ],
+            },
+            userId,
+            rating: 5,
+            comment: 'Rất đẹp.',
+            status: 'hidden',
+            editedAt: updatedAt,
+            hiddenReason: 'Đang kiểm tra.',
+            createdAt: updatedAt,
+            updatedAt,
+        }];
+        const query = {
+            sort: vi.fn().mockReturnThis(),
+            skip: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            populate: vi.fn().mockReturnThis(),
+            lean: vi.fn().mockResolvedValue(reviews),
+        };
+        vi.spyOn(LocationReview, 'find').mockReturnValue(query as never);
+        vi.spyOn(LocationReview, 'countDocuments').mockResolvedValue(6);
+
+        const result = await getMyLocationReviews(userId.toString(), { page: '2', pageSize: '5' });
+
+        expect(LocationReview.find).toHaveBeenCalledWith({
+            userId: userId.toString(),
+            status: { $ne: 'deleted' },
+        });
+        expect(query.skip).toHaveBeenCalledWith(5);
+        expect(query.limit).toHaveBeenCalledWith(5);
+        expect(query.populate).toHaveBeenCalledWith('locationId', 'name images status');
+        expect(result).toEqual({
+            data: [expect.objectContaining({
+                id: reviewId.toString(),
+                location: {
+                    id: locationId.toString(),
+                    name: 'Đại Nội Huế',
+                    coverImageUrl: 'cover.jpg',
+                    status: 'approved',
+                },
+                rating: 5,
+                status: 'hidden',
+                isEdited: true,
+                hiddenReason: 'Đang kiểm tra.',
+            })],
+            meta: { page: 2, pageSize: 5, total: 6, totalPages: 2 },
+        });
     });
 
     it('creates a new active review without marking it as edited', async () => {
