@@ -233,8 +233,15 @@ export function AdminReviewsPage() {
               onClick={applySearch}
             />
           </div>
-          <Select value={rating} className={styles.select} onChange={(value) => updateFilter(setRating, rating, value)} options={[{ value: '', label: 'Tất cả số sao' }, ...[5, 4, 3, 2, 1].map((value) => ({ value: String(value), label: `${value} sao` }))]} />
-          <Select value={status} className={styles.select} onChange={(value) => updateFilter(setStatus, status, value)} options={[
+          <Select
+            value={rating}
+            className={styles.select}
+            placement="bottomLeft"
+            getPopupContainer={(triggerNode) => triggerNode.parentElement}
+            onChange={(value) => updateFilter(setRating, rating, value)}
+            options={[{ value: '', label: 'Tất cả số sao' }, ...[5, 4, 3, 2, 1].map((value) => ({ value: String(value), label: `${value} sao` }))]}
+          />
+          <Select value={status} className={styles.select} placement="bottomLeft" getPopupContainer={(triggerNode) => triggerNode.parentElement} onChange={(value) => updateFilter(setStatus, status, value)} options={[
             { value: '', label: 'Tất cả trạng thái' },
             { value: 'active', label: 'Đang hiển thị' },
             { value: 'hidden', label: 'Đã ẩn' },
