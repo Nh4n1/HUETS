@@ -1,9 +1,11 @@
-import { CalendarOutlined, EllipsisOutlined, EnvironmentOutlined, EyeOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
+import { CalendarOutlined, CheckCircleOutlined, EllipsisOutlined, EnvironmentOutlined, EyeOutlined, FlagOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
 import { Alert, Avatar, Button, Dropdown, Empty, Input, Pagination, Select, Skeleton } from 'antd'
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
+import { useAuth } from '../../auth/context/useAuth'
 import { BookmarkButton } from '../../bookmarks/components/BookmarkButton'
 import { createItineraryBookmark } from '../../bookmarks/utils/bookmarkMappers'
+import { ReportModal } from '../../reports/components/ReportModal'
 import { getPublicItinerariesApi } from '../api/itineraryApi'
 import { ItineraryHubHeader } from '../components/ItineraryHubHeader'
 import styles from './Itinerary.module.css'
@@ -14,6 +16,9 @@ const firstCover = (itinerary) => itinerary.days.flatMap((day) => day.items).fin
 const countItems = (itinerary) => itinerary.days.reduce((total, day) => total + day.items.length, 0)
 
 export function CommunityItinerariesPage() {
+  const { isAuthenticated, user } = useAuth()
+  const navigate = useNavigate()
+  const routerLocation = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Math.max(Number(searchParams.get('page')) || 1, 1)
   const q = searchParams.get('q') ?? ''
@@ -25,6 +30,17 @@ export function CommunityItinerariesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [reportTarget, setReportTarget] = useState(null)
+  const [reportedItineraryIds, setReportedItineraryIds] = useState(() => new Set())
+
+  const openReport = (itinerary) => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: routerLocation } })
+      return
+    }
+    if (itinerary.owner?.id === user?.id || reportedItineraryIds.has(itinerary.id)) return
+    setReportTarget(itinerary)
+  }
 
   const updateParams = (changes) => {
     setLoading(true)
@@ -76,7 +92,24 @@ export function CommunityItinerariesPage() {
                   <h2>{itinerary.title}</h2>
                   <p className={styles.cardDescription}>{itinerary.description || 'Một hành trình khám phá Huế từ cộng đồng.'}</p>
                   <div className={styles.cardStats}><span><CalendarOutlined /> {itinerary.days.length} ngày</span><span><EnvironmentOutlined /> {countItems(itinerary)} điểm dừng</span></div>
-                  <div className={styles.cardActions}><Link to={`/itineraries/${itinerary.id}`}><Button type="primary" icon={<EyeOutlined />}>Xem hành trình</Button></Link><Dropdown menu={{ items: [{ key: 'report', label: 'Báo cáo', disabled: true }] }}><Button type="text" aria-label="Thêm hành động" icon={<EllipsisOutlined />} /></Dropdown></div>
+                  <div className={styles.cardActions}>
+                    <Link to={`/itineraries/${itinerary.id}`}><Button type="primary" icon={<EyeOutlined />}>Xem hành trình</Button></Link>
+                    <Dropdown
+                      menu={{
+                        onClick: ({ key }) => { if (key === 'report') openReport(itinerary) },
+                        items: [{
+                          key: 'report',
+                          icon: reportedItineraryIds.has(itinerary.id) ? <CheckCircleOutlined /> : <FlagOutlined />,
+                          disabled: itinerary.owner?.id === user?.id || reportedItineraryIds.has(itinerary.id),
+                          label: itinerary.owner?.id === user?.id
+                            ? 'Lịch trình của bạn'
+                            : reportedItineraryIds.has(itinerary.id) ? 'Đã báo cáo' : 'Báo cáo',
+                        }],
+                      }}
+                    >
+                      <Button type="text" aria-label="Thêm hành động" icon={<EllipsisOutlined />} />
+                    </Dropdown>
+                  </div>
                 </div>
               </article>
             ))}
@@ -84,6 +117,18 @@ export function CommunityItinerariesPage() {
           <div className={styles.pagination}><Pagination current={page} pageSize={PAGE_SIZE} total={meta.total} hideOnSinglePage onChange={(nextPage) => updateParams({ page: nextPage === 1 ? '' : nextPage })} /></div>
         </>
       ) : null}
+
+      <ReportModal
+        open={Boolean(reportTarget)}
+        targetType="itinerary"
+        targetId={reportTarget?.id}
+        contextLabel={reportTarget ? `Báo cáo lịch trình "${reportTarget.title}"` : undefined}
+        onClose={() => setReportTarget(null)}
+        onSubmitted={() => {
+          if (!reportTarget) return
+          setReportedItineraryIds((current) => new Set(current).add(reportTarget.id))
+        }}
+      />
     </main>
   )
 }

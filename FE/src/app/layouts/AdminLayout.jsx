@@ -59,7 +59,7 @@ const menuItems = [
   {
     key: '/admin/reports',
     icon: <FlagOutlined />,
-    label: placeholderLink('Báo cáo nội dung'),
+    label: <Link to="/admin/reports">Báo cáo nội dung</Link>,
   },
   {
     key: '/admin/users',
@@ -80,7 +80,7 @@ function getSelectedKey(pathname) {
   if (pathname === '/admin/locations') return '/admin/locations'
   if (pathname.startsWith('/admin/itineraries')) return '/admin/itineraries'
   if (pathname === '/admin/reviews') return '/admin/reviews'
-  if (pathname === '/admin/reports') return '/admin/reports'
+  if (pathname.startsWith('/admin/reports')) return '/admin/reports'
   if (pathname === '/admin/users') return '/admin/users'
   if (pathname === '/admin/settings') return '/admin/settings'
   return '/admin'

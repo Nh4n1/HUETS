@@ -4,6 +4,7 @@ import { ApiError } from '../utils/apiError.ts';
 interface RateLimitOptions {
     windowMs: number;
     maxRequests: number;
+    keyGenerator?: (req: Request) => string | undefined;
 }
 
 interface RateLimitEntry {
@@ -11,12 +12,12 @@ interface RateLimitEntry {
     resetAt: number;
 }
 
-export const createRateLimit = ({ windowMs, maxRequests }: RateLimitOptions) => {
+export const createRateLimit = ({ windowMs, maxRequests, keyGenerator }: RateLimitOptions) => {
     const clients = new Map<string, RateLimitEntry>();
 
     return (req: Request, res: Response, next: NextFunction) => {
         const now = Date.now();
-        const key = req.ip || req.socket.remoteAddress || 'unknown';
+        const key = keyGenerator?.(req) || req.ip || req.socket.remoteAddress || 'unknown';
         const current = clients.get(key);
         const entry = !current || current.resetAt <= now
             ? { count: 0, resetAt: now + windowMs }

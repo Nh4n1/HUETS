@@ -1,0 +1,28 @@
+.reasonGroup {
+  display: grid;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.reasonOption {
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--color-border, #ded5cb);
+  border-radius: 0.65rem;
+  margin-inline-end: 0;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.reasonOption:hover,
+.reasonOption:has(:global(.ant-radio-checked)) {
+  border-color: var(--color-primary, #7c3f20);
+  background: rgb(124 63 32 / 5%);
+}
+
+.contextAlert {
+  margin-bottom: 1rem;
+}
+
+.privacyNote {
+  margin-bottom: 0 !important;
+  font-size: 0.8rem;
+}
