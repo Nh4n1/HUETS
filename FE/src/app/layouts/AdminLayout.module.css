@@ -186,6 +186,7 @@
   border-bottom: 1px solid var(--color-border-light);
   box-shadow: 0 4px 18px rgb(68 48 33 / 5%);
   backdrop-filter: blur(12px);
+  line-height: normal;
 }
 
 .collapseButton {
@@ -217,10 +218,27 @@
 }
 
 .userActions {
-  padding: 0.3rem 0.35rem 0.3rem 0.8rem;
-  border: 1px solid var(--color-border-light);
+  min-width: 0;
+  align-items: center;
+  line-height: normal;
+}
+
+.userActions > * {
+  line-height: normal;
+}
+
+.userName {
+  overflow: hidden;
+  max-width: 12rem;
+  padding: 0.38rem 0.7rem;
+  border: 1px solid rgb(124 63 32 / 10%);
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
+  color: var(--color-primary) !important;
+  background: var(--color-primary-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 62rem) {
@@ -235,7 +253,7 @@
   .collapseButton span { display: none; }
   .userName,
   .userActions > :global(.anticon) { display: none; }
-  .userActions { padding-left: 0.5rem; gap: 0.5rem !important; }
+  .userActions { gap: 0.5rem !important; }
   .userActions a { font-size: 0.78rem; }
   .content { padding: 0.75rem; }
 }
