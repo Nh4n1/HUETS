@@ -1,11 +1,11 @@
-import { SearchOutlined } from "@ant-design/icons";
+import { EyeOutlined, MoreOutlined, SearchOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
+  Dropdown,
   Input,
   Modal,
   Select,
-  Space,
   Table,
   Tag,
   Typography,
@@ -101,6 +101,18 @@ export function AdminItinerariesPage() {
     }
   };
 
+  const actionItems = (record) => [
+    {
+      key: "detail",
+      icon: <EyeOutlined />,
+      label: <Link to={`/admin/itineraries/${record.id}`}>Xem chi tiết</Link>,
+    },
+    { type: "divider" },
+    record.status === "hidden"
+      ? { key: "restore", label: "Hiện lại", onClick: () => handleUnhide(record) }
+      : { key: "hide", danger: true, label: "Ẩn lịch trình", onClick: () => setHideTarget(record) },
+  ];
+
   const columns = [
     {
       title: "Tiêu đề",
@@ -162,33 +174,21 @@ export function AdminItinerariesPage() {
       ),
     },
     {
-      title: "Thao tác",
+      title: <MoreOutlined aria-label="Thao tác" />,
       key: "actions",
+      width: 64,
+      align: "center",
+      fixed: "right",
       render: (_, record) => (
-        <Space className={styles.actions} size={8}>
-          <Link to={`/admin/itineraries/${record.id}`}>
-            <Button className={styles.detailButton} size="small" type="link">
-              Chi tiết
-            </Button>
-          </Link>
-          {record.status === "hidden" ? (
-            <Button
-              className={styles.actionButton}
-              size="small"
-              onClick={() => handleUnhide(record)}
-            >
-              Hiện lại
-            </Button>
-          ) : (
-            <Button
-              className={styles.actionButton}
-              size="small"
-              onClick={() => setHideTarget(record)}
-            >
-              Ẩn
-            </Button>
-          )}
-        </Space>
+        <Dropdown trigger={["click"]} placement="bottomRight" menu={{ items: actionItems(record) }}>
+          <Button
+            className={styles.actionMenuButton}
+            type="text"
+            size="small"
+            icon={<MoreOutlined />}
+            aria-label={`Mở thao tác với ${record.title}`}
+          />
+        </Dropdown>
       ),
     },
   ];
@@ -273,6 +273,7 @@ export function AdminItinerariesPage() {
       <section className={styles.contentCard}>
         <Table
           className={styles.table}
+          size="small"
           rowClassName={(record) =>
             record.status === "hidden" ? styles.hiddenRow : ""
           }

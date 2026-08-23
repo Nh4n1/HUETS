@@ -1,10 +1,13 @@
 .page {
   display: grid;
+  min-width: 0;
   gap: 1.25rem;
 }
 
 .pageHeader {
+  position: relative;
   display: flex;
+  overflow: hidden;
   padding: clamp(1.25rem, 3vw, 2rem);
   border: 1px solid var(--color-border-light);
   border-radius: 1rem;
@@ -15,6 +18,22 @@
     radial-gradient(circle at 92% 8%, rgb(214 168 75 / 18%), transparent 32%),
     linear-gradient(135deg, var(--color-surface), var(--color-surface-muted));
   box-shadow: 0 12px 34px rgb(68 48 33 / 7%);
+}
+
+.pageHeader::after {
+  position: absolute;
+  right: 2.5rem;
+  bottom: -4.5rem;
+  width: 10rem;
+  height: 10rem;
+  border: 1px solid rgb(124 63 32 / 8%);
+  border-radius: 50%;
+  content: '';
+}
+
+.pageHeader > * {
+  position: relative;
+  z-index: 1;
 }
 
 .pageHeader h2 {
@@ -46,6 +65,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   background: var(--color-surface);
+  box-shadow: 0 5px 18px rgb(68 48 33 / 4%);
 }
 
 .filters {
@@ -68,12 +88,18 @@
 }
 
 .contentCard :global(.ant-table-thead > tr > th) {
+  padding-block: 0.75rem;
   color: var(--color-text-soft);
   background: var(--color-surface-muted);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
+  font-weight: 750;
 }
 
-.contentCard :global(.ant-table-tbody > tr > td) { vertical-align: middle; }
+.contentCard :global(.ant-table-tbody > tr > td) {
+  padding-block: 0.65rem;
+  vertical-align: middle;
+}
+.contentCard :global(.ant-table-tbody > tr:hover > td) { background: #fffaf5 !important; }
 .contentCard :global(.ant-pagination) { margin-inline: 1rem; }
 .alert { margin: 0; }
 
@@ -119,6 +145,7 @@
   box-shadow: var(--shadow-sm);
 }
 .detailStack :global(.ant-card-head) { background: var(--color-surface-muted); }
+.detailStack :global(.ant-descriptions-item-label) { color: var(--color-text-muted); font-weight: 650; }
 .backLink { color: var(--color-primary); font-size: 0.82rem; font-weight: 700; }
 .headerActions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 

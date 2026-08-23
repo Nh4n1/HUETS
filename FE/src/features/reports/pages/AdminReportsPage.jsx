@@ -233,7 +233,7 @@ export function AdminReportsPage() {
       key: 'actions',
       width: 64,
       render: (_, report) => (
-        <Button type="text" icon={<EyeOutlined />} aria-label="Xem chi tiết báo cáo" onClick={() => openReport(report)} />
+        <Button className={styles.actionButton} type="text" icon={<EyeOutlined />} aria-label="Xem chi tiết báo cáo" onClick={() => openReport(report)} />
       ),
     },
   ]
@@ -303,6 +303,8 @@ export function AdminReportsPage() {
 
       <section className={styles.tableCard}>
         <Table
+          className={styles.table}
+          size="small"
           rowKey="id"
           columns={columns}
           dataSource={reports}

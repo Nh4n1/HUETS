@@ -71,6 +71,12 @@
 }
 
 .tableCard :global(.ant-table-thead > tr > th) { background: #faf6f1; }
+.table :global(.ant-table-thead > tr > th) { padding-block: .75rem; color: var(--color-text-soft); font-size: .74rem; font-weight: 750; }
+.table :global(.ant-table-tbody > tr > td) { padding-block: .65rem; vertical-align: middle; }
+.table :global(.ant-table-tbody > tr:hover > td) { background: #fffaf5 !important; }
+.table :global(.ant-pagination) { margin: 1rem; }
+.actionButton { width: 2rem; min-width: 2rem; height: 2rem; padding: 0; border-radius: 50%; }
+.actionButton:hover { color: var(--color-primary) !important; background: var(--color-primary-soft) !important; }
 
 .targetSummary {
   display: grid;
