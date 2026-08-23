@@ -336,7 +336,7 @@ export function AdminUsersPage() {
         <Table className={styles.table} size="small" rowKey="id" loading={loading} dataSource={users} columns={columns} tableLayout="fixed" locale={{ emptyText: 'Không có người dùng phù hợp với bộ lọc.' }} pagination={{ current: page, pageSize: PAGE_SIZE, total, showSizeChanger: false, showTotal: (value) => `${value} người dùng`, onChange: (nextPage) => { setLoading(true); setPage(nextPage) } }} />
       </section>
 
-      <Drawer title="Chi tiết tài khoản" open={Boolean(detailTarget)} width={440} onClose={() => setDetailTarget(null)}>
+      <Drawer title="Chi tiết tài khoản" open={Boolean(detailTarget)} width="min(440px, 100vw)" onClose={() => setDetailTarget(null)}>
         {detailTarget ? (
           <div className={styles.drawerContent}>
             <div className={styles.drawerIdentity}>

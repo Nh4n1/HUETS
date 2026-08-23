@@ -1,12 +1,10 @@
 import {
   AppstoreOutlined,
-  BellOutlined,
   CalendarOutlined,
   DashboardOutlined,
   EnvironmentOutlined,
   FlagOutlined,
   HomeOutlined,
-  SettingOutlined,
   StarOutlined,
   TeamOutlined,
   MenuFoldOutlined,
@@ -19,16 +17,7 @@ import { useAuth } from '../../features/auth/context/useAuth'
 import styles from './AdminLayout.module.css'
 
 const LOCATIONS_GROUP_KEY = 'locations'
-const ADMIN_ONLY_MENU_KEYS = new Set(['/admin/users', '/admin/settings'])
-
-// Sidebar items without a real page yet link nowhere ('#') until their feature is built.
-function placeholderLink(label) {
-  return (
-    <a href="#" onClick={(event) => event.preventDefault()}>
-      {label}
-    </a>
-  )
-}
+const ADMIN_ONLY_MENU_KEYS = new Set(['/admin/users'])
 
 const menuItems = [
   {
@@ -66,11 +55,6 @@ const menuItems = [
     icon: <TeamOutlined />,
     label: <Link to="/admin/users">Quản lý người dùng</Link>,
   },
-  {
-    key: '/admin/settings',
-    icon: <SettingOutlined />,
-    label: placeholderLink('Cài đặt hệ thống'),
-  },
 ]
 
 function getSelectedKey(pathname) {
@@ -82,7 +66,6 @@ function getSelectedKey(pathname) {
   if (pathname === '/admin/reviews') return '/admin/reviews'
   if (pathname.startsWith('/admin/reports')) return '/admin/reports'
   if (pathname === '/admin/users') return '/admin/users'
-  if (pathname === '/admin/settings') return '/admin/settings'
   return '/admin'
 }
 
@@ -189,7 +172,6 @@ export function AdminLayout() {
 
           <Space className={styles.userActions} size="middle">
             <Link to="/">Về trang chủ</Link>
-            <BellOutlined aria-label="Thông báo" />
             <Typography.Text className={styles.userName}>{user?.displayName}</Typography.Text>
             <Button size="small" loading={loggingOut} onClick={handleLogout}>
               Đăng xuất

@@ -33,6 +33,7 @@ export function AdminItinerariesPage() {
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [submittingId, setSubmittingId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [hideTarget, setHideTarget] = useState(null);
@@ -74,11 +75,14 @@ export function AdminItinerariesPage() {
 
   const handleUnhide = async (record) => {
     try {
+      setSubmittingId(record.id);
       await moderateItineraryApi(record.id, { status: "active" });
       message.success("Đã hiện lại lịch trình.");
       reload();
     } catch (error) {
       message.error(error.response?.data?.message ?? "Không thể cập nhật.");
+    } finally {
+      setSubmittingId(null);
     }
   };
 
@@ -88,6 +92,7 @@ export function AdminItinerariesPage() {
       return;
     }
     try {
+      setSubmittingId(hideTarget.id);
       await moderateItineraryApi(hideTarget.id, {
         status: "hidden",
         reason: hideReason.trim(),
@@ -98,6 +103,8 @@ export function AdminItinerariesPage() {
       reload();
     } catch (error) {
       message.error(error.response?.data?.message ?? "Không thể cập nhật.");
+    } finally {
+      setSubmittingId(null);
     }
   };
 
@@ -109,8 +116,8 @@ export function AdminItinerariesPage() {
     },
     { type: "divider" },
     record.status === "hidden"
-      ? { key: "restore", label: "Hiện lại", onClick: () => handleUnhide(record) }
-      : { key: "hide", danger: true, label: "Ẩn lịch trình", onClick: () => setHideTarget(record) },
+      ? { key: "restore", label: "Hiện lại", disabled: submittingId !== null, onClick: () => handleUnhide(record) }
+      : { key: "hide", danger: true, label: "Ẩn lịch trình", disabled: submittingId !== null, onClick: () => setHideTarget(record) },
   ];
 
   const columns = [
@@ -186,6 +193,7 @@ export function AdminItinerariesPage() {
             type="text"
             size="small"
             icon={<MoreOutlined />}
+            loading={submittingId === record.id}
             aria-label={`Mở thao tác với ${record.title}`}
           />
         </Dropdown>
@@ -301,8 +309,13 @@ export function AdminItinerariesPage() {
       <Modal
         title="Ẩn lịch trình"
         open={!!hideTarget}
+        confirmLoading={submittingId === hideTarget?.id}
+        closable={submittingId === null}
+        keyboard={submittingId === null}
+        maskClosable={submittingId === null}
         onOk={confirmHide}
         onCancel={() => {
+          if (submittingId !== null) return;
           setHideTarget(null);
           setHideReason("");
         }}

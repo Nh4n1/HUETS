@@ -219,7 +219,7 @@ export function AdminLocationDetailPage() {
       <div className={styles.detailStack}>
         <header className={styles.pageHeader}>
           <div>
-            <Link className={styles.backLink} to="/admin/locations/pending">← Quay lại hàng chờ</Link>
+            <Link className={styles.backLink} to="/admin/locations">← Quay lại danh sách địa điểm</Link>
             <Typography.Title level={2}>{location.name}</Typography.Title>
             <Tag color={status.color}>{status.label}</Tag>
           </div>
