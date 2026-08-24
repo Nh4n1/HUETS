@@ -89,6 +89,34 @@ describe('location search service', () => {
         });
     });
 
+    it('returns no_exact_match when Fast Path has no results', async () => {
+        vi.spyOn(Location, 'findOne')
+            .mockReturnValueOnce(findOneQuery(null) as never)
+            .mockReturnValueOnce(findOneQuery(null) as never);
+        vi.mocked(getPublicLocations).mockResolvedValue({
+            data: [],
+            meta: { page: 1, pageSize: 8, total: 0, totalPages: 0 },
+        } as never);
+
+        const result = await searchLocations({ query: 'asdfghxyz' });
+
+        expect(result.data).toMatchObject({
+            status: 'no_exact_match',
+            locations: [],
+        });
+    });
+
+    it('rejects a query that has no letters or numbers after normalization', async () => {
+        const findOne = vi.spyOn(Location, 'findOne');
+
+        await expect(searchLocations({ query: '!!!' })).rejects.toMatchObject({
+            statusCode: 400,
+            code: 'INVALID_SEARCH_QUERY',
+        });
+        expect(findOne).not.toHaveBeenCalled();
+        expect(getPublicLocations).not.toHaveBeenCalled();
+    });
+
     it('returns AI unavailable with a basic fallback when semantic parsing cannot start', async () => {
         vi.spyOn(Location, 'findOne')
             .mockReturnValueOnce(findOneQuery(null) as never)

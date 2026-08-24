@@ -719,10 +719,18 @@ export const buildPublicLocationFilter = (query: PublicLocationQuery): Record<st
     const filter: Record<string, unknown> = { status: 'approved', isDeleted: { $ne: true } };
 
     if (query.q !== undefined) {
-        if (query.q.trim().length > 200) {
+        const trimmedQuery = query.q.trim();
+        if (trimmedQuery.length > 200) {
             throw new ApiError(400, 'VALIDATION_ERROR', 'Từ khóa tìm kiếm không được vượt quá 200 ký tự.');
         }
-        const normalizedQuery = normalizeSearchText(query.q);
+        const normalizedQuery = normalizeSearchText(trimmedQuery);
+        if (trimmedQuery && !normalizedQuery) {
+            throw new ApiError(
+                400,
+                'INVALID_SEARCH_QUERY',
+                'Nội dung tìm kiếm phải chứa chữ hoặc số.',
+            );
+        }
         if (normalizedQuery) {
             filter.searchText = { $regex: escapeRegularExpression(normalizedQuery), $options: 'i' };
         }
