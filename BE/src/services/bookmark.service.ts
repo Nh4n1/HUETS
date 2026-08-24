@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Bookmark from '../models/bookmark.model.ts';
+import Location from '../models/location.model.ts';
 import { ApiError } from '../utils/apiError.ts';
 
 export const SUPPORTED_TARGET_TYPES = ['location', 'itinerary'] as const;
@@ -47,10 +48,29 @@ const toBookmarkPayload = (bookmark: {
     createdAt: bookmark.createdAt,
 });
 
+const assertTargetAvailable = async (targetType: BookmarkTargetType, targetId: string) => {
+    if (targetType !== 'location') return;
+
+    const locationExists = await Location.exists({
+        _id: targetId,
+        status: 'approved',
+        isDeleted: { $ne: true },
+    });
+    if (!locationExists) {
+        throw new ApiError(
+            404,
+            'BOOKMARK_TARGET_UNAVAILABLE',
+            'Địa điểm không tồn tại hoặc hiện không khả dụng để lưu.',
+        );
+    }
+};
+
 export const createBookmark = async ({ userId, targetType, targetId }: CreateBookmarkInput) => {
     const normalizedUserId = normalizeObjectId(userId, 'userId');
     const normalizedTargetType = normalizeTargetType(targetType);
     const normalizedTargetId = normalizeObjectId(targetId, 'targetId');
+
+    await assertTargetAvailable(normalizedTargetType, normalizedTargetId);
 
     const existedBookmark = await Bookmark.findOne({
         userId: normalizedUserId,
@@ -100,7 +120,34 @@ export const getUserBookmarks = async (userId: string, rawType?: string) => {
         .sort({ createdAt: -1 })
         .lean();
 
-    const mappedBookmarks = bookmarks.map(toBookmarkPayload);
+    const locationTargetIds = bookmarks
+        .filter(({ targetType }) => targetType === 'location')
+        .map(({ targetId }) => targetId);
+    const locations = locationTargetIds.length > 0
+        ? await Location.find({ _id: { $in: locationTargetIds } })
+            .select({ _id: 1, status: 1, isDeleted: 1 })
+            .lean()
+        : [];
+    const locationById = new Map(locations.map((location) => [location._id.toString(), location]));
+
+    const mappedBookmarks = bookmarks.map((bookmark) => {
+        const payload = toBookmarkPayload(bookmark);
+        if (bookmark.targetType !== 'location') return payload;
+
+        const location = locationById.get(bookmark.targetId.toString());
+        const available = location?.status === 'approved' && location.isDeleted !== true;
+        return {
+            ...payload,
+            availability: available ? 'available' as const : 'unavailable' as const,
+            unavailableReason: available
+                ? null
+                : location?.status === 'hidden'
+                    ? 'hidden' as const
+                    : location?.isDeleted === true || !location
+                        ? 'removed' as const
+                        : 'not_public' as const,
+        };
+    });
 
     if (type) {
         return mappedBookmarks;

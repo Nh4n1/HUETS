@@ -59,6 +59,10 @@ export function SavedContentPage() {
     const categories = new Map()
 
     locationBookmarks.forEach((bookmark) => {
+      if (bookmark.availability === 'unavailable') {
+        return
+      }
+
       const category =
         bookmark.snapshot?.category
 
@@ -101,6 +105,8 @@ export function SavedContentPage() {
 
     return locationBookmarks.filter(
       (bookmark) => {
+        const unavailable =
+          bookmark.availability === 'unavailable'
         const snapshot =
           bookmark.snapshot ?? {}
 
@@ -121,16 +127,18 @@ export function SavedContentPage() {
 
         const matchesQuery =
           !normalizedQuery
-          || name
-            .toLowerCase()
-            .includes(normalizedQuery)
-          || address
-            .toLowerCase()
-            .includes(normalizedQuery)
+          || (unavailable
+            ? 'địa điểm hiện không khả dụng'.includes(normalizedQuery)
+            : name
+              .toLowerCase()
+              .includes(normalizedQuery)
+              || address
+                .toLowerCase()
+                .includes(normalizedQuery))
 
         const matchesFilter =
           !filter
-          || categoryValue === filter
+          || (!unavailable && categoryValue === filter)
 
         return (
           matchesQuery
@@ -347,11 +355,15 @@ function LocationBookmarks({
       {bookmarks.map((bookmark) => {
         const snapshot =
           bookmark.snapshot ?? {}
+        const unavailable =
+          bookmark.availability === 'unavailable'
 
         const categoryName =
-          snapshot.category?.name
-          ?? snapshot.category?.code
-          ?? 'Địa điểm'
+          unavailable
+            ? 'Không khả dụng'
+            : snapshot.category?.name
+              ?? snapshot.category?.code
+              ?? 'Địa điểm'
 
         return (
           <Card
@@ -364,7 +376,7 @@ function LocationBookmarks({
                 styles.imagePlaceholder
               }
             >
-              {snapshot.coverImageUrl ? (
+              {!unavailable && snapshot.coverImageUrl ? (
                 <img
                   src={snapshot.coverImageUrl}
                   alt={snapshot.name || 'Ảnh địa điểm'}
@@ -393,34 +405,44 @@ function LocationBookmarks({
                   styles.cardTitle
                 }
               >
-                {snapshot.name}
-              </Title>
+                  {unavailable
+                    ? 'Địa điểm hiện không khả dụng'
+                    : snapshot.name}
+                </Title>
 
-              <div className={styles.rating}>
-                <StarFilled />
+              {unavailable ? (
+                <Text type="secondary">
+                  Địa điểm đã bị ẩn hoặc không còn được công khai. Bạn vẫn có thể bỏ lưu mục này.
+                </Text>
+              ) : (
+                <>
+                  <div className={styles.rating}>
+                    <StarFilled />
 
-                <span>
-                  {snapshot.averageRating
-                    ?? 0}
-                </span>
+                    <span>
+                      {snapshot.averageRating
+                        ?? 0}
+                    </span>
 
-                <span>
-                  (
-                  {snapshot.reviewCount
-                    ?? 0}
-                  )
-                </span>
-              </div>
+                    <span>
+                      (
+                      {snapshot.reviewCount
+                        ?? 0}
+                      )
+                    </span>
+                  </div>
 
-              <p className={styles.address}>
-                <EnvironmentOutlined />
+                  <p className={styles.address}>
+                    <EnvironmentOutlined />
 
-                <span>
-                  {
-                    snapshot.formattedAddress
-                  }
-                </span>
-              </p>
+                    <span>
+                      {
+                        snapshot.formattedAddress
+                      }
+                    </span>
+                  </p>
+                </>
+              )}
             </div>
 
             <div
@@ -428,13 +450,19 @@ function LocationBookmarks({
                 styles.cardActions
               }
             >
-              <Link
-                to={`/locations/${bookmark.targetId}`}
-              >
-                <Button type="primary">
-                  Xem
+              {unavailable ? (
+                <Button type="primary" disabled>
+                  Không thể xem
                 </Button>
-              </Link>
+              ) : (
+                <Link
+                  to={`/locations/${bookmark.targetId}`}
+                >
+                  <Button type="primary">
+                    Xem
+                  </Button>
+                </Link>
+              )}
 
               <Button
                 danger

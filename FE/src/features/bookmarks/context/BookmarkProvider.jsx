@@ -72,6 +72,8 @@ function BookmarkStore({
           return {
             targetType: serverItem.targetType,
             targetId: serverItem.targetId,
+            availability: serverItem.availability ?? 'available',
+            unavailableReason: serverItem.unavailableReason ?? null,
             snapshot: cached?.snapshot ?? {},
             savedAt: serverItem.createdAt ?? cached?.savedAt ?? new Date().toISOString(),
           }
@@ -126,6 +128,8 @@ function BookmarkStore({
           ...bookmarks,
           {
             ...bookmark,
+            availability: 'available',
+            unavailableReason: null,
             savedAt: new Date().toISOString(),
           },
         ]
