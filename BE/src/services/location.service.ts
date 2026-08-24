@@ -794,6 +794,7 @@ export const getPublicLocationById = async (locationId: string) => {
 };
 
 const LOCATION_STATUSES: LocationStatus[] = ['pending', 'approved', 'rejected', 'withdrawn', 'hidden'];
+const MY_LOCATION_STATUSES: LocationStatus[] = ['pending', 'approved', 'rejected', 'withdrawn'];
 
 export const getAdminLocations = async (query: AdminLocationQuery) => {
     const page = positiveInteger(query.page, 1);
@@ -833,11 +834,15 @@ export const getAdminLocations = async (query: AdminLocationQuery) => {
 export const getMyLocations = async (actor: Actor, query: MyLocationQuery) => {
     const page = positiveInteger(query.page, 1);
     const pageSize = positiveInteger(query.pageSize, 12, 100);
-    const filter: Record<string, unknown> = { createdBy: actor.id, isDeleted: { $ne: true } };
+    const filter: Record<string, unknown> = {
+        createdBy: actor.id,
+        isDeleted: { $ne: true },
+        status: { $ne: 'hidden' },
+    };
 
     if (query.status) {
         const status = query.status.trim().toLowerCase() as LocationStatus;
-        if (!LOCATION_STATUSES.includes(status)) {
+        if (!MY_LOCATION_STATUSES.includes(status)) {
             throw new ApiError(400, 'VALIDATION_ERROR', 'Trạng thái Location không hợp lệ.');
         }
         filter.status = status;

@@ -10,6 +10,34 @@
 .form :global(.ant-radio-group),
 .form :global(.ant-checkbox-group) { display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; }
 
+.imageUpload :global(.ant-upload-list-item-container) {
+  height: auto !important;
+}
+
+.imageItem {
+  display: grid;
+  width: 100%;
+  gap: 0.4rem;
+}
+
+.imageItem > :global(.ant-upload-list-item) {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.imageActions {
+  display: flex;
+  min-height: 1.5rem;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.imageHint {
+  display: block;
+  margin-top: 0.75rem;
+}
+
 .submitBar {
   display: flex;
   padding: 0.8rem;
