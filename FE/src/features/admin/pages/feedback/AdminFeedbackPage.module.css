@@ -1,0 +1,10 @@
+.page { padding: 28px; }
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.eyebrow { display: block; margin-bottom: 4px; color: #1677ff; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.toolbar { display: grid; margin-bottom: 16px; grid-template-columns: minmax(240px, 1fr) 190px 170px; gap: 10px; }
+.card { overflow: hidden; padding: 16px; border: 1px solid #edf0f3; border-radius: 14px; background: #fff; }
+.clickableRow { cursor: pointer; }
+.description { padding: 14px; border-radius: 8px; white-space: pre-wrap; background: #f7f9fc; }
+.image { object-fit: cover; border-radius: 8px; }
+.form { margin-top: 24px; padding-top: 20px; border-top: 1px solid #f0f0f0; }
+@media (max-width: 700px) { .page { padding: 16px; } .header { flex-direction: column; } .toolbar { grid-template-columns: 1fr; } }
