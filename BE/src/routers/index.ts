@@ -14,6 +14,7 @@ import adminLocationReviewRouter from './adminLocationReview/index.ts';
 import adminDashboardRouter from './adminDashboard/index.ts';
 import reportRouter from './report/index.ts';
 import adminReportRouter from './adminReport/index.ts';
+import adminReferenceRouter from './adminReference/index.ts';
 
 const router = Router();
 
@@ -31,6 +32,7 @@ router.use('/api/admin/reviews', adminLocationReviewRouter);
 router.use('/api/admin/users', adminUserRouter);
 router.use('/api/admin/itineraries', adminItineraryRouter);
 router.use('/api/admin/reports', adminReportRouter);
+router.use('/api/admin/reference', adminReferenceRouter);
 router.use('/api/location-search', locationSearchRouter);
 router.use('/api/locations', locationRouter);
 router.use('/api/itineraries', itineraryRouter);
