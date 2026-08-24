@@ -34,6 +34,18 @@ import {
 } from '../../components/location/locationPresentation'
 import styles from '../AdminPage.module.css'
 
+const EDIT_FIELD_LABELS = {
+  name: 'Tên địa điểm',
+  description: 'Mô tả',
+  categoryCode: 'Danh mục',
+  tagCodes: 'Đặc điểm',
+  aliases: 'Tên gọi khác',
+  address: 'Địa chỉ',
+  geo: 'Vị trí bản đồ',
+  images: 'Hình ảnh',
+  openingHours: 'Giờ hoạt động',
+}
+
 function openingHoursLabel(openingHours) {
   if (!openingHours || openingHours.status === 'unknown') return 'Chưa xác định'
   if (openingHours.status === 'always_open') return 'Mở cửa 24/7'
@@ -213,6 +225,8 @@ export function AdminLocationDetailPage() {
     label: location.status,
     color: 'default',
   }
+  const canEdit = user?.role === 'admin'
+    || (user?.role === 'mod' && location.status === 'pending')
 
   return (
     <main className={`${styles.page} page-container`}>
@@ -224,18 +238,16 @@ export function AdminLocationDetailPage() {
             <Tag color={status.color}>{status.label}</Tag>
           </div>
           <div className={styles.headerActions}>
-              {user?.role === 'admin' ? (
-                <>
-                  <Link to={`/admin/locations/${location.id}/edit`}>
-                    <Button disabled={submitting}>Chỉnh sửa</Button>
-                  </Link>
-                  {['hidden', 'rejected', 'withdrawn'].includes(location.status) ? (
-                    <Button danger disabled={submitting} onClick={() => setDeleteOpen(true)}>
-                      Xóa khỏi hệ thống
-                    </Button>
-                  ) : null}
-                </>
-              ) : null}
+            {canEdit ? (
+              <Link to={`/admin/locations/${location.id}/edit`}>
+                <Button disabled={submitting}>Chỉnh sửa</Button>
+              </Link>
+            ) : null}
+            {user?.role === 'admin' && ['hidden', 'rejected', 'withdrawn'].includes(location.status) ? (
+              <Button danger disabled={submitting} onClick={() => setDeleteOpen(true)}>
+                Xóa khỏi hệ thống
+              </Button>
+            ) : null}
             {location.status === 'pending' ? (
               <>
                 <Button danger disabled={submitting} onClick={() => setRejectOpen(true)}>
@@ -332,6 +344,42 @@ export function AdminLocationDetailPage() {
               ? location.tagCodes.map((code) => <Tag key={code}>{code}</Tag>)
               : <Typography.Text type="secondary">Chưa có đặc điểm.</Typography.Text>}
           </Space>
+        </Card>
+
+        <Card title="Lịch sử chỉnh sửa">
+          {location.editHistory?.length ? (
+            <List
+              dataSource={location.editHistory}
+              renderItem={(entry) => (
+                <List.Item>
+                  <List.Item.Meta
+                    title={(
+                      <Space wrap>
+                        <Typography.Text strong>
+                          {entry.editor?.displayName ?? 'Tài khoản không còn tồn tại'}
+                        </Typography.Text>
+                        <Typography.Text type="secondary">
+                          {formatDateTime(entry.editedAt)}
+                        </Typography.Text>
+                      </Space>
+                    )}
+                    description={(
+                      <Space direction="vertical" size={6}>
+                        <Typography.Text>{entry.reason}</Typography.Text>
+                        <Space wrap size={4}>
+                          {entry.changedFields.map((field) => (
+                            <Tag key={field}>{EDIT_FIELD_LABELS[field] ?? field}</Tag>
+                          ))}
+                        </Space>
+                      </Space>
+                    )}
+                  />
+                </List.Item>
+              )}
+            />
+          ) : (
+            <Typography.Text type="secondary">Chưa có lần chỉnh sửa nào được ghi nhận.</Typography.Text>
+          )}
         </Card>
 
         <Row gutter={[16, 16]}>

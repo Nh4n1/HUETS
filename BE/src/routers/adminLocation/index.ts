@@ -7,7 +7,7 @@ const router = Router();
 router.use(authenticate, authorize('mod', 'admin'));
 router.get('/moderation', locationController.getAdminLocations);
 router.get('/:locationId', locationController.getAdminLocationById);
-router.patch('/:locationId', authorize('admin'), locationController.updateAdminLocation);
+router.patch('/:locationId', locationController.updateAdminLocation);
 router.delete('/:locationId', authorize('admin'), locationController.deleteAdminLocation);
 router.post('/:locationId/approve', locationController.approveLocation);
 router.post('/:locationId/reject', locationController.rejectLocation);

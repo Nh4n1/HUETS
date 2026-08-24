@@ -2,6 +2,7 @@ import { Alert, App, Spin, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { LocationSubmitForm } from '../../../locations/components/LocationSubmitForm'
+import { useAuth } from '../../../auth/context/useAuth'
 import {
   getAdminLocationByIdApi,
   updateAdminLocationApi,
@@ -12,6 +13,7 @@ export function AdminEditLocationPage() {
   const { locationId } = useParams()
   const navigate = useNavigate()
   const { message } = App.useApp()
+  const { user } = useAuth()
   const [location, setLocation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -52,6 +54,9 @@ export function AdminEditLocationPage() {
 
   if (loading) return <Spin fullscreen tip="Đang tải địa điểm..." />
 
+  const canEdit = user?.role === 'admin'
+    || (user?.role === 'mod' && location?.status === 'pending')
+
   return (
     <main className={`${styles.page} page-container`}>
       <header className={styles.pageHeader}>
@@ -65,7 +70,15 @@ export function AdminEditLocationPage() {
       </header>
 
       {errorMessage ? <Alert type="error" showIcon message={errorMessage} /> : null}
-      {location ? (
+      {location && !canEdit ? (
+        <Alert
+          type="warning"
+          showIcon
+          message="Bạn không có quyền chỉnh sửa địa điểm này."
+          description="Kiểm duyệt viên chỉ được chỉnh sửa địa điểm đang chờ duyệt; địa điểm ở trạng thái khác chỉ quản trị viên được sửa."
+        />
+      ) : null}
+      {location && canEdit ? (
         <div className={styles.formShell}>
           <LocationSubmitForm
             mode="edit"

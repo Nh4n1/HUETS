@@ -68,6 +68,39 @@ export interface ILocationModeration {
     restoredAt: Date | null;
 }
 
+export interface ILocationEditSnapshot {
+    name: string;
+    description: string;
+    categoryCode: string;
+    tagCodes: string[];
+    aliases: string[];
+    address: {
+        wardCode: string;
+        wardNameSnapshot: string;
+        addressLine: string;
+        locationNote: string | null;
+    };
+    geo: {
+        latitude: number;
+        longitude: number;
+    };
+    images: Array<{
+        url: string;
+        position: number;
+    }>;
+    openingHours: ILocationOpeningHours;
+}
+
+export interface ILocationEditHistory {
+    _id: Types.ObjectId;
+    editedBy: Types.ObjectId;
+    editedAt: Date;
+    reason: string;
+    changedFields: string[];
+    before: ILocationEditSnapshot;
+    after: ILocationEditSnapshot;
+}
+
 export interface ILocation extends Document {
     createdBy: Types.ObjectId;
     name: string;
@@ -83,6 +116,7 @@ export interface ILocation extends Document {
     ratingSummary: ILocationRatingSummary;
     status: LocationStatus;
     moderation: ILocationModeration;
+    editHistory: Types.DocumentArray<ILocationEditHistory>;
     isDeleted: boolean;
     deletedAt: Date | null;
     deletedBy: Types.ObjectId | null;
@@ -194,6 +228,18 @@ const locationModerationSchema = new Schema<ILocationModeration>(
     { _id: false },
 );
 
+const locationEditHistorySchema = new Schema<ILocationEditHistory>(
+    {
+        editedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        editedAt: { type: Date, required: true },
+        reason: { type: String, required: true, trim: true, maxlength: 1000 },
+        changedFields: { type: [String], required: true },
+        before: { type: Schema.Types.Mixed, required: true },
+        after: { type: Schema.Types.Mixed, required: true },
+    },
+    { _id: true },
+);
+
 const locationSchema = new Schema<ILocation>(
     {
         createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -218,6 +264,7 @@ const locationSchema = new Schema<ILocation>(
             required: true,
         },
         moderation: { type: locationModerationSchema, required: true, default: () => ({}) },
+        editHistory: { type: [locationEditHistorySchema], required: true, default: [] },
         isDeleted: { type: Boolean, required: true, default: false },
         deletedAt: { type: Date, default: null },
         deletedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },

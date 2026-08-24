@@ -498,7 +498,10 @@ export function LocationSubmitForm({
         longitude: values.longitude,
         openingHours,
         images,
-        ...(mode === 'edit' ? { aliases: initialLocation?.aliases ?? [] } : {}),
+        ...(mode === 'edit' ? {
+          aliases: initialLocation?.aliases ?? [],
+          reason: values.reason,
+        } : {}),
       })
 
       onSuccess?.(location)
@@ -803,6 +806,25 @@ export function LocationSubmitForm({
             Ảnh chỉ được tải lên khi bạn bấm &quot;{submitLabel}&quot;.
           </Typography.Text>
         </Card>
+
+        {mode === 'edit' ? (
+          <Card title="Lý do chỉnh sửa" style={{ marginBottom: 16 }}>
+            <Form.Item
+              name="reason"
+              label="Nội dung giải trình"
+              rules={[
+                { required: true, whitespace: true, message: 'Vui lòng nhập lý do chỉnh sửa.' },
+                { max: 1000, message: 'Lý do không được vượt quá 1000 ký tự.' },
+              ]}
+              extra="Lý do và nội dung thay đổi sẽ được lưu trong lịch sử kiểm duyệt."
+            >
+              <Input.TextArea
+                rows={4}
+                placeholder="Ví dụ: Sửa địa chỉ và vị trí ghim theo thông tin xác minh từ trang chính thức"
+              />
+            </Form.Item>
+          </Card>
+        ) : null}
 
         <Divider />
         <div className={styles.submitBar}>

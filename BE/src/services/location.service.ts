@@ -7,6 +7,7 @@ import Bookmark from '../models/bookmark.model.ts';
 import Location from '../models/location.model.ts';
 import type {
     ILocation,
+    ILocationEditSnapshot,
     ILocationOpeningHours,
     IOpeningPeriod,
     IOpeningRange,
@@ -101,6 +102,7 @@ export interface ModerateLocationVisibilityInput {
 
 export interface UpdateLocationInput extends CreateLocationInput {
     expectedUpdatedAt?: unknown;
+    reason?: unknown;
 }
 
 export interface DeleteLocationInput {
@@ -449,15 +451,55 @@ const categoryMapFor = async (locations: ILocation[]) => {
 
 const contributorMapFor = async (locations: ILocation[]) => {
     const contributorIds = [...new Set(locations.map(({ createdBy }) => createdBy.toString()))];
-    const contributors = await User.find({ _id: { $in: contributorIds } })
+    return userSummaryMapForIds(contributorIds);
+};
+
+const userSummaryMapForIds = async (userIds: string[]) => {
+    const users = await User.find({ _id: { $in: [...new Set(userIds)] } })
         .select({ email: 1, displayName: 1 })
         .lean();
-    return new Map(contributors.map((contributor) => [contributor._id.toString(), {
-        id: contributor._id.toString(),
-        displayName: contributor.displayName,
-        email: contributor.email,
+    return new Map(users.map((user) => [user._id.toString(), {
+        id: user._id.toString(),
+        displayName: user.displayName,
+        email: user.email,
     }]));
 };
+
+const editableSnapshot = (location: Pick<
+    ILocation,
+    'name' | 'description' | 'categoryCode' | 'tagCodes' | 'aliases' | 'address' | 'geo' | 'images' | 'openingHours'
+>): ILocationEditSnapshot => ({
+    name: location.name,
+    description: location.description,
+    categoryCode: location.categoryCode,
+    tagCodes: [...location.tagCodes],
+    aliases: location.aliases.map(({ value }) => value),
+    address: {
+        wardCode: location.address.wardCode,
+        wardNameSnapshot: location.address.wardNameSnapshot,
+        addressLine: location.address.addressLine,
+        locationNote: location.address.locationNote,
+    },
+    geo: {
+        latitude: location.geo.coordinates[1],
+        longitude: location.geo.coordinates[0],
+    },
+    images: [...location.images]
+        .sort((left, right) => left.position - right.position)
+        .map(({ url, position }) => ({ url, position })),
+    openingHours: {
+        status: location.openingHours.status,
+        periods: location.openingHours.periods.map(({ dayOfWeek, ranges }) => ({
+            dayOfWeek,
+            ranges: ranges.map(({ open, close }) => ({ open, close })),
+        })),
+    },
+});
+
+const changedEditableFields = (before: ILocationEditSnapshot, after: ILocationEditSnapshot) => (
+    (Object.keys(before) as Array<keyof ILocationEditSnapshot>)
+        .filter((field) => JSON.stringify(before[field]) !== JSON.stringify(after[field]))
+);
 
 const toLocationSummary = (location: ILocation, categoryNames: Map<string, string>) => ({
     id: location._id.toString(),
@@ -521,9 +563,13 @@ const toMyLocationSummary = (location: ILocation, categoryNames: Map<string, str
 });
 
 const toAdminLocationDetail = async (location: ILocation) => {
-    const [categoryNames, contributors, duplicateCandidates] = await Promise.all([
+    const editHistory = location.editHistory ?? [];
+    const [categoryNames, users, duplicateCandidates] = await Promise.all([
         categoryMapFor([location]),
-        contributorMapFor([location]),
+        userSummaryMapForIds([
+            location.createdBy.toString(),
+            ...editHistory.map(({ editedBy }) => editedBy.toString()),
+        ]),
         findDuplicateCandidates(
             location.normalizedName,
             location.geo.coordinates[0],
@@ -534,7 +580,7 @@ const toAdminLocationDetail = async (location: ILocation) => {
 
     return {
         ...toLocationDetail(location, categoryNames.get(location.categoryCode) ?? location.categoryCode),
-        contributor: contributors.get(location.createdBy.toString()) ?? null,
+        contributor: users.get(location.createdBy.toString()) ?? null,
         moderation: {
             reviewedBy: location.moderation.reviewedBy?.toString() ?? null,
             reviewedAt: location.moderation.reviewedAt,
@@ -547,6 +593,18 @@ const toAdminLocationDetail = async (location: ILocation) => {
             restoredBy: location.moderation.restoredBy?.toString() ?? null,
             restoredAt: location.moderation.restoredAt,
         },
+        editHistory: [...editHistory]
+            .sort((left, right) => right.editedAt.getTime() - left.editedAt.getTime())
+            .map((entry) => ({
+                id: entry._id.toString(),
+                editedBy: entry.editedBy.toString(),
+                editor: users.get(entry.editedBy.toString()) ?? null,
+                editedAt: entry.editedAt,
+                reason: entry.reason,
+                changedFields: entry.changedFields,
+                before: entry.before,
+                after: entry.after,
+            })),
         duplicateWarning: duplicateCandidates.length > 0,
         duplicateCandidates,
     };
@@ -864,15 +922,23 @@ export const updateAdminLocation = async (
     if (!mongoose.isValidObjectId(locationId)) {
         throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
     }
-    const [admin, current, expectedUpdatedAt] = await Promise.all([
-        assertActiveAdmin(actor),
+    const [manager, current, expectedUpdatedAt] = await Promise.all([
+        assertActiveModerator(actor),
         Location.findOne({ _id: locationId, isDeleted: { $ne: true } }),
         Promise.resolve(parseExpectedUpdatedAt(input.expectedUpdatedAt)),
     ]);
     if (!current) {
         throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
     }
+    if (manager.role === 'mod' && current.status !== 'pending') {
+        throw new ApiError(
+            403,
+            'MODERATOR_CAN_ONLY_EDIT_PENDING',
+            'Kiểm duyệt viên chỉ được chỉnh sửa địa điểm đang chờ duyệt.',
+        );
+    }
 
+    const reason = requiredString(input.reason, 'Lý do chỉnh sửa', 1000);
     const name = requiredString(input.name, 'Tên địa điểm', 200);
     const normalizedName = normalizeSearchText(name);
     const description = requiredString(input.description, 'Mô tả', 5000);
@@ -896,7 +962,7 @@ export const updateAdminLocation = async (
     const openingHours = parseOpeningHours(input.openingHours);
     const images = input.images === undefined
         ? current.images
-        : parseLocationImages(input.images, admin._id.toString(), current.images);
+        : parseLocationImages(input.images, manager._id.toString(), current.images);
     const searchText = normalizeSearchText([
         name,
         ...aliases.map(({ value }) => value),
@@ -906,9 +972,38 @@ export const updateAdminLocation = async (
         ward.name,
         description,
     ].join(' '));
+    const before = editableSnapshot(current);
+    const after: ILocationEditSnapshot = {
+        name,
+        description,
+        categoryCode,
+        tagCodes,
+        aliases: aliases.map(({ value }) => value),
+        address: {
+            wardCode,
+            wardNameSnapshot: ward.name,
+            addressLine,
+            locationNote,
+        },
+        geo: { latitude, longitude },
+        images: [...images]
+            .sort((left, right) => left.position - right.position)
+            .map(({ url, position }) => ({ url, position })),
+        openingHours,
+    };
+    const changedFields = changedEditableFields(before, after);
+    if (changedFields.length === 0) {
+        throw new ApiError(400, 'NO_CHANGES', 'Không có nội dung nào được thay đổi.');
+    }
+    const editedAt = new Date();
 
     const location = await Location.findOneAndUpdate(
-        { _id: locationId, isDeleted: { $ne: true }, updatedAt: expectedUpdatedAt },
+        {
+            _id: locationId,
+            isDeleted: { $ne: true },
+            updatedAt: expectedUpdatedAt,
+            ...(manager.role === 'mod' ? { status: 'pending' } : {}),
+        },
         {
             $set: {
                 isDeleted: false,
@@ -928,6 +1023,16 @@ export const updateAdminLocation = async (
                 images,
                 openingHours,
                 searchText,
+            },
+            $push: {
+                editHistory: {
+                    editedBy: manager._id,
+                    editedAt,
+                    reason,
+                    changedFields,
+                    before,
+                    after,
+                },
             },
         },
         { new: true, runValidators: true },

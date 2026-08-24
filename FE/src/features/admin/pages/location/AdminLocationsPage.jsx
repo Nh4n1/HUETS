@@ -365,12 +365,12 @@ export function AdminLocationsPage({
           <Link to={`/admin/locations/${record.id}`}>
             <Button size="small">Chi tiết</Button>
           </Link>
-          {isAdmin ? (
+          {isAdmin || record.status === "pending" ? (
             <>
               <Link to={`/admin/locations/${record.id}/edit`}>
                 <Button size="small" icon={<EditOutlined />}>Chỉnh sửa</Button>
               </Link>
-              {DELETABLE_STATUSES.has(record.status) ? (
+              {isAdmin && DELETABLE_STATUSES.has(record.status) ? (
                 <Dropdown
                   trigger={["click"]}
                   menu={{

@@ -60,10 +60,40 @@ const locationDocument = (overrides: Record<string, unknown> = {}) => ({
     ...overrides,
 });
 
-const mockActiveAdmin = () => {
+const mockActiveManager = (role: 'mod' | 'admin' = 'admin') => {
     vi.spyOn(User, 'findById').mockReturnValue({
-        select: vi.fn().mockResolvedValue({ _id: adminId, role: 'admin', status: 'active' }),
+        select: vi.fn().mockResolvedValue({ _id: adminId, role, status: 'active' }),
     } as never);
+};
+
+const mockAdminLocationDetailDependencies = () => {
+    vi.spyOn(Category, 'findOne').mockReturnValue({
+        select: vi.fn().mockResolvedValue({ code: 'cafe', name: 'Quán cà phê' }),
+    } as never);
+    vi.spyOn(TagGroup, 'find').mockReturnValue({
+        select: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }),
+    } as never);
+    vi.spyOn(Category, 'find').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+            lean: vi.fn().mockResolvedValue([{ code: 'cafe', name: 'Quán cà phê' }]),
+        }),
+    } as never);
+    vi.spyOn(User, 'find').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+            lean: vi.fn().mockResolvedValue([{
+                _id: contributorId,
+                email: 'contributor@example.com',
+                displayName: 'Người đóng góp',
+            }]),
+        }),
+    } as never);
+    vi.spyOn(Location, 'init').mockResolvedValue(Location as never);
+    vi.spyOn(Location, 'find').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+            limit: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }),
+        }),
+    } as never);
+    vi.spyOn(Location, 'aggregate').mockResolvedValue([]);
 };
 
 describe('admin location management', () => {
@@ -72,7 +102,7 @@ describe('admin location management', () => {
     });
 
     it('updates editable data without changing status, contributor or rating', async () => {
-        mockActiveAdmin();
+        mockActiveManager();
         const current = locationDocument();
         const updated = locationDocument({
             name: 'Địa điểm mới',
@@ -87,38 +117,13 @@ describe('admin location management', () => {
         });
         vi.spyOn(Location, 'findOne').mockResolvedValue(current as never);
         const updateSpy = vi.spyOn(Location, 'findOneAndUpdate').mockResolvedValue(updated as never);
-        vi.spyOn(Category, 'findOne').mockReturnValue({
-            select: vi.fn().mockResolvedValue({ code: 'cafe', name: 'Quán cà phê' }),
-        } as never);
-        vi.spyOn(TagGroup, 'find').mockReturnValue({
-            select: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }),
-        } as never);
-        vi.spyOn(Category, 'find').mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue([{ code: 'cafe', name: 'Quán cà phê' }]),
-            }),
-        } as never);
-        vi.spyOn(User, 'find').mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                lean: vi.fn().mockResolvedValue([{
-                    _id: contributorId,
-                    email: 'contributor@example.com',
-                    displayName: 'Người đóng góp',
-                }]),
-            }),
-        } as never);
-        vi.spyOn(Location, 'init').mockResolvedValue(Location as never);
-        vi.spyOn(Location, 'find').mockReturnValue({
-            select: vi.fn().mockReturnValue({
-                limit: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue([]) }),
-            }),
-        } as never);
-        vi.spyOn(Location, 'aggregate').mockResolvedValue([]);
+        mockAdminLocationDetailDependencies();
 
         const result = await updateAdminLocation(
             locationId.toString(),
             {
                 expectedUpdatedAt: expectedUpdatedAt.toISOString(),
+                reason: '  Chuẩn hóa thông tin địa điểm  ',
                 name: '  Địa điểm mới  ',
                 description: 'Mô tả mới',
                 categoryCode: 'cafe',
@@ -147,11 +152,80 @@ describe('admin location management', () => {
         expect(update.$set).not.toHaveProperty('status');
         expect(update.$set).not.toHaveProperty('createdBy');
         expect(update.$set).not.toHaveProperty('ratingSummary');
+        const audit = (updateSpy.mock.calls[0]?.[1] as {
+            $push: { editHistory: Record<string, unknown> };
+        }).$push.editHistory;
+        expect(audit).toMatchObject({
+            editedBy: adminId,
+            reason: 'Chuẩn hóa thông tin địa điểm',
+            changedFields: expect.arrayContaining(['name', 'description', 'address']),
+            before: expect.objectContaining({ name: 'Địa điểm cũ' }),
+            after: expect.objectContaining({ name: 'Địa điểm mới' }),
+        });
         expect(result.location.name).toBe('Địa điểm mới');
     });
 
+    it('allows a moderator to edit a pending location and applies an atomic status precondition', async () => {
+        mockActiveManager('mod');
+        const current = locationDocument({ status: 'pending' });
+        const updated = locationDocument({ status: 'pending', description: 'Mô tả đã xác minh' });
+        vi.spyOn(Location, 'findOne').mockResolvedValue(current as never);
+        const updateSpy = vi.spyOn(Location, 'findOneAndUpdate').mockResolvedValue(updated as never);
+        mockAdminLocationDetailDependencies();
+
+        await updateAdminLocation(
+            locationId.toString(),
+            {
+                expectedUpdatedAt: expectedUpdatedAt.toISOString(),
+                reason: 'Xác minh lại nội dung',
+                name: 'Địa điểm cũ',
+                description: 'Mô tả đã xác minh',
+                categoryCode: 'cafe',
+                tagCodes: [],
+                aliases: [],
+                wardCode: '19753',
+                addressLine: '1 Đường Cũ',
+                latitude: 16.47,
+                longitude: 107.58,
+                openingHours: { status: 'unknown', periods: [] },
+            },
+            { id: adminId.toString(), role: 'mod' },
+        );
+
+        expect(updateSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                _id: locationId.toString(),
+                status: 'pending',
+                updatedAt: expectedUpdatedAt,
+            }),
+            expect.objectContaining({
+                $push: {
+                    editHistory: expect.objectContaining({
+                        editedBy: adminId,
+                        reason: 'Xác minh lại nội dung',
+                        changedFields: ['description'],
+                    }),
+                },
+            }),
+            { new: true, runValidators: true },
+        );
+    });
+
+    it('does not allow a moderator to edit a location that is no longer pending', async () => {
+        mockActiveManager('mod');
+        vi.spyOn(Location, 'findOne').mockResolvedValue(locationDocument({ status: 'approved' }) as never);
+        const updateSpy = vi.spyOn(Location, 'findOneAndUpdate');
+
+        await expect(updateAdminLocation(
+            locationId.toString(),
+            { expectedUpdatedAt: expectedUpdatedAt.toISOString(), reason: 'Sửa nội dung' },
+            { id: adminId.toString(), role: 'mod' },
+        )).rejects.toMatchObject({ code: 'MODERATOR_CAN_ONLY_EDIT_PENDING', statusCode: 403 });
+        expect(updateSpy).not.toHaveBeenCalled();
+    });
+
     it('soft deletes a location with an atomic updatedAt precondition', async () => {
-        mockActiveAdmin();
+        mockActiveManager();
         const deleteBookmarks = vi.spyOn(Bookmark, 'deleteMany').mockResolvedValue({ deletedCount: 2 } as never);
         const updateSpy = vi.spyOn(Location, 'findOneAndUpdate').mockResolvedValue(
             locationDocument({ status: 'hidden', isDeleted: true, deletedBy: adminId }) as never,
@@ -191,7 +265,7 @@ describe('admin location management', () => {
     });
 
     it('does not soft delete a pending or approved location', async () => {
-        mockActiveAdmin();
+        mockActiveManager();
 
         await expect(deleteAdminLocation(
             locationId.toString(),
