@@ -18,6 +18,7 @@ import { executeSearchPlan } from './locationSearchExecutor.service.ts';
 import { MockSearchParser } from './mockSearchParser.service.ts';
 import { getSearchCatalog } from './searchCatalog.service.ts';
 import { validateSearchPlan } from './searchPlanValidator.service.ts';
+import { ApiError } from '../utils/apiError.ts';
 
 type ExactMatch = { type: 'name' | 'alias' };
 type CacheStatus = 'hit' | 'miss' | 'shared';
@@ -126,6 +127,13 @@ export const clearLocationSearchCache = () => {
 
 export const searchLocations = async (rawInput: unknown) => {
     const input = initialLocationSearchRequestSchema.parse(rawInput);
+    if (!normalizeSearchText(input.query)) {
+        throw new ApiError(
+            400,
+            'INVALID_SEARCH_QUERY',
+            'Nội dung tìm kiếm phải chứa chữ hoặc số.',
+        );
+    }
     const decision = await decideSearchPath(input.query);
 
     if (decision.path === 'ai') {
@@ -164,7 +172,13 @@ export const searchLocations = async (rawInput: unknown) => {
 
     const result = await executeBasicSearch(input);
     return {
-        data: { status: 'success' as const, query: input.query, criteria: null, interpretation: null, locations: result.data },
+        data: {
+            status: result.meta.total ? 'success' as const : 'no_exact_match' as const,
+            query: input.query,
+            criteria: null,
+            interpretation: null,
+            locations: result.data,
+        },
         meta: result.meta,
         debug: decision,
     };

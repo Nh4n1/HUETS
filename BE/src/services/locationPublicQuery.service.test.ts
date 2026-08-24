@@ -28,6 +28,12 @@ describe('public location filters', () => {
         });
     });
 
+    it('rejects a non-empty search query that has no letters or numbers', () => {
+        expect(() => buildPublicLocationFilter({ q: '!!!' })).toThrow(
+            'Nội dung tìm kiếm phải chứa chữ hoặc số.',
+        );
+    });
+
     it('rejects invalid and excessive tag filters', () => {
         expect(() => buildPublicLocationFilter({ tagCodes: 'wifi,not valid' })).toThrow(
             'Danh sách đặc điểm lọc không hợp lệ.',
