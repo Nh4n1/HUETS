@@ -227,7 +227,29 @@
   color: rgb(255 250 242 / 72%);
 }
 
-.footerColumn a:hover {
+.feedbackButton {
+  min-height: 2.6rem;
+  padding-inline: 0.85rem;
+  border-radius: 999px;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.feedbackButton:hover {
+  color: var(--color-primary-dark) !important;
+  background: var(--color-primary-soft) !important;
+}
+
+.footerAction {
+  padding: 0;
+  border: 0;
+  color: rgb(255 250 242 / 72%);
+  background: transparent;
+  cursor: pointer;
+}
+
+.footerColumn a:hover,
+.footerAction:hover {
   color: var(--color-accent-light);
 }
 
@@ -262,6 +284,7 @@
   }
 
   .loginLink,
+  .feedbackButton,
   .headerActions > .registerLink,
   .userButton {
     display: none;

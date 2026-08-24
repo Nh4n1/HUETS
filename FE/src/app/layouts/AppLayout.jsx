@@ -5,6 +5,7 @@ import {
   DownOutlined,
   EnvironmentOutlined,
   MenuOutlined,
+  MessageOutlined,
   PlusCircleOutlined,
   UserOutlined,
 } from '@ant-design/icons'
@@ -12,6 +13,7 @@ import { Avatar, Button, Dropdown, Layout } from 'antd'
 import { useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../../features/auth/context/useAuth'
+import { FeedbackDrawer } from '../../features/feedback/components/FeedbackDrawer'
 import styles from './AppLayout.module.css'
 
 function Brand() {
@@ -32,6 +34,11 @@ export function AppLayout() {
   const { user, logout } = useAuth()
   const [loggingOut, setLoggingOut] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+
+  const openFeedback = () => {
+    setFeedbackOpen(true)
+  }
 
   const handleLogout = async () => {
     try {
@@ -72,6 +79,7 @@ export function AppLayout() {
 
     items.push(
       { type: 'divider' },
+      { key: 'feedback', icon: <MessageOutlined />, label: 'Góp ý cho HueTrip' },
       { key: 'logout', danger: true, label: 'Đăng xuất' },
     )
     return items
@@ -79,6 +87,7 @@ export function AppLayout() {
 
   const handleUserMenu = ({ key }) => {
     if (key === 'logout') handleLogout()
+    if (key === 'feedback') openFeedback()
   }
 
   return (
@@ -114,6 +123,14 @@ export function AppLayout() {
               </Dropdown>
             ) : (
               <>
+                <Button
+                  className={styles.feedbackButton}
+                  type="text"
+                  icon={<MessageOutlined />}
+                  onClick={openFeedback}
+                >
+                  Góp ý
+                </Button>
                 <Link className={styles.loginLink} to="/login">
                   Đăng nhập
                 </Link>
@@ -148,16 +165,20 @@ export function AppLayout() {
                 <Link to="/profile">Hồ sơ của tôi</Link>
                 <Link to="/itineraries/mine">Lịch trình của tôi</Link>
                 <Link to="/locations/contribute">Đóng góp địa điểm</Link>
+                <Button type="text" onClick={openFeedback}>Góp ý cho HueTrip</Button>
                 {user.role === 'admin' || user.role === 'mod' ? <Link to="/admin">Trang quản trị</Link> : null}
                 <Button type="text" danger loading={loggingOut} onClick={handleLogout}>
                   Đăng xuất
                 </Button>
               </>
             ) : (
-              <div className={styles.mobileAuthActions}>
-                <Link to="/login">Đăng nhập</Link>
-                <Link className={styles.registerLink} to="/register">Đăng ký</Link>
-              </div>
+              <>
+                <Button type="text" icon={<MessageOutlined />} onClick={openFeedback}>Góp ý cho HueTrip</Button>
+                <div className={styles.mobileAuthActions}>
+                  <Link to="/login">Đăng nhập</Link>
+                  <Link className={styles.registerLink} to="/register">Đăng ký</Link>
+                </div>
+              </>
             )}
           </nav>
         ) : null}
@@ -193,7 +214,7 @@ export function AppLayout() {
 
           <div className={styles.footerColumn}>
             <h2>HueTrip</h2>
-            <a href="#">Liên hệ</a>
+            <button type="button" className={styles.footerAction} onClick={openFeedback}>Góp ý cho HueTrip</button>
             <span className={styles.footerLocation}>
               <EnvironmentOutlined /> Thành phố Huế, Việt Nam
             </span>
@@ -205,6 +226,11 @@ export function AppLayout() {
           <span>Khám phá chậm, cảm nhận sâu.</span>
         </div>
       </footer>
+      <FeedbackDrawer
+        open={feedbackOpen}
+        user={user}
+        onClose={() => setFeedbackOpen(false)}
+      />
     </Layout>
   )
 }
