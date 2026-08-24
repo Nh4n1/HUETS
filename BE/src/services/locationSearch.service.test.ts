@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Location from '../models/location.model.ts';
+import TagGroup from '../models/tagGroup.model.ts';
 import { getPublicLocations } from './location.service.ts';
 import { clearLocationSearchCache, decideSearchPath, searchLocations } from './locationSearch.service.ts';
 import { executeSearchPlan } from './locationSearchExecutor.service.ts';
@@ -29,6 +30,18 @@ const basicResult = {
 };
 
 describe('location search service', () => {
+    beforeEach(() => {
+        vi.spyOn(TagGroup, 'find').mockReturnValue({
+            select: vi.fn().mockReturnThis(),
+            lean: vi.fn().mockResolvedValue([{
+                tags: [
+                    { code: 'quiet', name: 'Yên tĩnh', isActive: true },
+                    { code: 'wifi', name: 'Wi-Fi', isActive: true },
+                ],
+            }]),
+        } as never);
+    });
+
     afterEach(() => {
         clearLocationSearchCache();
         vi.clearAllMocks();

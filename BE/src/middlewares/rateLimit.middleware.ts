@@ -5,6 +5,7 @@ interface RateLimitOptions {
     windowMs: number;
     maxRequests: number;
     keyGenerator?: (req: Request) => string | undefined;
+    skip?: (req: Request) => boolean;
 }
 
 interface RateLimitEntry {
@@ -12,10 +13,11 @@ interface RateLimitEntry {
     resetAt: number;
 }
 
-export const createRateLimit = ({ windowMs, maxRequests, keyGenerator }: RateLimitOptions) => {
+export const createRateLimit = ({ windowMs, maxRequests, keyGenerator, skip }: RateLimitOptions) => {
     const clients = new Map<string, RateLimitEntry>();
 
     return (req: Request, res: Response, next: NextFunction) => {
+        if (skip?.(req)) return next();
         const now = Date.now();
         const key = keyGenerator?.(req) || req.ip || req.socket.remoteAddress || 'unknown';
         const current = clients.get(key);

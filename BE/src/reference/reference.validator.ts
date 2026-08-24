@@ -37,16 +37,10 @@ export const validateReferenceCatalog = () => {
 
     for (const [categoryCode, rule] of Object.entries(categoryTagWhitelist)) {
         assertUnique(rule.allowedTagCodes, `${categoryCode}.allowedTagCodes`);
-        assertUnique(rule.recommendedTagCodes, `${categoryCode}.recommendedTagCodes`);
 
         for (const code of rule.allowedTagCodes) {
             if (!knownTags.has(code)) {
                 throw new Error(`${categoryCode} allows unknown tag: ${code}.`);
-            }
-        }
-        for (const code of rule.recommendedTagCodes) {
-            if (!rule.allowedTagCodes.includes(code)) {
-                throw new Error(`${categoryCode} recommends a tag that is not allowed: ${code}.`);
             }
         }
     }

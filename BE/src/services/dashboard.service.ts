@@ -1,14 +1,13 @@
 import Itinerary from '../models/itinerary.model.ts';
 import Location from '../models/location.model.ts';
 import LocationReview from '../models/locationReview.model.ts';
+import Category from '../models/category.model.ts';
 import type { UserRole } from '../models/user.model.ts';
-import { categories } from '../reference/reference.data.ts';
 import { getAdminUserStats } from './user.service.ts';
 
 const PENDING_OVERDUE_HOURS = 48;
 const PENDING_PREVIEW_LIMIT = 5;
 const TOP_RATED_LOCATION_LIMIT = 5;
-const categoryNames = new Map(categories.map((category) => [category.code, category.name]));
 
 interface StatusCount {
     _id: string;
@@ -22,7 +21,7 @@ export const getDashboard = async (role: UserRole) => {
     const overdueCutoff = new Date(Date.now() - PENDING_OVERDUE_HOURS * 60 * 60 * 1000);
     const pendingFilter = { status: 'pending' as const, isDeleted: { $ne: true } };
 
-    const [locationCounts, reviewCounts, itineraryCounts, overduePending, oldestPending, topRated, users] = await Promise.all([
+    const [locationCounts, reviewCounts, itineraryCounts, overduePending, oldestPending, topRated, users, categories] = await Promise.all([
         Location.aggregate<StatusCount>([
             { $match: { isDeleted: { $ne: true } } },
             { $group: { _id: '$status', count: { $sum: 1 } } },
@@ -68,7 +67,9 @@ export const getDashboard = async (role: UserRole) => {
             .limit(TOP_RATED_LOCATION_LIMIT)
             .lean(),
         role === 'admin' ? getAdminUserStats() : Promise.resolve(null),
+        Category.find({}).select({ _id: 0, code: 1, name: 1 }).lean(),
     ]);
+    const categoryNames = new Map(categories.map((category) => [category.code, category.name]));
 
     return {
         role,

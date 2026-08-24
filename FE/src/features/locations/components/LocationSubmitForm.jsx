@@ -552,7 +552,7 @@ export function LocationSubmitForm({
           ? 'Tải ảnh lên hoặc cập nhật địa điểm không thành công.'
           : 'Tải ảnh lên hoặc tạo địa điểm không thành công.')
 
-      if (['INVALID_CATEGORY_TAG_COMBINATION', 'TOO_MANY_TAGS'].includes(responseError?.code)) {
+      if (responseError?.code === 'INVALID_CATEGORY_TAG_COMBINATION') {
         if (responseError?.details?.invalidTagCodes || responseError?.details?.groupCode) {
           setTagError(messageText)
         } else {

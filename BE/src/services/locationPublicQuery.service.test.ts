@@ -34,12 +34,12 @@ describe('public location filters', () => {
         );
     });
 
-    it('rejects invalid and excessive tag filters', () => {
+    it('rejects invalid tag filters and accepts more than ten tags', () => {
         expect(() => buildPublicLocationFilter({ tagCodes: 'wifi,not valid' })).toThrow(
             'Danh sách đặc điểm lọc không hợp lệ.',
         );
-        expect(() => buildPublicLocationFilter({
+        expect(buildPublicLocationFilter({
             tagCodes: Array.from({ length: 11 }, (_, index) => `tag_${index}`).join(','),
-        })).toThrow('Chỉ được lọc tối đa 10 đặc điểm.');
+        }).tagCodes).toEqual({ $all: Array.from({ length: 11 }, (_, index) => `tag_${index}`) });
     });
 });

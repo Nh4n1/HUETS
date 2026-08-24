@@ -19,6 +19,9 @@ import { AdminOverviewPage } from '../features/admin/pages/overview/AdminOvervie
 import { AdminUsersPage } from '../features/admin/pages/user/AdminUsersPage'
 import { AdminReviewsPage } from '../features/admin/pages/review/AdminReviewsPage'
 import { AdminReportsPage } from '../features/reports/pages/AdminReportsPage'
+import { AdminCategoriesPage } from '../features/admin/pages/reference/AdminCategoriesPage'
+import { AdminTagGroupsPage } from '../features/admin/pages/reference/AdminTagGroupsPage'
+import { AdminFeedbackPage } from '../features/admin/pages/feedback/AdminFeedbackPage'
 
 import { HomePage } from '../pages/HomePage'
 
@@ -184,6 +187,9 @@ export const router = createBrowserRouter([
             Component: AdminOnlyRoute,
             children: [
               { path: 'users', Component: AdminUsersPage },
+              { path: 'reference/categories', Component: AdminCategoriesPage },
+              { path: 'reference/tag-groups', Component: AdminTagGroupsPage },
+              { path: 'feedback', Component: AdminFeedbackPage },
             ],
           },
 

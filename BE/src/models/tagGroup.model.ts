@@ -13,6 +13,7 @@ export interface ITagGroup extends Document {
     code: string;
     name: string;
     selectionMode: TagSelectionMode;
+    sortOrder: number;
     tags: ITag[];
     isActive: boolean;
     createdAt: Date;
@@ -21,7 +22,7 @@ export interface ITagGroup extends Document {
 
 const tagSchema = new Schema<ITag>(
     {
-        code: { type: String, required: true, trim: true },
+        code: { type: String, required: true, trim: true, lowercase: true, immutable: true },
         name: { type: String, required: true, trim: true },
         isActive: { type: Boolean, required: true, default: true },
     },
@@ -33,6 +34,7 @@ const tagGroupSchema = new Schema<ITagGroup>(
         code: { type: String, required: true, trim: true },
         name: { type: String, required: true, trim: true },
         selectionMode: { type: String, enum: ['single', 'multiple'], required: true },
+        sortOrder: { type: Number, required: true, default: 0 },
         tags: { type: [tagSchema], required: true, default: [] },
         isActive: { type: Boolean, required: true, default: true },
     },
@@ -41,5 +43,6 @@ const tagGroupSchema = new Schema<ITagGroup>(
 
 tagGroupSchema.index({ code: 1 }, { unique: true });
 tagGroupSchema.index({ 'tags.code': 1 });
+tagGroupSchema.index({ isActive: 1, sortOrder: 1 });
 
 export default mongoose.model<ITagGroup>('TagGroup', tagGroupSchema);

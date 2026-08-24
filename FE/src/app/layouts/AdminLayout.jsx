@@ -3,6 +3,7 @@ import {
   BellOutlined,
   CalendarOutlined,
   DashboardOutlined,
+  DatabaseOutlined,
   EnvironmentOutlined,
   FlagOutlined,
   HomeOutlined,
@@ -11,6 +12,7 @@ import {
   TeamOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  MessageOutlined,
 } from '@ant-design/icons'
 import { Button, Layout, Menu, Space, Typography } from 'antd'
 import { useMemo, useState } from 'react'
@@ -19,7 +21,8 @@ import { useAuth } from '../../features/auth/context/useAuth'
 import styles from './AdminLayout.module.css'
 
 const LOCATIONS_GROUP_KEY = 'locations'
-const ADMIN_ONLY_MENU_KEYS = new Set(['/admin/users', '/admin/settings'])
+const REFERENCE_GROUP_KEY = 'reference'
+const ADMIN_ONLY_MENU_KEYS = new Set(['/admin/users', '/admin/settings', '/admin/feedback', REFERENCE_GROUP_KEY])
 
 // Sidebar items without a real page yet link nowhere ('#') until their feature is built.
 function placeholderLink(label) {
@@ -67,6 +70,20 @@ const menuItems = [
     label: <Link to="/admin/users">Quản lý người dùng</Link>,
   },
   {
+    key: '/admin/feedback',
+    icon: <MessageOutlined />,
+    label: <Link to="/admin/feedback">Góp ý người dùng</Link>,
+  },
+  {
+    key: REFERENCE_GROUP_KEY,
+    icon: <DatabaseOutlined />,
+    label: 'Dữ liệu tham chiếu',
+    children: [
+      { key: '/admin/reference/categories', label: <Link to="/admin/reference/categories">Danh mục</Link> },
+      { key: '/admin/reference/tag-groups', label: <Link to="/admin/reference/tag-groups">Nhóm Tag và Tag</Link> },
+    ],
+  },
+  {
     key: '/admin/settings',
     icon: <SettingOutlined />,
     label: placeholderLink('Cài đặt hệ thống'),
@@ -82,6 +99,9 @@ function getSelectedKey(pathname) {
   if (pathname === '/admin/reviews') return '/admin/reviews'
   if (pathname.startsWith('/admin/reports')) return '/admin/reports'
   if (pathname === '/admin/users') return '/admin/users'
+  if (pathname === '/admin/feedback') return '/admin/feedback'
+  if (pathname.startsWith('/admin/reference/categories')) return '/admin/reference/categories'
+  if (pathname.startsWith('/admin/reference/tag-groups')) return '/admin/reference/tag-groups'
   if (pathname === '/admin/settings') return '/admin/settings'
   return '/admin'
 }
@@ -94,7 +114,9 @@ export function AdminLayout() {
   const [isMobile, setIsMobile] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [openKeys, setOpenKeys] = useState(
-    location.pathname.startsWith('/admin/locations') ? [LOCATIONS_GROUP_KEY] : [],
+    location.pathname.startsWith('/admin/locations')
+      ? [LOCATIONS_GROUP_KEY]
+      : location.pathname.startsWith('/admin/reference') ? [REFERENCE_GROUP_KEY] : [],
   )
 
   const selectedKeys = useMemo(() => [getSelectedKey(location.pathname)], [location.pathname])

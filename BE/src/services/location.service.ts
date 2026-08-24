@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { categoryTagWhitelist } from '../config/category-tag-whitelist.ts';
 import { verifyLocationImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
 import { normalizeSearchText } from '../helpers/text.helper.ts';
 import Category from '../models/category.model.ts';
@@ -18,7 +17,6 @@ import User from '../models/user.model.ts';
 import { getWardByCode } from './reference.service.ts';
 import { ApiError } from '../utils/apiError.ts';
 
-const MAX_SEARCH_TAGS = 10;
 const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
@@ -336,7 +334,7 @@ export const parseLocationImages = (
     return images;
 };
 
-const validateTags = async (categoryCode: string, value: unknown) => {
+const validateTags = async (allowedTagCodes: string[], value: unknown) => {
     if (value === undefined) return [];
     if (!Array.isArray(value) || value.some((tag) => typeof tag !== 'string')) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'tagCodes phải là một mảng mã Tag.');
@@ -347,8 +345,7 @@ const validateTags = async (categoryCode: string, value: unknown) => {
         throw new ApiError(400, 'VALIDATION_ERROR', 'tagCodes không được chứa mã trùng nhau.');
     }
 
-    const rule = categoryTagWhitelist[categoryCode];
-    const allowedCodes = new Set(rule?.allowedTagCodes ?? []);
+    const allowedCodes = new Set(allowedTagCodes);
     const groups = await TagGroup.find({ isActive: true, 'tags.code': { $in: tagCodes } })
         .select({ _id: 0, code: 1, selectionMode: 1, tags: 1 })
         .lean();
@@ -637,12 +634,12 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
     const description = requiredString(input.description, 'Mô tả', 5000);
     const categoryCode = requiredString(input.categoryCode, 'Category', 100).toLowerCase();
     const category = await Category.findOne({ code: categoryCode, isActive: true })
-        .select({ code: 1, name: 1 });
-    if (!category || !categoryTagWhitelist[categoryCode]) {
+        .select({ code: 1, name: 1, allowedTagCodes: 1 });
+    if (!category) {
         throw new ApiError(422, 'INVALID_CATEGORY_TAG_COMBINATION', 'Category không tồn tại hoặc đã ngừng hoạt động.');
     }
 
-    const tagCodes = await validateTags(categoryCode, input.tagCodes);
+    const tagCodes = await validateTags(category.allowedTagCodes, input.tagCodes);
     const aliases = parseAliases(input.aliases, normalizedName);
     const wardCode = requiredString(input.wardCode, 'Phường/xã', 20);
     const ward = getWardByCode(wardCode);
@@ -754,9 +751,6 @@ export const buildPublicLocationFilter = (query: PublicLocationQuery): Record<st
             .split(',')
             .map((code) => code.trim().toLowerCase())
             .filter(Boolean))];
-        if (tagCodes.length > MAX_SEARCH_TAGS) {
-            throw new ApiError(400, 'VALIDATION_ERROR', `Chỉ được lọc tối đa ${MAX_SEARCH_TAGS} đặc điểm.`);
-        }
         if (tagCodes.some((code) => !/^[a-z0-9_]+$/.test(code))) {
             throw new ApiError(400, 'VALIDATION_ERROR', 'Danh sách đặc điểm lọc không hợp lệ.');
         }
@@ -987,11 +981,11 @@ export const updateAdminLocation = async (
     const description = requiredString(input.description, 'Mô tả', 5000);
     const categoryCode = requiredString(input.categoryCode, 'Category', 100).toLowerCase();
     const category = await Category.findOne({ code: categoryCode, isActive: true })
-        .select({ code: 1, name: 1 });
-    if (!category || !categoryTagWhitelist[categoryCode]) {
+        .select({ code: 1, name: 1, allowedTagCodes: 1 });
+    if (!category) {
         throw new ApiError(422, 'INVALID_CATEGORY_TAG_COMBINATION', 'Category không tồn tại hoặc đã ngừng hoạt động.');
     }
-    const tagCodes = await validateTags(categoryCode, input.tagCodes);
+    const tagCodes = await validateTags(category.allowedTagCodes, input.tagCodes);
     const aliases = parseAliases(input.aliases, normalizedName);
     const wardCode = requiredString(input.wardCode, 'Phường/xã', 20);
     const ward = getWardByCode(wardCode);

@@ -18,6 +18,20 @@ router.post(
     uploadController.confirmLocationImages,
 );
 
+router.get(
+    '/feedback-images/signature',
+    authenticate,
+    authorize('user', 'mod', 'admin'),
+    uploadController.getUploadSignature,
+);
+
+router.post(
+    '/feedback-images',
+    authenticate,
+    authorize('user', 'mod', 'admin'),
+    uploadController.confirmFeedbackImages,
+);
+
 router.post(
     '/location-images/delete',
     authenticate,
