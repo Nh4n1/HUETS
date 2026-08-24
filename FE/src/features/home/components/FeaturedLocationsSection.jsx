@@ -14,7 +14,6 @@ export function FeaturedLocationsSection({
     <section className={styles.featuredSection} id="featured" aria-labelledby="featured-heading">
       <div className={styles.featuredHeading}>
         <div>
-          <span className={styles.sectionEyebrow}>Được chia sẻ gần đây</span>
           <h2 id="featured-heading">Điểm đến đáng ghé</h2>
         </div>
         <Button

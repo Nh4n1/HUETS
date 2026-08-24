@@ -7,6 +7,7 @@ import { getAdminUserStats } from './user.service.ts';
 
 const PENDING_OVERDUE_HOURS = 48;
 const PENDING_PREVIEW_LIMIT = 5;
+const TOP_RATED_LOCATION_LIMIT = 5;
 const categoryNames = new Map(categories.map((category) => [category.code, category.name]));
 
 interface StatusCount {
@@ -21,7 +22,7 @@ export const getDashboard = async (role: UserRole) => {
     const overdueCutoff = new Date(Date.now() - PENDING_OVERDUE_HOURS * 60 * 60 * 1000);
     const pendingFilter = { status: 'pending' as const, isDeleted: { $ne: true } };
 
-    const [locationCounts, reviewCounts, itineraryCounts, overduePending, oldestPending, users] = await Promise.all([
+    const [locationCounts, reviewCounts, itineraryCounts, overduePending, oldestPending, topRated, users] = await Promise.all([
         Location.aggregate<StatusCount>([
             { $match: { isDeleted: { $ne: true } } },
             { $group: { _id: '$status', count: { $sum: 1 } } },
@@ -51,6 +52,21 @@ export const getDashboard = async (role: UserRole) => {
             .sort({ 'moderation.submittedAt': 1, createdAt: 1 })
             .limit(PENDING_PREVIEW_LIMIT)
             .lean(),
+        Location.find({
+            status: 'approved',
+            isDeleted: { $ne: true },
+            'ratingSummary.count': { $gt: 0 },
+        })
+            .select({
+                name: 1,
+                categoryCode: 1,
+                'address.wardNameSnapshot': 1,
+                images: 1,
+                ratingSummary: 1,
+            })
+            .sort({ 'ratingSummary.average': -1, 'ratingSummary.count': -1, _id: 1 })
+            .limit(TOP_RATED_LOCATION_LIMIT)
+            .lean(),
         role === 'admin' ? getAdminUserStats() : Promise.resolve(null),
     ]);
 
@@ -72,6 +88,17 @@ export const getDashboard = async (role: UserRole) => {
                 categoryName: categoryNames.get(location.categoryCode) ?? location.categoryCode,
                 wardName: location.address.wardNameSnapshot,
                 submittedAt: location.moderation.submittedAt ?? location.createdAt,
+            })),
+            topRated: topRated.map((location) => ({
+                id: location._id.toString(),
+                name: location.name,
+                categoryCode: location.categoryCode,
+                categoryName: categoryNames.get(location.categoryCode) ?? location.categoryCode,
+                wardName: location.address.wardNameSnapshot,
+                coverImageUrl: [...location.images]
+                    .sort((left, right) => left.position - right.position)[0]?.url ?? null,
+                averageRating: location.ratingSummary.average,
+                reviewCount: location.ratingSummary.count,
             })),
         },
         reviews: {

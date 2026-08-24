@@ -764,6 +764,7 @@ export function LocationSubmitForm({
 
         <Card title="Hình ảnh (1-5 ảnh)" style={{ marginBottom: 16 }}>
           <Upload
+            className={styles.imageUpload}
             listType="picture-card"
             fileList={fileList}
             beforeUpload={beforeUpload}
@@ -774,18 +775,22 @@ export function LocationSubmitForm({
             itemRender={(originNode, file, currentFileList) => {
               const index = currentFileList.findIndex((item) => item.uid === file.uid)
               return (
-                <div>
+                <div className={styles.imageItem}>
                   {originNode}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
+                  <div className={styles.imageActions}>
                     <Button
                       size="small"
                       icon={<ArrowLeftOutlined />}
+                      aria-label={`Di chuyển ảnh ${index + 1} sang trái`}
+                      title="Di chuyển sang trái"
                       disabled={index <= 0}
                       onClick={() => moveImage(index, index - 1)}
                     />
                     <Button
                       size="small"
                       icon={<ArrowRightOutlined />}
+                      aria-label={`Di chuyển ảnh ${index + 1} sang phải`}
+                      title="Di chuyển sang phải"
                       disabled={index === -1 || index >= currentFileList.length - 1}
                       onClick={() => moveImage(index, index + 1)}
                     />
@@ -801,7 +806,7 @@ export function LocationSubmitForm({
               </div>
             )}
           </Upload>
-          <Typography.Text type="secondary">
+          <Typography.Text type="secondary" className={styles.imageHint}>
             Ảnh đầu tiên trong danh sách sẽ là ảnh đại diện. Dùng nút mũi tên để sắp xếp lại thứ tự.
             Ảnh chỉ được tải lên khi bạn bấm &quot;{submitLabel}&quot;.
           </Typography.Text>
