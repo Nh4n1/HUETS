@@ -18,12 +18,25 @@ import User from '../models/user.model.ts';
 import { getWardByCode } from './reference.service.ts';
 import { ApiError } from '../utils/apiError.ts';
 
-const MAX_TAGS = 10;
+const MAX_SEARCH_TAGS = 10;
 const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
 const DUPLICATE_RADIUS_METERS = 150;
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+const RECOMMENDED_LOCATION_SORT: Record<string, 1 | -1> = {
+    'ratingSummary.average': -1,
+    'ratingSummary.count': -1,
+    createdAt: -1,
+    _id: -1,
+};
+
+const RATING_DESC_LOCATION_SORT: Record<string, 1 | -1> = {
+    'ratingSummary.average': -1,
+    'ratingSummary.count': -1,
+    _id: -1,
+};
 
 interface Actor {
     id: string;
@@ -330,9 +343,6 @@ const validateTags = async (categoryCode: string, value: unknown) => {
     }
 
     const tagCodes = value.map((tag) => String(tag).trim()).filter(Boolean);
-    if (tagCodes.length > MAX_TAGS) {
-        throw new ApiError(422, 'TOO_MANY_TAGS', 'Location chỉ được chọn tối đa 10 Tag.');
-    }
     if (new Set(tagCodes).size !== tagCodes.length) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'tagCodes không được chứa mã trùng nhau.');
     }
@@ -744,8 +754,8 @@ export const buildPublicLocationFilter = (query: PublicLocationQuery): Record<st
             .split(',')
             .map((code) => code.trim().toLowerCase())
             .filter(Boolean))];
-        if (tagCodes.length > MAX_TAGS) {
-            throw new ApiError(400, 'VALIDATION_ERROR', `Chỉ được lọc tối đa ${MAX_TAGS} đặc điểm.`);
+        if (tagCodes.length > MAX_SEARCH_TAGS) {
+            throw new ApiError(400, 'VALIDATION_ERROR', `Chỉ được lọc tối đa ${MAX_SEARCH_TAGS} đặc điểm.`);
         }
         if (tagCodes.some((code) => !/^[a-z0-9_]+$/.test(code))) {
             throw new ApiError(400, 'VALIDATION_ERROR', 'Danh sách đặc điểm lọc không hợp lệ.');
@@ -759,24 +769,44 @@ export const buildPublicLocationFilter = (query: PublicLocationQuery): Record<st
 export const getPublicLocations = async (query: PublicLocationQuery) => {
     const page = positiveInteger(query.page, 1);
     const pageSize = positiveInteger(query.pageSize, 12, 100);
+
     const filter = buildPublicLocationFilter(query);
-    const sort: Record<string, 1 | -1> = query.sortBy === 'rating_desc'
-        ? { 'ratingSummary.average': -1, 'ratingSummary.count': -1, _id: -1 }
-        : { createdAt: -1, _id: -1 };
+
+    /*
+     * Default browse:
+     * - ưu tiên Location được đánh giá tốt;
+     * - nếu cùng rating thì ưu tiên Location có nhiều review hơn;
+     * - createdAt chỉ là tiêu chí phụ;
+     *
+     * Khi client chủ động chọn rating_desc thì dùng sort đánh giá thuần.
+     */
+    const sort: Record<string, 1 | -1> =
+        query.sortBy === 'rating_desc'
+            ? RATING_DESC_LOCATION_SORT
+            : RECOMMENDED_LOCATION_SORT;
 
     const [locations, total] = await Promise.all([
-        Location.find(filter).sort(sort).skip((page - 1) * pageSize).limit(pageSize),
+        Location.find(filter)
+            .sort(sort)
+            .skip((page - 1) * pageSize)
+            .limit(pageSize),
+
         Location.countDocuments(filter),
     ]);
+
     const categoryNames = await categoryMapFor(locations);
 
     return {
-        data: locations.map((location) => toLocationSummary(location, categoryNames)),
+        data: locations.map((location) =>
+            toLocationSummary(location, categoryNames)
+        ),
         meta: {
             page,
             pageSize,
             total,
-            totalPages: total === 0 ? 0 : Math.ceil(total / pageSize),
+            totalPages: total === 0
+                ? 0
+                : Math.ceil(total / pageSize),
         },
     };
 };

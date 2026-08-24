@@ -38,6 +38,7 @@ import styles from './LocationSubmitForm.module.css'
 
 const MAX_IMAGES = 5
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+const MAX_TOTAL_IMAGE_SIZE_BYTES = 20 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 const DAYS_OF_WEEK = [
@@ -112,6 +113,7 @@ export function LocationSubmitForm({
   const [tagGroups, setTagGroups] = useState([])
   const [tagsLoading, setTagsLoading] = useState(mode === 'edit')
   const [selectedTagsByGroup, setSelectedTagsByGroup] = useState({})
+  const [tagError, setTagError] = useState('')
 
   const [openingStatus, setOpeningStatus] = useState(
     initialLocation?.openingHours?.status ?? 'unknown',
@@ -120,8 +122,11 @@ export function LocationSubmitForm({
     () => scheduledDaysFromLocation(initialLocation),
   )
   const [scheduleErrors, setScheduleErrors] = useState({})
+  const [openingHoursError, setOpeningHoursError] = useState('')
 
   const [fileList, setFileList] = useState(() => imageFileListFromLocation(initialLocation))
+  const [imageError, setImageError] = useState('')
+  const [mapPositionError, setMapPositionError] = useState('')
 
   const [submitting, setSubmitting] = useState(false)
   const [submitPhase, setSubmitPhase] = useState('')
@@ -180,7 +185,7 @@ export function LocationSubmitForm({
       })
       .catch((error) => {
         if (active) {
-          setErrorMessage(
+          setTagError(
             error.response?.data?.message ?? 'Không thể tải đặc điểm của địa điểm.',
           )
         }
@@ -197,6 +202,7 @@ export function LocationSubmitForm({
   async function handleCategoryChange(categoryCode) {
     setSelectedTagsByGroup({})
     setTagGroups([])
+    setTagError('')
     if (!categoryCode) return
 
     try {
@@ -204,7 +210,7 @@ export function LocationSubmitForm({
       const result = await getTagsByCategoryApi(categoryCode)
       setTagGroups(result.groups)
     } catch (error) {
-      message.error(
+      setTagError(
         error.response?.data?.message ?? 'Không thể tải danh sách đặc điểm cho danh mục này.',
       )
     } finally {
@@ -213,6 +219,7 @@ export function LocationSubmitForm({
   }
 
   function handleGroupTagsChange(group, value) {
+    setTagError('')
     setSelectedTagsByGroup((previous) => ({
       ...previous,
       [group.code]: group.selectionMode === 'single' ? (value ? [value] : []) : value,
@@ -221,6 +228,7 @@ export function LocationSubmitForm({
 
   function handleMapPositionChange(lat, lng) {
     form.setFieldsValue({ latitude: lat, longitude: lng })
+    setMapPositionError('')
   }
 
   function handleFinishFailed({ errorFields }) {
@@ -228,7 +236,13 @@ export function LocationSubmitForm({
       (field) => field.name.includes('latitude') || field.name.includes('longitude'),
     )
     if (hasPositionError) {
-      message.error('Vui lòng chọn vị trí trên bản đồ.')
+      setMapPositionError('Vui lòng chọn vị trí trên bản đồ.')
+    }
+    validateImages()
+    try {
+      buildOpeningHoursPayload()
+    } catch {
+      // buildOpeningHoursPayload writes the error next to the affected schedule.
     }
   }
 
@@ -248,6 +262,7 @@ export function LocationSubmitForm({
       delete next[dayValue]
       return next
     })
+    setOpeningHoursError('')
   }
 
   function handleDayTimeChange(dayValue, rangeIndex, times) {
@@ -266,6 +281,7 @@ export function LocationSubmitForm({
       delete next[dayValue]
       return next
     })
+    setOpeningHoursError('')
   }
 
   function addDayRange(dayValue) {
@@ -281,6 +297,7 @@ export function LocationSubmitForm({
       delete next[dayValue]
       return next
     })
+    setOpeningHoursError('')
   }
 
   function removeDayRange(dayValue, rangeIndex) {
@@ -300,6 +317,7 @@ export function LocationSubmitForm({
       delete next[dayValue]
       return next
     })
+    setOpeningHoursError('')
   }
 
   function applyFirstCompleteRangeToDays(dayValues) {
@@ -326,6 +344,7 @@ export function LocationSubmitForm({
       return next
     })
     setScheduleErrors({})
+    setOpeningHoursError('')
   }
 
   function moveImage(fromIndex, toIndex) {
@@ -341,17 +360,18 @@ export function LocationSubmitForm({
   // Cloudinary upload happens later, when the form is submitted.
   function beforeUpload(file) {
     if (fileList.length >= MAX_IMAGES) {
-      message.error(`Chỉ được tải lên tối đa ${MAX_IMAGES} ảnh.`)
+      setImageError(`Chỉ được tải lên tối đa ${MAX_IMAGES} ảnh.`)
       return Upload.LIST_IGNORE
     }
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      message.error('Ảnh chỉ hỗ trợ định dạng JPG, PNG hoặc WebP.')
+      setImageError('Ảnh chỉ hỗ trợ định dạng JPG, PNG hoặc WebP.')
       return Upload.LIST_IGNORE
     }
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      message.error('Mỗi ảnh không được vượt quá 5MB.')
+      setImageError('Mỗi ảnh không được vượt quá 5MB.')
       return Upload.LIST_IGNORE
     }
+    setImageError('')
     return false
   }
 
@@ -359,6 +379,22 @@ export function LocationSubmitForm({
     () => Object.values(selectedTagsByGroup).flat().filter(Boolean),
     [selectedTagsByGroup],
   )
+
+  function validateImages() {
+    if (fileList.length < 1) {
+      setImageError('Vui lòng chọn ít nhất 1 ảnh.')
+      return false
+    }
+    const totalNewImageSize = fileList
+      .filter((file) => file.originFileObj)
+      .reduce((total, file) => total + (file.size ?? 0), 0)
+    if (totalNewImageSize > MAX_TOTAL_IMAGE_SIZE_BYTES) {
+      setImageError('Tổng dung lượng ảnh mới không được vượt quá 20MB.')
+      return false
+    }
+    setImageError('')
+    return true
+  }
 
   function buildOpeningHoursPayload() {
     if (openingStatus !== 'scheduled') {
@@ -399,12 +435,17 @@ export function LocationSubmitForm({
     setScheduleErrors(errors)
 
     if (Object.keys(errors).length > 0) {
-      throw new Error('Vui lòng kiểm tra lại giờ hoạt động của từng ngày.')
+      const message = 'Vui lòng kiểm tra lại giờ hoạt động của từng ngày.'
+      setOpeningHoursError(message)
+      throw new Error(message)
     }
 
     if (periods.length === 0) {
-      throw new Error('Vui lòng chọn giờ mở cửa cho ít nhất một ngày.')
+      const message = 'Vui lòng chọn giờ mở cửa cho ít nhất một ngày.'
+      setOpeningHoursError(message)
+      throw new Error(message)
     }
+    setOpeningHoursError('')
     return { status: 'scheduled', periods }
   }
 
@@ -429,20 +470,18 @@ export function LocationSubmitForm({
   async function handleFinish(values) {
     setErrorMessage('')
 
-    if (fileList.length < 1) {
-      message.error('Vui lòng chọn ít nhất 1 ảnh.')
-      return
-    }
+    let hasInlineError = !validateImages()
 
     let openingHours
     try {
       openingHours = buildOpeningHoursPayload()
-    } catch (error) {
-      message.error(error.message)
-      return
+    } catch {
+      hasInlineError = true
     }
+    if (hasInlineError) return
 
     const uploadedPublicIds = []
+    let submissionStage = 'images'
 
     try {
       setSubmitting(true)
@@ -484,6 +523,7 @@ export function LocationSubmitForm({
           : { assetToken: assetTokenByUid.get(file.uid), position }
       ))
 
+      submissionStage = 'location'
       setSubmitPhase(mode === 'edit' ? 'Đang cập nhật địa điểm...' : 'Đang tạo địa điểm...')
       const submitRequest = onSubmit ?? createLocationApi
       const location = await submitRequest({
@@ -506,12 +546,48 @@ export function LocationSubmitForm({
 
       onSuccess?.(location)
     } catch (error) {
-      setErrorMessage(
-        error.response?.data?.message
-          ?? (mode === 'edit'
-            ? 'Tải ảnh lên hoặc cập nhật địa điểm không thành công.'
-            : 'Tải ảnh lên hoặc tạo địa điểm không thành công.'),
-      )
+      const responseError = error.response?.data
+      const messageText = responseError?.message
+        ?? (mode === 'edit'
+          ? 'Tải ảnh lên hoặc cập nhật địa điểm không thành công.'
+          : 'Tải ảnh lên hoặc tạo địa điểm không thành công.')
+
+      if (['INVALID_CATEGORY_TAG_COMBINATION', 'TOO_MANY_TAGS'].includes(responseError?.code)) {
+        if (responseError?.details?.invalidTagCodes || responseError?.details?.groupCode) {
+          setTagError(messageText)
+        } else {
+          form.setFields([{ name: 'categoryCode', errors: [messageText] }])
+        }
+      } else if (responseError?.code === 'INVALID_WARD') {
+        form.setFields([{ name: 'wardCode', errors: [messageText] }])
+      } else if (responseError?.code === 'INVALID_COORDINATES') {
+        setMapPositionError(messageText)
+      } else if (responseError?.code === 'INVALID_OPENING_HOURS') {
+        setOpeningHoursError(messageText)
+      } else if (responseError?.code?.startsWith('INVALID_IMAGE')) {
+        setImageError(messageText)
+      } else if (responseError?.code === 'VALIDATION_ERROR') {
+        const matchingField = [
+          ['Tên địa điểm', 'name'],
+          ['Mô tả', 'description'],
+          ['Category', 'categoryCode'],
+          ['Phường/xã', 'wardCode'],
+          ['Địa chỉ', 'addressLine'],
+          ['Ghi chú vị trí', 'locationNote'],
+          ['Lý do chỉnh sửa', 'reason'],
+        ].find(([label]) => messageText.startsWith(label))
+        if (matchingField) {
+          form.setFields([{ name: matchingField[1], errors: [messageText] }])
+        } else if (messageText.includes('tagCodes')) {
+          setTagError(messageText)
+        } else {
+          setErrorMessage(messageText)
+        }
+      } else if (!responseError && submissionStage === 'images') {
+        setImageError(messageText)
+      } else {
+        setErrorMessage(messageText)
+      }
 
       // Best-effort cleanup: don't leave images orphaned on Cloudinary if a later
       // step (confirm/create) failed. Swallow delete errors so the original
@@ -540,12 +616,22 @@ export function LocationSubmitForm({
         <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} />
       ) : null}
 
-      <Form className={styles.form} layout="vertical" form={form} onFinish={handleFinish} onFinishFailed={handleFinishFailed}>
+      <Form
+        className={styles.form}
+        layout="vertical"
+        form={form}
+        scrollToFirstError
+        onFinish={handleFinish}
+        onFinishFailed={handleFinishFailed}
+      >
         <Card title="Thông tin cơ bản" style={{ marginBottom: 16 }}>
           <Form.Item
             name="name"
             label="Tên địa điểm"
-            rules={[{ required: true, message: 'Vui lòng nhập tên địa điểm.' }]}
+            rules={[
+              { required: true, whitespace: true, message: 'Vui lòng nhập tên địa điểm.' },
+              { max: 200, message: 'Tên địa điểm không được vượt quá 200 ký tự.' },
+            ]}
           >
             <Input placeholder="VD: Đại Nội Huế" />
           </Form.Item>
@@ -553,7 +639,10 @@ export function LocationSubmitForm({
           <Form.Item
             name="description"
             label="Mô tả"
-            rules={[{ required: true, message: 'Vui lòng nhập mô tả.' }]}
+            rules={[
+              { required: true, whitespace: true, message: 'Vui lòng nhập mô tả.' },
+              { max: 5000, message: 'Mô tả không được vượt quá 5000 ký tự.' },
+            ]}
           >
             <Input.TextArea rows={4} placeholder="Mô tả chi tiết về địa điểm" />
           </Form.Item>
@@ -591,12 +680,19 @@ export function LocationSubmitForm({
           <Form.Item
             name="addressLine"
             label="Địa chỉ"
-            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ.' }]}
+            rules={[
+              { required: true, whitespace: true, message: 'Vui lòng nhập địa chỉ.' },
+              { max: 500, message: 'Địa chỉ không được vượt quá 500 ký tự.' },
+            ]}
           >
             <Input placeholder="Số nhà, tên đường" />
           </Form.Item>
 
-          <Form.Item name="locationNote" label="Ghi chú vị trí">
+          <Form.Item
+            name="locationNote"
+            label="Ghi chú vị trí"
+            rules={[{ max: 1000, message: 'Ghi chú vị trí không được vượt quá 1000 ký tự.' }]}
+          >
             <Input placeholder="VD: Đi vào hẻm nhỏ cạnh quán cà phê" />
           </Form.Item>
 
@@ -607,7 +703,12 @@ export function LocationSubmitForm({
             <Input />
           </Form.Item>
 
-          <Form.Item label="Vị trí trên bản đồ" required>
+          <Form.Item
+            label="Vị trí trên bản đồ"
+            required
+            validateStatus={mapPositionError ? 'error' : undefined}
+            help={mapPositionError || undefined}
+          >
             <LocationMapPicker
               value={{ lat: mapLatitude, lng: mapLongitude }}
               onChange={handleMapPositionChange}
@@ -647,6 +748,16 @@ export function LocationSubmitForm({
               </div>
             </div>
           ))}
+          {!tagsLoading && tagGroups.length > 0 ? (
+            <Typography.Text type="secondary">
+              Đã chọn {tagCodes.length} đặc điểm. Không giới hạn tổng số lượng.
+            </Typography.Text>
+          ) : null}
+          {tagError ? (
+            <Typography.Text type="danger" className={styles.fieldError}>
+              {tagError}
+            </Typography.Text>
+          ) : null}
         </Card>
 
         <Card title="Giờ hoạt động" style={{ marginBottom: 16 }}>
@@ -658,6 +769,7 @@ export function LocationSubmitForm({
             onChange={(event) => {
               setOpeningStatus(event.target.value)
               setScheduleErrors({})
+              setOpeningHoursError('')
             }}
             options={[
               { value: 'unknown', label: 'Chưa rõ' },
@@ -760,6 +872,11 @@ export function LocationSubmitForm({
               Tóm tắt: {openingSummary}
             </Typography.Paragraph>
           )}
+          {openingHoursError ? (
+            <Typography.Text type="danger" className={styles.fieldError}>
+              {openingHoursError}
+            </Typography.Text>
+          ) : null}
         </Card>
 
         <Card title="Hình ảnh (1-5 ảnh)" style={{ marginBottom: 16 }}>
@@ -768,7 +885,10 @@ export function LocationSubmitForm({
             listType="picture-card"
             fileList={fileList}
             beforeUpload={beforeUpload}
-            onChange={({ fileList: nextFileList }) => setFileList(nextFileList)}
+            onChange={({ fileList: nextFileList }) => {
+              setFileList(nextFileList)
+              if (nextFileList.length !== fileList.length) setImageError('')
+            }}
             multiple
             maxCount={MAX_IMAGES}
             accept="image/jpeg,image/png,image/webp"
@@ -810,6 +930,11 @@ export function LocationSubmitForm({
             Ảnh đầu tiên trong danh sách sẽ là ảnh đại diện. Dùng nút mũi tên để sắp xếp lại thứ tự.
             Ảnh chỉ được tải lên khi bạn bấm &quot;{submitLabel}&quot;.
           </Typography.Text>
+          {imageError ? (
+            <Typography.Text type="danger" className={styles.fieldError}>
+              {imageError}
+            </Typography.Text>
+          ) : null}
         </Card>
 
         {mode === 'edit' ? (

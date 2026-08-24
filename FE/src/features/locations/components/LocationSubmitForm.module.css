@@ -38,6 +38,11 @@
   margin-top: 0.75rem;
 }
 
+.fieldError {
+  display: block;
+  margin-top: 0.5rem;
+}
+
 .submitBar {
   display: flex;
   padding: 0.8rem;
