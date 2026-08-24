@@ -20,7 +20,6 @@ describe('admin reference schemas', () => {
         expect(createCategorySchema.parse({ code: 'spa', name: 'Spa' })).toMatchObject({
             sortOrder: 0,
             allowedTagCodes: [],
-            recommendedTagCodes: [],
         });
     });
 
@@ -31,7 +30,6 @@ describe('admin reference schemas', () => {
     it('rejects duplicate tag codes in category rules', () => {
         expect(() => updateCategoryTagRulesSchema.parse({
             allowedTagCodes: ['quiet', 'quiet'],
-            recommendedTagCodes: [],
         })).toThrow();
     });
 

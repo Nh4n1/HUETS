@@ -18,7 +18,6 @@ export const createCategorySchema = z.object({
     description: z.string().trim().max(500).optional(),
     sortOrder: sortOrderSchema.default(0),
     allowedTagCodes: tagCodeListSchema.default([]),
-    recommendedTagCodes: tagCodeListSchema.default([]),
 }).strict();
 
 export const updateCategorySchema = z.object({
@@ -30,7 +29,6 @@ export const updateCategorySchema = z.object({
 
 export const updateCategoryTagRulesSchema = z.object({
     allowedTagCodes: tagCodeListSchema,
-    recommendedTagCodes: tagCodeListSchema,
 }).strict();
 
 export const createTagGroupSchema = z.object({

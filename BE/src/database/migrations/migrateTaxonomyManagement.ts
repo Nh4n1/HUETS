@@ -11,7 +11,7 @@ const migrate = async () => {
     for (const [categoryCode, rule] of Object.entries(categoryTagWhitelist)) {
         const result = await Category.updateOne(
             { code: categoryCode },
-            { $set: { allowedTagCodes: rule.allowedTagCodes, recommendedTagCodes: rule.recommendedTagCodes } },
+            { $set: { allowedTagCodes: rule.allowedTagCodes }, $unset: { recommendedTagCodes: '' } },
         );
         if (result.matchedCount !== 1) {
             throw new Error(`Không tìm thấy Category cần migrate: ${categoryCode}`);
@@ -26,16 +26,14 @@ const migrate = async () => {
     }
 
     const [categories, groups] = await Promise.all([
-        Category.find({}).select({ code: 1, allowedTagCodes: 1, recommendedTagCodes: 1 }).lean(),
+        Category.find({}).select({ code: 1, allowedTagCodes: 1 }).lean(),
         TagGroup.find({}).select({ code: 1, sortOrder: 1, tags: 1 }).lean(),
     ]);
     const knownTagCodes = new Set(groups.flatMap(({ tags }) => tags.map(({ code }) => code)));
 
     for (const category of categories) {
-        const allowed = new Set(category.allowedTagCodes);
         const invalidAllowed = category.allowedTagCodes.filter((code) => !knownTagCodes.has(code));
-        const invalidRecommended = category.recommendedTagCodes.filter((code) => !knownTagCodes.has(code) || !allowed.has(code));
-        if (invalidAllowed.length > 0 || invalidRecommended.length > 0) {
+        if (invalidAllowed.length > 0) {
             throw new Error(`Taxonomy không hợp lệ tại Category ${category.code}.`);
         }
     }

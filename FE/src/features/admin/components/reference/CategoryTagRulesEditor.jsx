@@ -1,5 +1,4 @@
 import { Button, Checkbox, Drawer, Empty, Space, Tag, Typography } from 'antd'
-import { StarFilled, StarOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import styles from '../../pages/reference/AdminReferencePage.module.css'
 
@@ -10,7 +9,6 @@ export function CategoryTagRulesEditor({ open, category, groups, saving, onClose
 
 function CategoryTagRulesEditorState({ category, groups, saving, onClose, onSave }) {
   const [allowed, setAllowed] = useState(() => new Set(category.allowedTagCodes))
-  const [recommended, setRecommended] = useState(() => new Set(category.recommendedTagCodes))
 
   const catalogGroups = useMemo(() => groups.filter((group) => group.tags.length > 0), [groups])
 
@@ -19,23 +17,6 @@ function CategoryTagRulesEditorState({ category, groups, saving, onClose, onSave
       const next = new Set(current)
       if (checked) next.add(code)
       else next.delete(code)
-      return next
-    })
-    if (!checked) {
-      setRecommended((current) => {
-        const next = new Set(current)
-        next.delete(code)
-        return next
-      })
-    }
-  }
-
-  function toggleRecommended(code) {
-    if (!allowed.has(code)) return
-    setRecommended((current) => {
-      const next = new Set(current)
-      if (next.has(code)) next.delete(code)
-      else next.add(code)
       return next
     })
   }
@@ -54,7 +35,6 @@ function CategoryTagRulesEditorState({ category, groups, saving, onClose, onSave
             loading={saving}
             onClick={() => onSave({
               allowedTagCodes: [...allowed],
-              recommendedTagCodes: [...recommended],
             })}
           >
             Lưu quy tắc
@@ -63,7 +43,7 @@ function CategoryTagRulesEditorState({ category, groups, saving, onClose, onSave
       )}
     >
       <Typography.Paragraph type="secondary">
-        Checkbox cho phép Tag trong danh mục; ngôi sao đánh dấu Tag được đề xuất.
+        Chọn các Tag được phép sử dụng với danh mục này.
       </Typography.Paragraph>
       {catalogGroups.length === 0 ? <Empty description="Chưa có Tag" /> : catalogGroups.map((group) => (
         <section className={styles.ruleGroup} key={group.code}>
@@ -83,13 +63,6 @@ function CategoryTagRulesEditorState({ category, groups, saving, onClose, onSave
               >
                 {tag.name} <Typography.Text type="secondary">· {tag.code}</Typography.Text> {!tag.isActive ? <Tag>Đã ngừng</Tag> : null}
               </Checkbox>
-              <Button
-                type="text"
-                aria-label={recommended.has(tag.code) ? `Bỏ đề xuất ${tag.name}` : `Đề xuất ${tag.name}`}
-                disabled={!tag.isActive || !allowed.has(tag.code)}
-                icon={recommended.has(tag.code) ? <StarFilled className={styles.star} /> : <StarOutlined />}
-                onClick={() => toggleRecommended(tag.code)}
-              />
             </div>
           ))}
         </section>

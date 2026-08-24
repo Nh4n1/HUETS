@@ -8,7 +8,6 @@ export interface ICategory extends Document {
     sortOrder: number;
     isActive: boolean;
     allowedTagCodes: string[];
-    recommendedTagCodes: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -21,7 +20,6 @@ const categorySchema = new Schema<ICategory>(
         sortOrder: { type: Number, required: true, default: 0 },
         isActive: { type: Boolean, required: true, default: true },
         allowedTagCodes: { type: [String], required: true, default: [] },
-        recommendedTagCodes: { type: [String], required: true, default: [] },
     },
     { timestamps: true, collection: 'categories' },
 );

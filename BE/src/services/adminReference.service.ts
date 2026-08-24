@@ -57,16 +57,6 @@ const assertActiveTagCodes = async (codes: string[]) => {
     }
 };
 
-const assertRecommendedSubset = (allowedTagCodes: string[], recommendedTagCodes: string[]) => {
-    const allowed = new Set(allowedTagCodes);
-    const invalidTagCodes = recommendedTagCodes.filter((code) => !allowed.has(code));
-    if (invalidTagCodes.length > 0) {
-        throw new ApiError(422, 'RECOMMENDED_TAG_NOT_ALLOWED', 'Tag được đề xuất phải nằm trong danh sách Tag được phép.', {
-            invalidTagCodes,
-        });
-    }
-};
-
 const categoryView = (category: {
     code: string;
     name: string;
@@ -74,7 +64,6 @@ const categoryView = (category: {
     sortOrder: number;
     isActive: boolean;
     allowedTagCodes: string[];
-    recommendedTagCodes: string[];
     createdAt?: Date;
     updatedAt?: Date;
 }, locationUsageCount?: number) => ({
@@ -84,9 +73,7 @@ const categoryView = (category: {
     sortOrder: category.sortOrder,
     isActive: category.isActive,
     allowedTagCodes: category.allowedTagCodes,
-    recommendedTagCodes: category.recommendedTagCodes,
     allowedTagCount: category.allowedTagCodes.length,
-    recommendedTagCount: category.recommendedTagCodes.length,
     ...(locationUsageCount === undefined ? {} : { locationUsageCount }),
     ...(category.createdAt ? { createdAt: category.createdAt } : {}),
     ...(category.updatedAt ? { updatedAt: category.updatedAt } : {}),
@@ -129,7 +116,6 @@ export const getCategory = async (rawCode: string) => {
 
 export const createCategory = async (input: unknown) => {
     const data = parse(createCategorySchema, input);
-    assertRecommendedSubset(data.allowedTagCodes, data.recommendedTagCodes);
     await assertActiveTagCodes(data.allowedTagCodes);
     if (await Category.exists({ code: data.code })) {
         throw new ApiError(409, 'CATEGORY_CODE_ALREADY_EXISTS', 'Code danh mục đã tồn tại.');
@@ -139,7 +125,6 @@ export const createCategory = async (input: unknown) => {
         name: data.name,
         sortOrder: data.sortOrder,
         allowedTagCodes: data.allowedTagCodes,
-        recommendedTagCodes: data.recommendedTagCodes,
         ...(data.description === undefined ? {} : { description: data.description }),
     });
     return categoryView(category);
@@ -165,7 +150,6 @@ export const updateCategory = async (rawCode: string, input: unknown) => {
 export const updateCategoryTagRules = async (rawCode: string, input: unknown) => {
     const code = parseCode(rawCode, 'danh mục');
     const data = parse(updateCategoryTagRulesSchema, input);
-    assertRecommendedSubset(data.allowedTagCodes, data.recommendedTagCodes);
     await assertActiveTagCodes(data.allowedTagCodes);
     const category = await Category.findOne({ code });
     if (!category) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy danh mục.');
@@ -186,7 +170,6 @@ export const updateCategoryTagRules = async (rawCode: string, input: unknown) =>
     }
 
     category.allowedTagCodes = data.allowedTagCodes;
-    category.recommendedTagCodes = data.recommendedTagCodes;
     await category.save();
     return categoryView(category);
 };

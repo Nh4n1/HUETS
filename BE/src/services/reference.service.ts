@@ -70,7 +70,7 @@ export const getCategories = async () => Category.find({ isActive: true })
 export const getTagsByCategory = async (rawCategoryCode: string) => {
     const categoryCode = rawCategoryCode.trim().toLowerCase();
     const category = await Category.findOne({ code: categoryCode, isActive: true })
-        .select({ _id: 0, code: 1, name: 1, allowedTagCodes: 1, recommendedTagCodes: 1 })
+        .select({ _id: 0, code: 1, name: 1, allowedTagCodes: 1 })
         .lean();
 
     if (!category) {
@@ -82,34 +82,23 @@ export const getTagsByCategory = async (rawCategoryCode: string) => {
         .sort({ sortOrder: 1, code: 1 })
         .lean();
     const allowedCodes = new Set(category.allowedTagCodes);
-    const recommendedCodes = new Set(category.recommendedTagCodes);
-    const tagLookup = new Map<string, { code: string; name: string }>();
 
     const groups = storedGroups.flatMap((group) => {
         const tags = group.tags
             .filter((tag) => tag.isActive && allowedCodes.has(tag.code))
             .map((tag) => {
-                const value = {
+                return {
                     code: tag.code,
                     name: tag.name,
-                    isRecommended: recommendedCodes.has(tag.code),
                 };
-                tagLookup.set(tag.code, { code: tag.code, name: tag.name });
-                return value;
             });
 
         if (tags.length === 0) return [];
         return [{ code: group.code, name: group.name, selectionMode: group.selectionMode, tags }];
     });
 
-    const recommendedTags = category.recommendedTagCodes
-        .map((code) => tagLookup.get(code))
-        .filter((tag): tag is { code: string; name: string } => tag !== undefined);
-
     return {
         category: { code: category.code, name: category.name },
-        maxSelections: 10,
-        recommendedTags,
         groups,
     };
 };

@@ -58,7 +58,7 @@ export function AdminCategoriesPage() {
         })
         message.success('Đã cập nhật danh mục.')
       } else {
-        await createAdminCategoryApi({ ...values, allowedTagCodes: [], recommendedTagCodes: [] })
+        await createAdminCategoryApi({ ...values, allowedTagCodes: [] })
         message.success('Đã tạo danh mục.')
       }
       setEditor({ open: false, category: null })
@@ -104,7 +104,7 @@ export function AdminCategoriesPage() {
     { title: 'Danh mục', dataIndex: 'name', render: (name, row) => <><strong>{name}</strong><br /><Typography.Text type="secondary">{row.code}</Typography.Text></> },
     { title: 'Thứ tự', dataIndex: 'sortOrder', width: 90 },
     { title: 'Sử dụng', dataIndex: 'locationUsageCount', width: 100 },
-    { title: 'Tag', width: 170, render: (_, row) => `${row.allowedTagCount} cho phép · ${row.recommendedTagCount} đề xuất` },
+    { title: 'Tag', width: 130, render: (_, row) => `${row.allowedTagCount} cho phép` },
     { title: 'Trạng thái', dataIndex: 'isActive', width: 130, render: (active, row) => <Switch checked={active} checkedChildren="Bật" unCheckedChildren="Tắt" onChange={(checked) => setActive(row, checked)} /> },
     {
       title: 'Thao tác', width: 220, render: (_, row) => (
