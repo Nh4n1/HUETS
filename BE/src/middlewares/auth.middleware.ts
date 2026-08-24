@@ -32,6 +32,14 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
     return next();
 };
 
+export const optionalAuthenticate = (req: Request, res: Response, next: NextFunction) => {
+    const header = req.headers.authorization;
+    if (!header?.startsWith('Bearer ') || header.slice('Bearer '.length).trim().length === 0) {
+        return next();
+    }
+    return authenticate(req, res, next);
+};
+
 export const authorize = (...allowedRoles: UserRole[]) => (
     req: Request,
     _res: Response,

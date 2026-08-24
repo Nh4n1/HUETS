@@ -24,6 +24,11 @@ export const confirmLocationImages = asyncHandler(async (req: Request, res: Resp
     return sendSuccess(res, 201, result);
 });
 
+export const confirmFeedbackImages = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    return sendSuccess(res, 201, await uploadService.confirmFeedbackImageUploads(req.body?.results, req.user.id));
+});
+
 // [POST] /api/uploads/location-images/delete
 export const deleteLocationImage = asyncHandler(async (req: Request, res: Response) => {
     if (!req.user) {

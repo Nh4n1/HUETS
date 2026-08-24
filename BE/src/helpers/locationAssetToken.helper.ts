@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
 const LOCATION_IMAGE_TYPE = 'location_image';
+const FEEDBACK_IMAGE_TYPE = 'feedback_image';
 const locationAssetTokenSecret = process.env.LOCATION_ASSET_TOKEN_SECRET || 'dev_location_asset_secret_change_me';
 
 export interface LocationImageAssetPayload {
@@ -14,6 +15,10 @@ export interface LocationImageAssetPayload {
     publicId?: string;
     mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
     sizeBytes: number;
+}
+
+export interface FeedbackImageAssetPayload extends Omit<LocationImageAssetPayload, 'type'> {
+    type: typeof FEEDBACK_IMAGE_TYPE;
 }
 
 export const signLocationImageAssetToken = (
@@ -40,4 +45,28 @@ export const verifyLocationImageAssetToken = (token: string): LocationImageAsset
     }
 
     return payload as LocationImageAssetPayload;
+};
+
+export const signFeedbackImageAssetToken = (
+    payload: Omit<FeedbackImageAssetPayload, 'type'>,
+    expiresIn: SignOptions['expiresIn'] = '30m',
+) => jwt.sign(
+    { ...payload, type: FEEDBACK_IMAGE_TYPE },
+    locationAssetTokenSecret,
+    { expiresIn },
+);
+
+export const verifyFeedbackImageAssetToken = (token: string): FeedbackImageAssetPayload => {
+    const payload = jwt.verify(token, locationAssetTokenSecret) as Partial<FeedbackImageAssetPayload>;
+    if (
+        payload.type !== FEEDBACK_IMAGE_TYPE
+        || typeof payload.sub !== 'string'
+        || typeof payload.url !== 'string'
+        || !['image/jpeg', 'image/png', 'image/webp'].includes(payload.mimeType ?? '')
+        || typeof payload.sizeBytes !== 'number'
+        || !Number.isFinite(payload.sizeBytes)
+    ) {
+        throw new Error('Invalid feedback image asset token payload.');
+    }
+    return payload as FeedbackImageAssetPayload;
 };
