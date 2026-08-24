@@ -1,4 +1,3 @@
-import { categoryTagWhitelist } from '../config/category-tag-whitelist.ts';
 import Category from '../models/category.model.ts';
 import TagGroup from '../models/tagGroup.model.ts';
 import type { AiSearchInput } from './aiSearchParser.service.ts';
@@ -8,7 +7,7 @@ export type SearchCatalog = Omit<AiSearchInput, 'query'>;
 
 export const getSearchCatalog = async (): Promise<SearchCatalog> => {
     const [categories, groups] = await Promise.all([
-        Category.find({ isActive: true }).select({ _id: 0, code: 1, name: 1 }).lean(),
+        Category.find({ isActive: true }).select({ _id: 0, code: 1, name: 1, allowedTagCodes: 1 }).lean(),
         TagGroup.find({ isActive: true }).select({ _id: 0, tags: 1 }).lean(),
     ]);
 
@@ -18,7 +17,7 @@ export const getSearchCatalog = async (): Promise<SearchCatalog> => {
             code: tag.code,
             name: tag.name,
             categoryCodes: categories
-                .filter(({ code }) => categoryTagWhitelist[code]?.allowedTagCodes.includes(tag.code))
+                .filter(({ allowedTagCodes }) => allowedTagCodes.includes(tag.code))
                 .map(({ code }) => code),
         }));
 

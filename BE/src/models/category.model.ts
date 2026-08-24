@@ -7,17 +7,21 @@ export interface ICategory extends Document {
     description?: string;
     sortOrder: number;
     isActive: boolean;
+    allowedTagCodes: string[];
+    recommendedTagCodes: string[];
     createdAt: Date;
     updatedAt: Date;
 }
 
 const categorySchema = new Schema<ICategory>(
     {
-        code: { type: String, required: true, trim: true },
+        code: { type: String, required: true, trim: true, lowercase: true, immutable: true },
         name: { type: String, required: true, trim: true },
         description: { type: String, trim: true },
         sortOrder: { type: Number, required: true, default: 0 },
         isActive: { type: Boolean, required: true, default: true },
+        allowedTagCodes: { type: [String], required: true, default: [] },
+        recommendedTagCodes: { type: [String], required: true, default: [] },
     },
     { timestamps: true, collection: 'categories' },
 );

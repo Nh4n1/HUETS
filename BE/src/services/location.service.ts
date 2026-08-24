@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { categoryTagWhitelist } from '../config/category-tag-whitelist.ts';
 import { verifyLocationImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
 import { normalizeSearchText } from '../helpers/text.helper.ts';
 import Category from '../models/category.model.ts';
@@ -336,19 +335,21 @@ export const parseLocationImages = (
     return images;
 };
 
-const validateTags = async (categoryCode: string, value: unknown) => {
+const validateTags = async (allowedTagCodes: string[], value: unknown) => {
     if (value === undefined) return [];
     if (!Array.isArray(value) || value.some((tag) => typeof tag !== 'string')) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'tagCodes phải là một mảng mã Tag.');
     }
 
     const tagCodes = value.map((tag) => String(tag).trim()).filter(Boolean);
+    if (tagCodes.length > MAX_SEARCH_TAGS) {
+        throw new ApiError(400, 'TOO_MANY_TAGS', `Chỉ được chọn tối đa ${MAX_SEARCH_TAGS} đặc điểm.`);
+    }
     if (new Set(tagCodes).size !== tagCodes.length) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'tagCodes không được chứa mã trùng nhau.');
     }
 
-    const rule = categoryTagWhitelist[categoryCode];
-    const allowedCodes = new Set(rule?.allowedTagCodes ?? []);
+    const allowedCodes = new Set(allowedTagCodes);
     const groups = await TagGroup.find({ isActive: true, 'tags.code': { $in: tagCodes } })
         .select({ _id: 0, code: 1, selectionMode: 1, tags: 1 })
         .lean();
@@ -637,12 +638,12 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
     const description = requiredString(input.description, 'Mô tả', 5000);
     const categoryCode = requiredString(input.categoryCode, 'Category', 100).toLowerCase();
     const category = await Category.findOne({ code: categoryCode, isActive: true })
-        .select({ code: 1, name: 1 });
-    if (!category || !categoryTagWhitelist[categoryCode]) {
+        .select({ code: 1, name: 1, allowedTagCodes: 1 });
+    if (!category) {
         throw new ApiError(422, 'INVALID_CATEGORY_TAG_COMBINATION', 'Category không tồn tại hoặc đã ngừng hoạt động.');
     }
 
-    const tagCodes = await validateTags(categoryCode, input.tagCodes);
+    const tagCodes = await validateTags(category.allowedTagCodes, input.tagCodes);
     const aliases = parseAliases(input.aliases, normalizedName);
     const wardCode = requiredString(input.wardCode, 'Phường/xã', 20);
     const ward = getWardByCode(wardCode);
@@ -987,11 +988,11 @@ export const updateAdminLocation = async (
     const description = requiredString(input.description, 'Mô tả', 5000);
     const categoryCode = requiredString(input.categoryCode, 'Category', 100).toLowerCase();
     const category = await Category.findOne({ code: categoryCode, isActive: true })
-        .select({ code: 1, name: 1 });
-    if (!category || !categoryTagWhitelist[categoryCode]) {
+        .select({ code: 1, name: 1, allowedTagCodes: 1 });
+    if (!category) {
         throw new ApiError(422, 'INVALID_CATEGORY_TAG_COMBINATION', 'Category không tồn tại hoặc đã ngừng hoạt động.');
     }
-    const tagCodes = await validateTags(categoryCode, input.tagCodes);
+    const tagCodes = await validateTags(category.allowedTagCodes, input.tagCodes);
     const aliases = parseAliases(input.aliases, normalizedName);
     const wardCode = requiredString(input.wardCode, 'Phường/xã', 20);
     const ward = getWardByCode(wardCode);

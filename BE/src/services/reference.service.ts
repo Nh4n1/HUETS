@@ -1,11 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { categoryTagWhitelist } from '../config/category-tag-whitelist.ts';
 import Category from '../models/category.model.ts';
 import TagGroup from '../models/tagGroup.model.ts';
-import { tagGroups as referenceTagGroups } from '../reference/reference.data.ts';
-import { validateReferenceCatalog } from '../reference/reference.validator.ts';
 import { ApiError } from '../utils/apiError.ts';
 
 interface WardReference {
@@ -14,8 +11,6 @@ interface WardReference {
     normalizedName: string;
     isActive: boolean;
 }
-
-validateReferenceCatalog();
 
 let wardCache: WardReference[] | undefined;
 
@@ -74,27 +69,23 @@ export const getCategories = async () => Category.find({ isActive: true })
 
 export const getTagsByCategory = async (rawCategoryCode: string) => {
     const categoryCode = rawCategoryCode.trim().toLowerCase();
-    const rule = categoryTagWhitelist[categoryCode];
     const category = await Category.findOne({ code: categoryCode, isActive: true })
-        .select({ _id: 0, code: 1, name: 1 })
+        .select({ _id: 0, code: 1, name: 1, allowedTagCodes: 1, recommendedTagCodes: 1 })
         .lean();
 
-    if (!category || !rule) {
+    if (!category) {
         throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy danh mục địa điểm.');
     }
 
-    const storedGroups = await TagGroup.find({ isActive: true, 'tags.code': { $in: rule.allowedTagCodes } })
+    const storedGroups = await TagGroup.find({ isActive: true, 'tags.code': { $in: category.allowedTagCodes } })
         .select({ _id: 0, code: 1, name: 1, selectionMode: 1, tags: 1 })
+        .sort({ sortOrder: 1, code: 1 })
         .lean();
-    const storedGroupByCode = new Map(storedGroups.map((group) => [group.code, group]));
-    const allowedCodes = new Set(rule.allowedTagCodes);
-    const recommendedCodes = new Set(rule.recommendedTagCodes);
+    const allowedCodes = new Set(category.allowedTagCodes);
+    const recommendedCodes = new Set(category.recommendedTagCodes);
     const tagLookup = new Map<string, { code: string; name: string }>();
 
-    const groups = referenceTagGroups.flatMap(({ code }) => {
-        const group = storedGroupByCode.get(code);
-        if (!group) return [];
-
+    const groups = storedGroups.flatMap((group) => {
         const tags = group.tags
             .filter((tag) => tag.isActive && allowedCodes.has(tag.code))
             .map((tag) => {
@@ -111,12 +102,12 @@ export const getTagsByCategory = async (rawCategoryCode: string) => {
         return [{ code: group.code, name: group.name, selectionMode: group.selectionMode, tags }];
     });
 
-    const recommendedTags = rule.recommendedTagCodes
+    const recommendedTags = category.recommendedTagCodes
         .map((code) => tagLookup.get(code))
         .filter((tag): tag is { code: string; name: string } => tag !== undefined);
 
     return {
-        category,
+        category: { code: category.code, name: category.name },
         maxSelections: 10,
         recommendedTags,
         groups,

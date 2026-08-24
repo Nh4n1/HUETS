@@ -1,4 +1,3 @@
-import { categoryTagWhitelist } from '../config/category-tag-whitelist.ts';
 import Category from '../models/category.model.ts';
 import TagGroup from '../models/tagGroup.model.ts';
 import { searchPlanSchema, type SearchInterpretation, type SearchPlan } from '../schemas/locationSearch.schema.ts';
@@ -16,7 +15,7 @@ export const validateSearchPlan = async (rawPlan: unknown): Promise<{
     const [category, groups] = await Promise.all([
         criteria.categoryCode
             ? Category.findOne({ code: criteria.categoryCode, isActive: true })
-                .select({ _id: 0, code: 1, name: 1 }).lean()
+                .select({ _id: 0, code: 1, name: 1, allowedTagCodes: 1 }).lean()
             : Promise.resolve(null),
         TagGroup.find({ isActive: true, 'tags.code': { $in: allTagCodes } })
             .select({ _id: 0, code: 1, selectionMode: 1, tags: 1 }).lean(),
@@ -30,7 +29,7 @@ export const validateSearchPlan = async (rawPlan: unknown): Promise<{
         .filter(({ isActive }) => isActive)
         .map(({ code, name }) => [code, name]));
     const allowedCodes = new Set(criteria.categoryCode
-        ? categoryTagWhitelist[criteria.categoryCode]?.allowedTagCodes ?? []
+        ? category?.allowedTagCodes ?? []
         : activeTagNames.keys());
     const invalidTagCodes = allTagCodes.filter((code) => !activeTagNames.has(code) || !allowedCodes.has(code));
     if (invalidTagCodes.length) {

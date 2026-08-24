@@ -2,7 +2,7 @@ import { aiSearchConfig } from '../config/aiSearch.config.ts';
 import { locationSearchProtectionConfig } from '../config/locationSearchProtection.config.ts';
 import { normalizeSearchText } from '../helpers/text.helper.ts';
 import Location from '../models/location.model.ts';
-import { tagGroups } from '../reference/reference.data.ts';
+import TagGroup from '../models/tagGroup.model.ts';
 import {
     executeLocationSearchRequestSchema,
     initialLocationSearchRequestSchema,
@@ -36,8 +36,14 @@ interface SearchPlanCacheEntry extends ParsedSearchPlan {
 const searchPlanCache = new Map<string, SearchPlanCacheEntry>();
 const searchesInFlight = new Map<string, Promise<ParsedSearchPlan>>();
 
-const normalizedTagPhrases = tagGroups.flatMap((group) => group.tags)
-    .filter((tag) => tag.isActive).map((tag) => normalizeSearchText(tag.name));
+const getNormalizedTagPhrases = async () => {
+    const groups = await TagGroup.find({ isActive: true })
+        .select({ _id: 0, tags: 1 })
+        .lean();
+    return groups.flatMap((group) => group.tags)
+        .filter((tag) => tag.isActive)
+        .map((tag) => normalizeSearchText(tag.name));
+};
 
 const findExactMatch = async (normalizedQuery: string): Promise<ExactMatch | null> => {
     const exactName = await Location.findOne({ status: 'approved', isDeleted: { $ne: true }, normalizedName: normalizedQuery })
@@ -53,7 +59,7 @@ export const decideSearchPath = async (query: string): Promise<SearchDecision> =
     const exactMatch = await findExactMatch(normalizedQuery);
     if (exactMatch?.type === 'name') return { path: 'fast', reason: 'exact_name' };
     if (exactMatch?.type === 'alias') return { path: 'fast', reason: 'exact_alias' };
-    return decideAfterExactLookup(normalizedQuery, normalizedTagPhrases);
+    return decideAfterExactLookup(normalizedQuery, await getNormalizedTagPhrases());
 };
 
 const executeBasicSearch = (input: InitialLocationSearchRequest) => getPublicLocations({

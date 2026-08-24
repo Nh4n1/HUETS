@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import Itinerary from '../models/itinerary.model.ts';
 import Location from '../models/location.model.ts';
 import LocationReview from '../models/locationReview.model.ts';
+import Category from '../models/category.model.ts';
 import * as userService from './user.service.ts';
 import { getDashboard } from './dashboard.service.ts';
 
@@ -21,7 +22,16 @@ const mockOldestPending = () => {
             address: { wardNameSnapshot: 'Phú Xuân' },
             moderation: { submittedAt },
             createdAt: submittedAt,
+            images: [],
+            ratingSummary: { average: 0, count: 0 },
         }]),
+    } as never);
+};
+
+const mockCategories = () => {
+    vi.spyOn(Category, 'find').mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        lean: vi.fn().mockResolvedValue([{ code: 'heritage', name: 'Di sản' }]),
     } as never);
 };
 
@@ -38,6 +48,7 @@ describe('dashboard.service', () => {
         vi.spyOn(Location, 'countDocuments').mockResolvedValue(1 as never);
         const userStatsSpy = vi.spyOn(userService, 'getAdminUserStats');
         mockOldestPending();
+        mockCategories();
 
         const result = await getDashboard('mod');
 
@@ -63,6 +74,7 @@ describe('dashboard.service', () => {
             moderators: 3,
         });
         mockOldestPending();
+        mockCategories();
 
         const result = await getDashboard('admin');
 
