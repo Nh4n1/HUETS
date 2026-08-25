@@ -16,6 +16,7 @@ import TagGroup from '../models/tagGroup.model.ts';
 import User from '../models/user.model.ts';
 import { getWardByCode } from './reference.service.ts';
 import { ApiError } from '../utils/apiError.ts';
+import { safeCreateLocationNotification } from './notification.service.ts';
 
 const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -1200,6 +1201,13 @@ const moderatePendingLocation = async (
     if (!location) {
         return throwModerationConflict(locationId);
     }
+    await safeCreateLocationNotification({
+        userId: location.createdBy,
+        locationId: location._id,
+        type: nextStatus === 'approved' ? 'LOCATION_APPROVED' : 'LOCATION_REJECTED',
+        locationName: location.name,
+        reason: location.moderation.rejectionReason,
+    });
     return {
         id: location._id.toString(),
         status: location.status,
@@ -1280,6 +1288,14 @@ const moderateLocationVisibility = async (
         { new: true, runValidators: true },
     );
     if (!location) return throwModerationConflict(locationId);
+
+    await safeCreateLocationNotification({
+        userId: location.createdBy,
+        locationId: location._id,
+        type: transition === 'hide' ? 'LOCATION_HIDDEN' : 'LOCATION_RESTORED',
+        locationName: location.name,
+        reason: transition === 'hide' ? location.moderation.hiddenReason : null,
+    });
 
     return {
         id: location._id.toString(),
