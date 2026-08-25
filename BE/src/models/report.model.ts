@@ -24,6 +24,12 @@ export interface IReportResolution {
     note: string | null;
 }
 
+export interface IReportEvidenceImage {
+    url: string;
+    publicId: string | null;
+    position: number;
+}
+
 export interface IReport extends Document {
     reporterId: Types.ObjectId;
     targetType: ReportTargetType;
@@ -33,6 +39,7 @@ export interface IReport extends Document {
     status: ReportStatus;
     targetSnapshot: IReportTargetSnapshot;
     resolution: IReportResolution;
+    evidenceImages: IReportEvidenceImage[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -57,6 +64,15 @@ const reportResolutionSchema = new Schema<IReportResolution>(
     { _id: false },
 );
 
+const reportEvidenceImageSchema = new Schema<IReportEvidenceImage>(
+    {
+        url: { type: String, required: true, trim: true },
+        publicId: { type: String, default: null, trim: true },
+        position: { type: Number, required: true, min: 0, max: 2 },
+    },
+    { _id: false },
+);
+
 const reportSchema = new Schema<IReport>(
     {
         reporterId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -67,6 +83,15 @@ const reportSchema = new Schema<IReport>(
         status: { type: String, enum: REPORT_STATUSES, required: true, default: 'pending' },
         targetSnapshot: { type: reportTargetSnapshotSchema, required: true },
         resolution: { type: reportResolutionSchema, required: true, default: () => ({}) },
+        evidenceImages: {
+            type: [reportEvidenceImageSchema],
+            required: true,
+            default: [],
+            validate: {
+                validator: (images: IReportEvidenceImage[]) => images.length <= 3,
+                message: 'Mỗi báo cáo chỉ được có tối đa 3 ảnh chứng cứ.',
+            },
+        },
     },
     { timestamps: true, collection: 'reports' },
 );

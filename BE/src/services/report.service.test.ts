@@ -5,6 +5,7 @@ import Location from '../models/location.model.ts';
 import LocationReview from '../models/locationReview.model.ts';
 import Report from '../models/report.model.ts';
 import User from '../models/user.model.ts';
+import { signReportImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
 import { ApiError } from '../utils/apiError.ts';
 import {
     buildAdminReportFilter,
@@ -153,6 +154,53 @@ describe('createReport', () => {
             status: 'pending',
         });
         expect(result).not.toHaveProperty('targetSnapshot');
+    });
+
+    it('attaches ordered evidence from report tokens owned by the reporter', async () => {
+        mockActiveReporter();
+        mockApprovedLocation();
+        mockNoPendingDuplicate();
+        const createSpy = vi.spyOn(Report, 'create').mockResolvedValue(reportRecord() as never);
+        const imageAssetTokens = ['one', 'two'].map((name) => signReportImageAssetToken({
+            sub: reporterId.toString(),
+            url: `https://res.cloudinary.com/demo/image/upload/huetrip/${name}.png`,
+            publicId: `huetrip/${name}`,
+            mimeType: 'image/png',
+            sizeBytes: 1024,
+        }));
+
+        await createReport({
+            targetType: 'location',
+            targetId: targetId.toString(),
+            reasonCode: 'spam',
+            imageAssetTokens,
+        }, reporterId.toString());
+
+        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+            evidenceImages: [
+                expect.objectContaining({ publicId: 'huetrip/one', position: 0 }),
+                expect.objectContaining({ publicId: 'huetrip/two', position: 1 }),
+            ],
+        }));
+    });
+
+    it('rejects excessive and wrong-owner image tokens', async () => {
+        const baseInput = { targetType: 'location', targetId: targetId.toString(), reasonCode: 'spam' };
+        await expect(createReport({ ...baseInput, imageAssetTokens: ['a', 'b', 'c', 'd'] }, reporterId.toString()))
+            .rejects.toMatchObject<ApiError>({ statusCode: 422, code: 'INVALID_IMAGE_COUNT' });
+
+        mockActiveReporter();
+        mockApprovedLocation();
+        mockNoPendingDuplicate();
+        const token = signReportImageAssetToken({
+            sub: ownerId.toString(),
+            url: 'https://res.cloudinary.com/demo/image/upload/huetrip/evidence.png',
+            publicId: 'huetrip/evidence',
+            mimeType: 'image/png',
+            sizeBytes: 1024,
+        });
+        await expect(createReport({ ...baseInput, imageAssetTokens: [token] }, reporterId.toString()))
+            .rejects.toMatchObject<ApiError>({ statusCode: 422, code: 'INVALID_IMAGE_ASSET_TOKEN' });
     });
 
     it('creates a review report and records its location as snapshot context', async () => {

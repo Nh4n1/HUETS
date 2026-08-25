@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { verifyReportImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
 import Itinerary from '../models/itinerary.model.ts';
 import Location from '../models/location.model.ts';
 import LocationReview from '../models/locationReview.model.ts';
@@ -16,7 +17,7 @@ import type {
 import User from '../models/user.model.ts';
 import { ApiError } from '../utils/apiError.ts';
 
-const CREATE_FIELDS = new Set(['targetType', 'targetId', 'reasonCode', 'detail']);
+const CREATE_FIELDS = new Set(['targetType', 'targetId', 'reasonCode', 'detail', 'imageAssetTokens']);
 const UPDATE_STATUS_FIELDS = new Set(['status', 'resolutionNote', 'expectedUpdatedAt']);
 const ADMIN_REPORT_STATUSES: ReportStatus[] = [...REPORT_STATUSES];
 
@@ -25,6 +26,7 @@ interface CreateReportBody {
     targetId?: unknown;
     reasonCode?: unknown;
     detail?: unknown;
+    imageAssetTokens?: unknown;
 }
 
 interface UpdateReportStatusBody {
@@ -69,6 +71,7 @@ interface ReportRecord {
         handledAt?: Date | null;
         note?: string | null;
     };
+    evidenceImages?: Array<{ url: string; publicId?: string | null; position: number }>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -125,6 +128,39 @@ const normalizeDetail = (value: unknown, reasonCode: ReportReasonCode) => {
         return validationError('Lý do khác phải có mô tả tối thiểu 10 ký tự.');
     }
     return detail;
+};
+
+const normalizeImageAssetTokens = (value: unknown) => {
+    if (value === undefined) return [];
+    if (!Array.isArray(value)) {
+        throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'imageAssetTokens phải là một mảng.');
+    }
+    if (value.length > 3) {
+        throw new ApiError(422, 'INVALID_IMAGE_COUNT', 'Mỗi báo cáo chỉ được đính kèm tối đa 3 ảnh.');
+    }
+    if (value.some((token) => typeof token !== 'string' || !token.trim())) {
+        throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Token ảnh chứng cứ không hợp lệ.');
+    }
+    if (new Set(value).size !== value.length) {
+        throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Ảnh chứng cứ không được trùng nhau.');
+    }
+    return value as string[];
+};
+
+const resolveEvidenceImages = (tokens: string[], reporterId: string) => {
+    const seenAssets = new Set<string>();
+    return tokens.map((token, position) => {
+        try {
+            const asset = verifyReportImageAssetToken(token);
+            if (asset.sub !== reporterId) throw new Error('Asset owner mismatch.');
+            const assetKey = asset.publicId || asset.url;
+            if (seenAssets.has(assetKey)) throw new Error('Duplicate image asset.');
+            seenAssets.add(assetKey);
+            return { url: asset.url, publicId: asset.publicId ?? null, position };
+        } catch {
+            throw new ApiError(422, 'INVALID_IMAGE_ASSET_TOKEN', 'Token ảnh chứng cứ không hợp lệ hoặc đã hết hạn.');
+        }
+    });
 };
 
 const normalizeLabel = (value: string) => value.trim().slice(0, 200);
@@ -247,6 +283,7 @@ const toReportPayload = (rawReport: unknown) => {
         targetId: valueId(report.targetId),
         reasonCode: report.reasonCode,
         detail: report.detail,
+        imageCount: (rawReport as ReportRecord).evidenceImages?.length ?? 0,
         status: report.status,
         targetSnapshot: {
             label: report.targetSnapshot.label,
@@ -280,9 +317,16 @@ const populatedReporter = (value: unknown) => {
     };
 };
 
-const toAdminReportPayload = (rawReport: unknown) => ({
+const toAdminReportPayload = (rawReport: unknown, includeEvidenceImages = false) => ({
     ...toReportPayload(rawReport),
     reporter: populatedReporter((rawReport as ReportRecord).reporterId),
+    imageCount: (rawReport as ReportRecord).evidenceImages?.length ?? 0,
+    ...(includeEvidenceImages ? {
+        evidenceImages: ((rawReport as ReportRecord).evidenceImages ?? [])
+            .slice()
+            .sort((left, right) => left.position - right.position)
+            .map(({ url, position }) => ({ url, position })),
+    } : {}),
 });
 
 const toCreatedReportPayload = (rawReport: unknown) => {
@@ -321,6 +365,7 @@ export const createReport = async (input: unknown, reporterId: string) => {
     const targetId = normalizeObjectId(body.targetId, 'targetId');
     const reasonCode = normalizeReasonCode(body.reasonCode);
     const detail = normalizeDetail(body.detail, reasonCode);
+    const imageAssetTokens = normalizeImageAssetTokens(body.imageAssetTokens);
 
     await assertActiveReporter(reporterId);
     const targetSnapshot = await resolveReportTarget(targetType, targetId);
@@ -334,6 +379,8 @@ export const createReport = async (input: unknown, reporterId: string) => {
         .lean();
     if (existingReport) return duplicateReportError(existingReport);
 
+    const evidenceImages = resolveEvidenceImages(imageAssetTokens, reporterId);
+
     try {
         const report = await Report.create({
             reporterId,
@@ -344,6 +391,7 @@ export const createReport = async (input: unknown, reporterId: string) => {
             status: 'pending',
             targetSnapshot,
             resolution: { handledBy: null, handledAt: null, note: null },
+            evidenceImages,
         });
         return toCreatedReportPayload(report);
     } catch (error) {
@@ -406,7 +454,7 @@ export const getAdminReports = async (query: AdminReportQuery = {}, adminId: str
         Report.countDocuments(filter),
     ]);
     return {
-        data: reports.map(toAdminReportPayload),
+        data: reports.map((report) => toAdminReportPayload(report)),
         meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     };
 };
@@ -427,7 +475,7 @@ export const getAdminReportById = async (reportId: string, adminId: string) => {
     if (!report) {
         throw new ApiError(404, 'REPORT_NOT_FOUND', 'Không tìm thấy báo cáo.');
     }
-    return toAdminReportPayload(report);
+    return toAdminReportPayload(report, true);
 };
 
 const parseExpectedUpdatedAt = (value: unknown) => {
@@ -486,5 +534,5 @@ export const updateAdminReportStatus = async (reportId: string, input: unknown, 
         { new: true, runValidators: true },
     ).populate('reporterId', 'displayName email avatarUrl');
     if (!report) return throwReportConflict(normalizedReportId);
-    return toAdminReportPayload(report);
+    return toAdminReportPayload(report, true);
 };
