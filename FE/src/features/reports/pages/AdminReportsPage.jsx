@@ -3,6 +3,7 @@ import {
   CloseCircleOutlined,
   EyeOutlined,
   FlagOutlined,
+  MoreOutlined,
   ReloadOutlined,
   SearchOutlined,
 } from '@ant-design/icons'
@@ -12,6 +13,7 @@ import {
   Button,
   Descriptions,
   Drawer,
+  Dropdown,
   Input,
   Modal,
   Select,
@@ -229,11 +231,19 @@ export function AdminReportsPage() {
       render: (value) => <StatusTag status={value} />,
     },
     {
-      title: '',
+      title: <MoreOutlined aria-label="Thao tác" />,
       key: 'actions',
       width: 64,
+      align: 'center',
+      fixed: 'right',
       render: (_, report) => (
-        <Button type="text" icon={<EyeOutlined />} aria-label="Xem chi tiết báo cáo" onClick={() => openReport(report)} />
+        <Dropdown
+          trigger={['click']}
+          placement="bottomRight"
+          menu={{ items: [{ key: 'view', icon: <EyeOutlined />, label: 'Xem chi tiết', onClick: () => openReport(report) }] }}
+        >
+          <Button className={styles.actionButton} type="text" size="small" icon={<MoreOutlined />} aria-label="Mở thao tác báo cáo" />
+        </Dropdown>
       ),
     },
   ]
@@ -303,12 +313,13 @@ export function AdminReportsPage() {
 
       <section className={styles.tableCard}>
         <Table
+          className={styles.table}
+          size="small"
           rowKey="id"
           columns={columns}
           dataSource={reports}
           loading={loading}
           scroll={{ x: 900 }}
-          onRow={(report) => ({ onDoubleClick: () => openReport(report) })}
           pagination={{
             current: page,
             pageSize: PAGE_SIZE,
@@ -325,7 +336,7 @@ export function AdminReportsPage() {
 
       <Drawer
         title="Chi tiết báo cáo"
-        width={600}
+        width="min(600px, 100vw)"
         open={Boolean(selectedReport)}
         loading={detailLoading}
         onClose={() => {
@@ -380,6 +391,7 @@ export function AdminReportsPage() {
       </Drawer>
 
       <Modal
+        className={styles.reportDecisionModal}
         title={decisionStatus === 'resolved' ? 'Kết luận báo cáo' : 'Bỏ qua báo cáo'}
         open={Boolean(decisionStatus)}
         okText={decisionStatus === 'resolved' ? 'Xác nhận đã xử lý' : 'Xác nhận bỏ qua'}

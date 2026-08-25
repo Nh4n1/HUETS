@@ -99,7 +99,7 @@
 
 .filters { display: flex; min-width: 0; flex: 1; align-items: center; gap: .6rem; }
 .search {
-  --search-control-height: 2.5rem;
+  --search-control-height: 2.7rem;
 
   width: min(100%, 25rem);
 }
@@ -107,18 +107,23 @@
   display: flex;
   height: var(--search-control-height);
   align-items: stretch;
+  line-height: normal;
 }
 .search :global(.ant-input-affix-wrapper) {
   height: var(--search-control-height);
   border-radius: .65rem 0 0 .65rem !important;
   align-items: center;
+  align-self: stretch;
+  box-sizing: border-box;
 }
 .search :global(.ant-input-group-addon) {
   display: flex;
   height: var(--search-control-height);
   padding: 0;
   align-items: stretch;
+  align-self: stretch;
   background: transparent;
+  line-height: normal;
 }
 .search :global(.ant-input-prefix) { margin-inline-end: .45rem; color: var(--color-text-muted); }
 .search :global(.ant-input-search-button) {
@@ -128,8 +133,10 @@
   padding-block: 0;
   padding-inline: 1.15rem;
   border-radius: 0 .65rem .65rem 0 !important;
+  align-self: stretch;
+  box-sizing: border-box;
   font-weight: 650;
-  line-height: calc(var(--search-control-height) - 2px);
+  line-height: normal;
 }
 .select { width: 11rem; flex: 0 0 11rem; }
 .select :global(.ant-select-selector) { min-height: 2.5rem; border-radius: .65rem !important; align-items: center; }

@@ -1,5 +1,5 @@
-import { EyeInvisibleOutlined, ReloadOutlined, SearchOutlined, StarFilled } from '@ant-design/icons'
-import { Alert, App, Avatar, Button, Input, Modal, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { EyeInvisibleOutlined, EyeOutlined, MoreOutlined, ReloadOutlined, SearchOutlined, StarFilled } from '@ant-design/icons'
+import { Alert, App, Avatar, Button, Dropdown, Input, Modal, Select, Table, Tag, Tooltip, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { getAdminReviewsApi, setAdminReviewStatusApi } from '../../api/adminReviewsApi'
@@ -169,17 +169,37 @@ export function AdminReviewsPage() {
       ),
     },
     {
-      title: 'Thao tác', key: 'actions', width: 112, fixed: 'right',
+      title: <MoreOutlined aria-label="Thao tác" />, key: 'actions', width: 64, align: 'center', fixed: 'right',
       render: (_, record) => (
-        <Space>
-          {record.status === 'active'
-            ? <Button size="small" danger icon={<EyeInvisibleOutlined />} onClick={() => setHideTarget(record)}>Ẩn</Button>
-            : null}
-          {record.status === 'hidden'
-            ? <Button size="small" onClick={() => restoreReview(record)}>Khôi phục</Button>
-            : null}
-          {record.status === 'deleted' ? <Typography.Text type="secondary">—</Typography.Text> : null}
-        </Space>
+        <Dropdown
+          trigger={['click']}
+          placement="bottomRight"
+          menu={{
+            items: [
+              {
+                key: 'location',
+                icon: <EyeOutlined />,
+                label: <Link to={`/locations/${record.location.id}`} target="_blank" rel="noreferrer">Xem địa điểm</Link>,
+              },
+              ...(record.status === 'active' ? [
+                { type: 'divider' },
+                { key: 'hide', danger: true, icon: <EyeInvisibleOutlined />, label: 'Ẩn đánh giá', onClick: () => setHideTarget(record) },
+              ] : []),
+              ...(record.status === 'hidden' ? [
+                { type: 'divider' },
+                { key: 'restore', label: 'Khôi phục đánh giá', onClick: () => restoreReview(record) },
+              ] : []),
+            ],
+          }}
+        >
+          <Button
+            className={styles.actionMenuButton}
+            type="text"
+            size="small"
+            icon={<MoreOutlined />}
+            aria-label={`Mở thao tác với đánh giá của ${record.author.displayName}`}
+          />
+        </Dropdown>
       ),
     },
   ]
@@ -213,8 +233,15 @@ export function AdminReviewsPage() {
               onClick={applySearch}
             />
           </div>
-          <Select value={rating} className={styles.select} onChange={(value) => updateFilter(setRating, rating, value)} options={[{ value: '', label: 'Tất cả số sao' }, ...[5, 4, 3, 2, 1].map((value) => ({ value: String(value), label: `${value} sao` }))]} />
-          <Select value={status} className={styles.select} onChange={(value) => updateFilter(setStatus, status, value)} options={[
+          <Select
+            value={rating}
+            className={styles.select}
+            placement="bottomLeft"
+            getPopupContainer={(triggerNode) => triggerNode.parentElement}
+            onChange={(value) => updateFilter(setRating, rating, value)}
+            options={[{ value: '', label: 'Tất cả số sao' }, ...[5, 4, 3, 2, 1].map((value) => ({ value: String(value), label: `${value} sao` }))]}
+          />
+          <Select value={status} className={styles.select} placement="bottomLeft" getPopupContainer={(triggerNode) => triggerNode.parentElement} onChange={(value) => updateFilter(setStatus, status, value)} options={[
             { value: '', label: 'Tất cả trạng thái' },
             { value: 'active', label: 'Đang hiển thị' },
             { value: 'hidden', label: 'Đã ẩn' },
@@ -232,10 +259,10 @@ export function AdminReviewsPage() {
         <div className={styles.tableHeading}>
           <div><strong>Danh sách đánh giá</strong><span>{total} kết quả{hasFilters ? ' phù hợp bộ lọc' : ''}</span></div>
         </div>
-        <Table className={styles.table} rowKey="id" loading={loading} dataSource={reviews} columns={columns} scroll={{ x: 1060 }} locale={{ emptyText: hasFilters ? 'Không có đánh giá phù hợp bộ lọc.' : 'Chưa có đánh giá.' }} pagination={{ current: page, pageSize: PAGE_SIZE, total, showSizeChanger: false, showTotal: (value) => `${value} đánh giá`, onChange: (value) => { setLoading(true); setPage(value) } }} />
+        <Table className={styles.table} size="small" rowKey="id" loading={loading} dataSource={reviews} columns={columns} scroll={{ x: 1010 }} locale={{ emptyText: hasFilters ? 'Không có đánh giá phù hợp bộ lọc.' : 'Chưa có đánh giá.' }} pagination={{ current: page, pageSize: PAGE_SIZE, total, showSizeChanger: false, showTotal: (value) => `${value} đánh giá`, onChange: (value) => { setLoading(true); setPage(value) } }} />
       </section>
 
-      <Modal title="Ẩn đánh giá" open={Boolean(hideTarget)} okText="Ẩn đánh giá" cancelText="Hủy" confirmLoading={submitting} okButtonProps={{ danger: true }} onOk={hideReview} onCancel={() => { if (!submitting) { setHideTarget(null); setHideReason('') } }}>
+      <Modal className={styles.hideReviewModal} title="Ẩn đánh giá" open={Boolean(hideTarget)} okText="Ẩn đánh giá" cancelText="Hủy" confirmLoading={submitting} okButtonProps={{ danger: true }} onOk={hideReview} onCancel={() => { if (!submitting) { setHideTarget(null); setHideReason('') } }}>
         {hideTarget ? (
           <div className={styles.moderationContext}>
             <strong>{hideTarget.location.name}</strong>
@@ -244,7 +271,7 @@ export function AdminReviewsPage() {
           </div>
         ) : null}
         <Typography.Paragraph type="secondary">Đánh giá bị ẩn sẽ không còn hiển thị công khai và không được tính vào điểm trung bình.</Typography.Paragraph>
-        <Input.TextArea rows={3} maxLength={500} showCount autoFocus placeholder="Lý do ẩn (bắt buộc)" value={hideReason} onChange={(event) => setHideReason(event.target.value)} />
+        <Input.TextArea rows={4} maxLength={500} showCount autoFocus placeholder="Lý do ẩn (bắt buộc)" value={hideReason} onChange={(event) => setHideReason(event.target.value)} />
       </Modal>
     </main>
   )

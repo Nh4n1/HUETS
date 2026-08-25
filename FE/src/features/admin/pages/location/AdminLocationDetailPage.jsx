@@ -233,7 +233,7 @@ export function AdminLocationDetailPage() {
       <div className={styles.detailStack}>
         <header className={styles.pageHeader}>
           <div>
-            <Link className={styles.backLink} to="/admin/locations/pending">← Quay lại hàng chờ</Link>
+            <Link className={styles.backLink} to="/admin/locations">← Quay lại danh sách địa điểm</Link>
             <Typography.Title level={2}>{location.name}</Typography.Title>
             <Tag color={status.color}>{status.label}</Tag>
           </div>
@@ -295,9 +295,14 @@ export function AdminLocationDetailPage() {
           <Descriptions bordered column={{ xs: 1, md: 2 }}>
             <Descriptions.Item label="Danh mục">{location.category?.name}</Descriptions.Item>
             <Descriptions.Item label="Người đóng góp">
-              {location.contributor
-                ? `${location.contributor.displayName} (${location.contributor.email})`
-                : 'Không xác định'}
+              {location.contributor ? (
+                <Space direction="vertical" size={0}>
+                  <Typography.Text strong>{location.contributor.displayName}</Typography.Text>
+                  <Typography.Text type="secondary" copyable>
+                    {location.contributor.email}
+                  </Typography.Text>
+                </Space>
+              ) : 'Không xác định'}
             </Descriptions.Item>
             <Descriptions.Item label="Địa chỉ" span={2}>{location.formattedAddress}</Descriptions.Item>
             <Descriptions.Item label="Ghi chú vị trí" span={2}>
