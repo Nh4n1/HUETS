@@ -1,9 +1,10 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { getCloudinaryConfig } from '../config/config.cloudinary.ts';
 import { locationImageUploadConfig } from '../config/config.upload.ts';
-import { signFeedbackImageAssetToken, signLocationImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
+import { signFeedbackImageAssetToken, signLocationImageAssetToken, signReportImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
 import Feedback from '../models/feedback.model.ts';
 import Location from '../models/location.model.ts';
+import Report from '../models/report.model.ts';
 import User from '../models/user.model.ts';
 import { ApiError } from '../utils/apiError.ts';
 
@@ -56,16 +57,17 @@ export function assertPublicIdInUploadFolder(publicId: unknown, uploadFolder: st
 // (e.g. the admin form failed/aborted after upload but before createLocation succeeded).
 // Cloudinary's own secure_url embeds the publicId, so it is public information —
 // callers must never be trusted on ownership alone; refuse anything already in use.
-export const deleteLocationImage = async (rawPublicId: unknown) => {
+export const deleteUploadedImage = async (rawPublicId: unknown) => {
     const config = getCloudinaryConfig();
     assertPublicIdInUploadFolder(rawPublicId, config.uploadFolder);
 
-    const [isAttachedToLocation, isAttachedToFeedback] = await Promise.all([
+    const [isAttachedToLocation, isAttachedToFeedback, isAttachedToReport] = await Promise.all([
         Location.exists({ 'images.publicId': rawPublicId }),
         Feedback.exists({ 'images.publicId': rawPublicId }),
+        Report.exists({ 'evidenceImages.publicId': rawPublicId }),
     ]);
-    if (isAttachedToLocation || isAttachedToFeedback) {
-        throw new ApiError(403, 'FORBIDDEN', 'Ảnh đã được sử dụng cho một địa điểm và không thể xoá qua API này.');
+    if (isAttachedToLocation || isAttachedToFeedback || isAttachedToReport) {
+        throw new ApiError(403, 'FORBIDDEN', 'Ảnh đã được gắn vào nội dung và không thể xoá qua API cleanup.');
     }
 
     // The Cloudinary SDK's destroy() has no per-call credential override, so configure
@@ -178,6 +180,8 @@ export const confirmLocationImageUploads = async (results: unknown, actorId: str
     return { assets };
 };
 
+export const deleteLocationImage = deleteUploadedImage;
+
 export const confirmFeedbackImageUploads = async (results: unknown, actorId: string) => {
     if (!Array.isArray(results) || results.length < 1 || results.length > 3) {
         throw new ApiError(422, 'INVALID_IMAGE_COUNT', 'Mỗi lần phải tải lên từ 1 đến 3 ảnh góp ý.');
@@ -193,6 +197,33 @@ export const confirmFeedbackImageUploads = async (results: unknown, actorId: str
     return {
         assets: validatedResults.map((result) => ({
             assetToken: signFeedbackImageAssetToken({
+                sub: actorId,
+                url: result.secureUrl,
+                publicId: result.publicId,
+                mimeType: result.mimeType,
+                sizeBytes: result.bytes,
+            }, expiresIn),
+            previewUrl: result.secureUrl,
+            expiresAt,
+        })),
+    };
+};
+
+export const confirmReportImageUploads = async (results: unknown, actorId: string) => {
+    if (!Array.isArray(results) || results.length < 1 || results.length > 3) {
+        throw new ApiError(422, 'INVALID_IMAGE_COUNT', 'Mỗi lần phải tải lên từ 1 đến 3 ảnh chứng cứ.');
+    }
+    const user = await User.findById(actorId).select({ status: 1 }).lean();
+    if (!user) throw new ApiError(401, 'UNAUTHORIZED', 'Tài khoản không còn tồn tại.');
+    if (user.status === 'locked') throw new ApiError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa.');
+
+    const config = getCloudinaryConfig();
+    const validatedResults = results.map((result) => validateCloudinaryResult(result, config.cloudName, config.uploadFolder));
+    const expiresIn = locationImageUploadConfig.assetTokenExpiresInSeconds;
+    const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+    return {
+        assets: validatedResults.map((result) => ({
+            assetToken: signReportImageAssetToken({
                 sub: actorId,
                 url: result.secureUrl,
                 publicId: result.publicId,

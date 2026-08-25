@@ -38,3 +38,10 @@ a {
   margin-inline: auto;
   padding-block: 2rem;
 }
+
+/* Ant Design positions a TextArea's showCount row below the control without
+   including that row in normal flow. Reserve one text line so following
+   controls and modal actions cannot overlap the counter. */
+.ant-input-textarea-show-count {
+  margin-block-end: 1.6em;
+}

@@ -3,6 +3,9 @@
   gap: 1rem;
 }
 
+.pb-10{
+  padding-bottom: 10px!important;
+}
 .header {
   display: flex;
   padding: clamp(1.25rem, 3vw, 2rem);
@@ -121,6 +124,25 @@
 .reportDecisionModal :global(.ant-modal-body) { padding-bottom: 1.25rem; }
 .reportDecisionModal :global(.ant-input-textarea-show-count) { margin-bottom: 1.25rem; }
 
+.evidenceSection h5 { margin: 0 0 0.75rem !important; }
+
+.evidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.evidenceGrid :global(.ant-image),
+.evidenceGrid :global(.ant-image-img) {
+  width: 100%;
+}
+
+.evidenceGrid :global(.ant-image-img) {
+  aspect-ratio: 4 / 3;
+  border-radius: 0.65rem;
+  object-fit: cover;
+}
+
 @media (max-width: 48rem) {
   .header { align-items: stretch; flex-direction: column; }
   .queueCount { width: 100%; }
@@ -128,4 +150,5 @@
   .toolbar :global(.ant-select),
   .search,
   .toolbar button { width: 100%; }
+  .evidenceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

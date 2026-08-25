@@ -29,6 +29,17 @@ export const confirmFeedbackImages = asyncHandler(async (req: Request, res: Resp
     return sendSuccess(res, 201, await uploadService.confirmFeedbackImageUploads(req.body?.results, req.user.id));
 });
 
+export const confirmReportImages = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    return sendSuccess(res, 201, await uploadService.confirmReportImageUploads(req.body?.results, req.user.id));
+});
+
+export const deleteReportImage = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    await uploadService.deleteUploadedImage(req.body?.publicId);
+    return sendSuccess(res, 200, { deleted: true });
+});
+
 // [POST] /api/uploads/location-images/delete
 export const deleteLocationImage = asyncHandler(async (req: Request, res: Response) => {
     if (!req.user) {

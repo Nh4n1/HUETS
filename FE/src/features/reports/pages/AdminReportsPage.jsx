@@ -13,6 +13,7 @@ import {
   Button,
   Descriptions,
   Drawer,
+  Image,
   Dropdown,
   Input,
   Modal,
@@ -373,6 +374,27 @@ export function AdminReportsPage() {
               <Descriptions.Item label="Thời gian gửi">{formatDateTime(selectedReport.createdAt)}</Descriptions.Item>
             </Descriptions>
 
+            <section className={styles.evidenceSection}>
+              <Typography.Title level={5}>
+                Bằng chứng do người báo cáo cung cấp
+                {selectedReport.evidenceImages?.length ? ` (${selectedReport.evidenceImages.length})` : ''}
+              </Typography.Title>
+              {selectedReport.evidenceImages?.length ? (
+                <Image.PreviewGroup>
+                  <div className={styles.evidenceGrid}>
+                    {selectedReport.evidenceImages.map((item, index) => (
+                      <Image
+                        key={`${item.url}-${item.position ?? index}`}
+                        src={item.url}
+                        alt={`Ảnh chứng cứ ${index + 1}`}
+                        fallback="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='160'%3E%3Crect width='100%25' height='100%25' fill='%23f3eee8'/%3E%3C/svg%3E"
+                      />
+                    ))}
+                  </div>
+                </Image.PreviewGroup>
+              ) : <Typography.Paragraph type="secondary">Không có ảnh đính kèm.</Typography.Paragraph>}
+            </section>
+
             {selectedReport.resolution?.handledAt ? (
               <Alert
                 showIcon
@@ -409,7 +431,6 @@ export function AdminReportsPage() {
           autoFocus
           rows={4}
           maxLength={1000}
-          showCount
           value={resolutionNote}
           onChange={(event) => setResolutionNote(event.target.value)}
           placeholder="Kết quả xác minh và hành động đã thực hiện..."
