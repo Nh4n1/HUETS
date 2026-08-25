@@ -18,6 +18,7 @@ import adminReferenceRouter from './adminReference/index.ts';
 import feedbackRouter from './feedback/index.ts';
 import adminFeedbackRouter from './adminFeedback/index.ts';
 import notificationRouter from './notification/index.ts';
+import aiItineraryRouter from './aiItinerary/index.ts';
 
 const router = Router();
 
@@ -42,6 +43,7 @@ router.use('/api/me/notifications', notificationRouter);
 router.use('/api/location-search', locationSearchRouter);
 router.use('/api/locations', locationRouter);
 router.use('/api/itineraries', itineraryRouter);
+router.use('/api/ai-itinerary-plans', aiItineraryRouter);
 router.use('/api/bookmarks', bookmarkRouter);
 router.use('/api/reports', reportRouter);
 router.use('/api/me/itineraries', ownerItineraryRouter);
