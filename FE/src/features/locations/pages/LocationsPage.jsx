@@ -1,5 +1,5 @@
 import { Alert } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import {
   getCategoriesApi,
@@ -29,9 +29,10 @@ export function LocationsPage() {
   const urlWard = searchParams.get("wardCode") ?? "";
   const urlTags = searchParams.get("tagCodes") ?? "";
   const urlPreferredTags = searchParams.get("preferredTagCodes") ?? "";
-  const urlSortBy = searchParams.get("sortBy") === "rating_desc"
-    ? "rating_desc"
-    : "relevance";
+  const requestedSort = searchParams.get("sortBy");
+  const urlSortBy = ["rating_desc", "newest"].includes(requestedSort)
+    ? requestedSort
+    : "recommended";
   const structuredUrl = searchParams.get("mode") === "filters";
   const urlOpenMode = searchParams.get("openMode");
   const urlOpenDay = Number(searchParams.get("openDay"));
@@ -68,7 +69,6 @@ export function LocationsPage() {
   const [tagsLoading, setTagsLoading] = useState(false);
   const [referenceError, setReferenceError] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
-  const searchRequestInFlight = useRef(false);
 
   const categoryCode = searchMode
     ? (criteria?.categoryCode ?? "")
@@ -80,7 +80,7 @@ export function LocationsPage() {
   const preferredTagCodes = searchMode
     ? (criteria?.preferredTagCodes ?? [])
     : browsePreferredTags;
-  const sortBy = searchMode ? (criteria?.sortBy ?? "relevance") : urlSortBy;
+  const sortBy = searchMode ? (criteria?.sortBy ?? "relevance") : query ? "relevance" : urlSortBy;
 
   useEffect(() => {
     let active = true;
@@ -127,16 +127,16 @@ export function LocationsPage() {
   }, [categoryCode]);
 
   useEffect(() => {
-    if (searchMode || structuredUrl) return undefined;
+    if (searchMode || structuredUrl || query) return undefined;
     let active = true;
     Promise.resolve().then(() => active && setLoading(true));
     searchPublicLocationsApi({
       page,
       pageSize: PAGE_SIZE,
-      ...(query ? { q: query } : {}),
       ...(urlCategory ? { categoryCode: urlCategory } : {}),
       ...(urlWard ? { wardCode: urlWard } : {}),
       ...(urlTags ? { tagCodes: urlTags } : {}),
+      sortBy: urlSortBy,
     })
       .then((payload) => {
         if (!active) return;
@@ -155,7 +155,22 @@ export function LocationsPage() {
     return () => {
       active = false;
     };
-  }, [page, query, reloadKey, searchMode, structuredUrl, urlCategory, urlTags, urlWard]);
+  }, [page, query, reloadKey, searchMode, structuredUrl, urlCategory, urlSortBy, urlTags, urlWard]);
+
+  useEffect(() => {
+    if (!query || searchMode || structuredUrl) return undefined;
+    let active = true;
+    Promise.resolve().then(() => active && setLoading(true));
+    searchLocationsApi({ query, page, pageSize: PAGE_SIZE })
+      .then((payload) => active && applyPayload(payload))
+      .catch((error) => {
+        if (!active) return;
+        setLocations([]);
+        setErrorMessage(getErrorMessage(error, "Không thể tìm kiếm địa điểm."));
+      })
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [page, query, reloadKey, searchMode, structuredUrl]);
 
   const tagOptions = useMemo(
     () =>
@@ -206,7 +221,7 @@ export function LocationsPage() {
         preferredTagCodes: browsePreferredTags,
         keywords: [],
         openCondition: urlOpenCondition,
-        sortBy: urlSortBy,
+        sortBy: requestedSort === "rating_desc" ? "rating_desc" : "relevance",
       },
       page,
       pageSize: PAGE_SIZE,
@@ -220,7 +235,7 @@ export function LocationsPage() {
       setErrorMessage(getErrorMessage(error, "KhÃ´ng thá»ƒ Ã¡p dá»¥ng tiÃªu chÃ­ tÃ¬m kiáº¿m."));
     }).finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [browsePreferredTags, browseTags, page, searchMode, structuredUrl, urlCategory, urlOpenCondition, urlSortBy, urlWard]);
+  }, [browsePreferredTags, browseTags, page, requestedSort, searchMode, structuredUrl, urlCategory, urlOpenCondition, urlSortBy, urlWard]);
 
   async function runCriteria(
     nextCriteria,
@@ -271,8 +286,7 @@ export function LocationsPage() {
     }
   }
 
-  async function handleSearch(value) {
-    if (searchRequestInFlight.current) return;
+  function handleSearch(value) {
     const nextQuery = value.trim();
     if (!nextQuery) {
       setCriteria(null);
@@ -283,28 +297,24 @@ export function LocationsPage() {
       setSearchParams({});
       return;
     }
-    searchRequestInFlight.current = true;
     setCriteriaAdjusted(false);
-    setLoading(true);
     setErrorMessage("");
+    setCriteria(null);
+    setInterpretation(null);
+    setSearchMode(false);
     setSearchParams({ q: nextQuery });
-    try {
-      applyPayload(
-        await searchLocationsApi({
-          query: nextQuery,
-          page: 1,
-          pageSize: PAGE_SIZE,
-        }),
-      );
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Không thể tìm kiếm địa điểm."));
-    } finally {
-      searchRequestInFlight.current = false;
-      setLoading(false);
-    }
   }
 
   function changeCriteria(patch) {
+    if (!searchMode && !structuredUrl && !query && !("preferredTagCodes" in patch)) {
+      updateSearchParams({
+        categoryCode: "categoryCode" in patch ? patch.categoryCode : urlCategory,
+        wardCode: "wardCode" in patch ? patch.wardCode : urlWard,
+        tagCodes: "requiredTagCodes" in patch ? patch.requiredTagCodes : browseTags,
+        page: undefined,
+      });
+      return;
+    }
     const currentCriteria = criteria ?? {
       categoryCode: urlCategory || null,
       wardCode: urlWard || null,
@@ -353,7 +363,7 @@ export function LocationsPage() {
     setNotice("");
     setSearchMode(false);
     setCriteriaAdjusted(false);
-    setSearchParams(query ? { q: query } : {});
+    setSearchParams({});
   }
 
   const activeFilterCount =
@@ -439,18 +449,11 @@ export function LocationsPage() {
             hasCriteria={Boolean(query || activeCriteriaCount)}
             sortBy={sortBy}
             criteriaAdjusted={criteriaAdjusted}
+            searchMode={searchMode || Boolean(query)}
             onSortChange={(value) =>
               criteria
                 ? runCriteria({ ...criteria, sortBy: value }, 1, { markAdjusted: true })
-                : runCriteria({
-                    categoryCode: categoryCode || null,
-                    wardCode: wardCode || null,
-                    requiredTagCodes,
-                    preferredTagCodes: [],
-                    keywords: query ? [query.slice(0, 50)] : [],
-                    openCondition: null,
-                    sortBy: value,
-                  }, 1, { markAdjusted: true })
+                : updateSearchParams({ sortBy: value === "recommended" ? undefined : value, page: undefined })
             }
             onOpenFilters={() => setFilterDrawerOpen(true)}
             onRetry={() =>

@@ -33,8 +33,10 @@ export function LocationResultCard({ location }) {
             <span className={styles.category}>{location.category.name}</span>
             <h3><Link to={`/locations/${location.id}`}>{location.name}</Link></h3>
           </div>
-          <span className={styles.rating}><StarFilled /> {getRatingLabel(location)}</span>
+          <BookmarkButton bookmark={createLocationBookmark(location)} className={styles.bookmarkButton} />
         </div>
+
+        <span className={styles.rating}><StarFilled /> {getRatingLabel(location)}</span>
 
         <p className={styles.address}>
           <EnvironmentOutlined />
@@ -50,10 +52,6 @@ export function LocationResultCard({ location }) {
         ) : null}
 
         <div className={styles.actions}>
-          <BookmarkButton
-            bookmark={createLocationBookmark(location)}
-            className={styles.bookmarkButton}
-          />
           <Link className={styles.detailLink} to={`/locations/${location.id}`}>
             Xem chi tiết <ArrowRightOutlined />
           </Link>

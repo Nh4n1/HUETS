@@ -15,7 +15,7 @@ import {
 import { Alert, Button, Empty, Input, Spin, TimePicker, message } from 'antd'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useBookmarks } from '../../bookmarks/context/useBookmarks'
 import { getPublicLocationByIdApi, searchPublicLocationsApi } from '../../locations/api/locationApi'
 import { createItineraryApi, getItineraryApi, updateItineraryApi } from '../api/itineraryApi'
@@ -168,6 +168,8 @@ export function ItineraryEditorPage() {
   const { itineraryId } = useParams()
   const editing = Boolean(itineraryId)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const prefillLocationId = editing ? '' : (searchParams.get('locationId') ?? '')
   const [form, setForm] = useState(emptyItineraryForm)
   const [loading, setLoading] = useState(editing)
   const [saving, setSaving] = useState(false)
@@ -183,6 +185,23 @@ export function ItineraryEditorPage() {
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [editing, itineraryId])
+
+  useEffect(() => {
+    if (!prefillLocationId) return undefined
+    let active = true
+    Promise.resolve().then(() => active && setLoading(true))
+    getPublicLocationByIdApi(prefillLocationId)
+      .then((location) => {
+        if (!active) return
+        setForm((current) => ({
+          ...current,
+          days: [{ ...current.days[0], items: [{ ...current.days[0].items[0], locationId: location.id, location }] }, ...current.days.slice(1)],
+        }))
+      })
+      .catch((requestError) => active && setError(errorMessage(requestError, 'Không thể thêm sẵn địa điểm vào lịch trình.')))
+      .finally(() => active && setLoading(false))
+    return () => { active = false }
+  }, [prefillLocationId])
 
   const validation = useMemo(() => getItineraryFormErrors(form), [form])
   const itemTimeValue = (value) => value ? dayjs(value, 'HH:mm') : null

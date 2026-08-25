@@ -4,20 +4,22 @@ import { LocationResultCard } from './LocationResultCard'
 import styles from './LocationResults.module.css'
 
 export function LocationResults({ query, locations, meta, page, pageSize, loading, errorMessage,
-  activeFilterCount, hasCriteria, sortBy, criteriaAdjusted, onSortChange, onOpenFilters, onRetry, onResetCriteria, onPageChange }) {
+  activeFilterCount, hasCriteria, sortBy, criteriaAdjusted, searchMode, onSortChange, onOpenFilters, onRetry, onResetCriteria, onPageChange }) {
   return (
     <section className={styles.results} aria-labelledby="location-results-heading">
       <div className={styles.heading}>
-        <div><span className={styles.eyebrow}>Kết quả khám phá</span>
+        <div><span className={styles.eyebrow}>{query || criteriaAdjusted ? 'Kết quả tìm kiếm' : 'Danh mục địa điểm'}</span>
           <h2 id="location-results-heading">
             {criteriaAdjusted
               ? activeFilterCount > 0 ? 'Kết quả theo bộ lọc' : 'Kết quả đã điều chỉnh'
-              : query ? `Kết quả cho “${query}”` : 'Địa điểm dành cho bạn'}
+              : query ? `Kết quả cho “${query}”` : 'Tất cả địa điểm tại Huế'}
           </h2>
           {!loading && !errorMessage ? <p>{meta.total} địa điểm phù hợp</p> : null}</div>
         <div className={styles.actions}>
-          <Select aria-label="Sắp xếp" value={sortBy} onChange={onSortChange} options={[
+          <Select aria-label="Sắp xếp" value={sortBy} onChange={onSortChange} options={searchMode ? [
             { value: 'relevance', label: 'Phù hợp nhất' }, { value: 'rating_desc', label: 'Đánh giá cao' },
+          ] : [
+            { value: 'recommended', label: 'Đề xuất' }, { value: 'rating_desc', label: 'Đánh giá cao' }, { value: 'newest', label: 'Mới nhất' },
           ]} />
           <Button className={styles.mobileFilterButton} icon={<FilterOutlined />} onClick={onOpenFilters}>
             Bộ lọc{activeFilterCount ? ` (${activeFilterCount})` : ''}</Button>

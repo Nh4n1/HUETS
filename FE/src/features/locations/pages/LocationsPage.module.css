@@ -5,11 +5,11 @@
 
 .content {
   display: grid;
-  width: min(100% - 2rem, var(--container-width));
+  width: min(100% - 3.5rem, var(--container-width));
   margin: 0 auto;
-  padding-block: clamp(1.75rem, 4vw, 3.5rem);
-  grid-template-columns: 16rem minmax(0, 1fr);
-  gap: clamp(1.25rem, 3vw, 2rem);
+  padding-block: 0 3.5rem;
+  grid-template-columns: 16.25rem minmax(0, 1fr);
+  gap: 1.75rem;
   align-items: start;
 }
 
@@ -21,3 +21,5 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 40rem) { .content { width: calc(100% - 2rem); } }

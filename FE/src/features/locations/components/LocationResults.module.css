@@ -4,7 +4,7 @@
 
 .heading {
   display: flex;
-  margin-bottom: 1.25rem;
+  margin-bottom: .9rem;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
@@ -20,7 +20,7 @@
 
 .heading h2 {
   margin: 0.28rem 0 0;
-  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  font-size: clamp(1.55rem, 3vw, 1.6rem);
   letter-spacing: -0.035em;
 }
 
@@ -39,7 +39,8 @@
 
 .list {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.125rem;
 }
 
 .skeletonCard {
@@ -107,3 +108,5 @@
     flex: 1;
   }
 }
+
+@media (max-width: 72rem) { .list { grid-template-columns: 1fr; } }

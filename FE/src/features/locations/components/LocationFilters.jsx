@@ -34,7 +34,7 @@ export function LocationFilters({ open, activeFilterCount, referenceError, onClo
       {referenceError ? <Alert type="warning" showIcon message={referenceError} /> : null}{fields}
     </aside>
     <Drawer className={styles.mobileDrawer} title={`Bộ lọc${activeFilterCount ? ` (${activeFilterCount})` : ''}`}
-      placement="bottom" height="min(80svh, 38rem)" open={open} onClose={onClose}
+      placement="bottom" size="min(80svh, 38rem)" open={open} onClose={onClose}
       extra={activeFilterCount > 0 ? <Button type="link" onClick={onReset}>Đặt lại</Button> : null}
       footer={<Button type="primary" block onClick={onClose}>Xem kết quả</Button>}>
       {referenceError ? <Alert type="warning" showIcon message={referenceError} /> : null}{fields}

@@ -1,7 +1,7 @@
 import {
   ArrowLeftOutlined,
+  CalendarOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   EnvironmentOutlined,
   FlagOutlined,
   StarFilled,
@@ -9,14 +9,16 @@ import {
 import { Alert, Button, Image, Skeleton } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useLocation as useRouterLocation, useNavigate, useParams } from 'react-router'
-import { getPublicLocationByIdApi } from '../api/locationApi'
+import { getPublicLocationByIdApi, getPublicLocationsApi } from '../api/locationApi'
 import { useAuth } from '../../auth/context/useAuth'
 import { BookmarkButton } from '../../bookmarks/components/BookmarkButton'
 import { createLocationBookmark } from '../../bookmarks/utils/bookmarkMappers'
 import { ReportModal } from '../../reports/components/ReportModal'
 import { LocationMap } from '../components/LocationMap'
 import { LocationReviews } from '../components/LocationReviews'
-import { getOpeningHoursRows, getRatingLabel, getTagLabel } from '../locationPresentation'
+import { LocationOpeningHours } from '../components/LocationOpeningHours'
+import { LocationDiscoveryCard } from '../components/LocationDiscoveryCard'
+import { getRatingLabel, getTagLabel } from '../locationPresentation'
 import styles from './LocationDetailPage.module.css'
 
 function DetailSkeleton() {
@@ -41,6 +43,9 @@ export function LocationDetailPage() {
   const [reportOpen, setReportOpen] = useState(false)
   const [reportedLocationIds, setReportedLocationIds] = useState(() => new Set())
   const [unavailableReportIds, setUnavailableReportIds] = useState(() => new Set())
+  const [relatedLocations, setRelatedLocations] = useState([])
+  const [relatedLoading, setRelatedLoading] = useState(false)
+  const [relatedError, setRelatedError] = useState('')
   const requestKey = `${locationId}|${reloadKey}`
   const hasReported = reportedLocationIds.has(locationId)
   const reportUnavailable = unavailableReportIds.has(locationId)
@@ -76,6 +81,22 @@ export function LocationDetailPage() {
     return () => { active = false }
   }, [locationId, reloadKey, requestKey])
 
+  useEffect(() => {
+    const categoryCode = location?.category?.code
+    if (!categoryCode) return undefined
+    let active = true
+    Promise.resolve().then(() => active && setRelatedLoading(true))
+    getPublicLocationsApi({ page: 1, pageSize: 5, categoryCode, sortBy: 'recommended' })
+      .then((payload) => {
+        if (!active) return
+        setRelatedLocations((payload.data ?? []).filter((item) => item.id !== locationId).slice(0, 4))
+        setRelatedError('')
+      })
+      .catch(() => active && setRelatedError('Không thể tải các địa điểm liên quan.'))
+      .finally(() => active && setRelatedLoading(false))
+    return () => { active = false }
+  }, [location?.category?.code, locationId])
+
   const loading = loadedRequestKey !== requestKey
   if (loading) return <DetailSkeleton />
 
@@ -91,7 +112,6 @@ export function LocationDetailPage() {
     )
   }
 
-  const openingRows = getOpeningHoursRows(location.openingHours)
   const [coverImage, ...otherImages] = location.images ?? []
   const mapUrl = `https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=17/${location.latitude}/${location.longitude}`
 
@@ -105,13 +125,12 @@ export function LocationDetailPage() {
         <div>
           <span className={styles.category}>{location.category?.name}</span>
           <h1>{location.name}</h1>
-          <p className={styles.address}><EnvironmentOutlined /> {location.formattedAddress}</p>
+          <div className={styles.detailMeta}>
+            <span><StarFilled /> {getRatingLabel(location)}</span>
+            <span><EnvironmentOutlined /> {location.formattedAddress}</span>
+          </div>
         </div>
         <div className={styles.headerActions}>
-          <div className={styles.rating}>
-            <StarFilled />
-            <div><strong>{getRatingLabel(location)}</strong><span>Đánh giá cộng đồng</span></div>
-          </div>
           <BookmarkButton
             bookmark={createLocationBookmark(location)}
             showLabel
@@ -119,6 +138,12 @@ export function LocationDetailPage() {
             unsavedLabel="Lưu địa điểm"
             className={styles.bookmarkAction}
           />
+          <Button type="primary" icon={<CalendarOutlined />} onClick={() => {
+            const destination = `/itineraries/new?locationId=${encodeURIComponent(location.id)}`
+            navigate(isAuthenticated ? destination : '/login', isAuthenticated ? undefined : { state: { from: { pathname: destination } } })
+          }}>
+            Thêm vào lịch trình
+          </Button>
           <Button
             icon={hasReported ? <CheckCircleOutlined /> : <FlagOutlined />}
             disabled={hasReported || reportUnavailable}
@@ -160,6 +185,8 @@ export function LocationDetailPage() {
             ) : null}
           </section>
 
+          <LocationOpeningHours openingHours={location.openingHours} />
+
           {location.tagCodes?.length ? (
             <section className={styles.section}>
               <span className={styles.eyebrow}>Trải nghiệm</span>
@@ -197,27 +224,40 @@ export function LocationDetailPage() {
         </article>
 
         <aside className={styles.infoCard}>
-          <h2>Thông tin hữu ích</h2>
-          <div className={styles.infoBlock}>
-            <EnvironmentOutlined />
-            <div>
-              <strong>Địa chỉ</strong>
-              <span>{location.address?.addressLine}</span>
-              <span>{location.address?.wardName}, Thành phố Huế</span>
-              {location.address?.locationNote ? <small>{location.address.locationNote}</small> : null}
-            </div>
+          <div className={styles.sideCard}>
+            <h2>Thông tin hữu ích</h2>
+            <div className={styles.sideRow}><span>Danh mục</span><strong>{location.category?.name}</strong></div>
+            <div className={styles.sideRow}><span>Khu vực</span><strong>{location.address?.wardName}</strong></div>
+            <div className={styles.sideRow}><span>Đánh giá</span><strong>{getRatingLabel(location)}</strong></div>
+            {location.address?.locationNote ? <p className={styles.sideNote}>{location.address.locationNote}</p> : null}
           </div>
-          <div className={styles.infoBlock}>
-            <ClockCircleOutlined />
-            <div className={styles.openingHours}>
-              <strong>Giờ hoạt động</strong>
-              {openingRows.length ? openingRows.map((row) => (
-                <span key={row.dayLabel}><b>{row.dayLabel}</b><em>{row.hours}</em></span>
-              )) : <span>Chưa có thông tin giờ hoạt động</span>}
-            </div>
+          <div className={styles.sideCard}>
+            <h2>Lên kế hoạch</h2>
+            <p className={styles.sideNote}>Bắt đầu một lịch trình mới với địa điểm này được điền sẵn ở ngày đầu tiên.</p>
+            <Button block type="primary" icon={<CalendarOutlined />} onClick={() => {
+              const destination = `/itineraries/new?locationId=${encodeURIComponent(location.id)}`
+              navigate(isAuthenticated ? destination : '/login', isAuthenticated ? undefined : { state: { from: { pathname: destination } } })
+            }}>Thêm vào lịch trình</Button>
+          </div>
+          <div className={styles.sideCard}>
+            <h2>Thông tin chưa chính xác?</h2>
+            <p className={styles.sideNote}>Báo cáo nội dung sai, spam hoặc không phù hợp. Góp ý về website dùng kênh Feedback riêng.</p>
+            <Button block icon={<FlagOutlined />} disabled={hasReported || reportUnavailable} onClick={handleReportClick}>
+              {hasReported ? 'Đã báo cáo' : 'Báo cáo địa điểm'}
+            </Button>
           </div>
         </aside>
       </div>
+
+      <section className={styles.relatedSection} aria-labelledby="related-heading">
+        <span className={styles.eyebrow}>Tiếp tục khám phá</span>
+        <h2 id="related-heading">Địa điểm liên quan</h2>
+        {relatedError ? <Alert type="warning" showIcon message={relatedError} /> : null}
+        {relatedLoading ? <div className={styles.relatedGrid}>{[0, 1, 2, 3].map((item) => <Skeleton.Node active key={item} />)}</div> : null}
+        {!relatedLoading && !relatedError && relatedLocations.length ? (
+          <div className={styles.relatedGrid}>{relatedLocations.map((item) => <LocationDiscoveryCard key={item.id} location={item} />)}</div>
+        ) : null}
+      </section>
 
       <ReportModal
         open={reportOpen}
