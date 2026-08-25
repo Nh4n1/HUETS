@@ -348,6 +348,17 @@
   font-weight: 700;
 }
 
+.moreCategories {
+  display: inline-flex;
+  min-width: max-content;
+  min-height: 3rem;
+  padding: 0.65rem 1rem;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-primary);
+  font-weight: 750;
+}
+
 .showAllButton:global(.ant-btn) {
   height: auto;
   padding: 0.5rem 0;
@@ -830,4 +841,98 @@
     animation: none;
     transition: none;
   }
+}
+
+/* Desktop mockup v1.6 alignment */
+.hero {
+  width: min(100% - 3.5rem, var(--container-width));
+  min-height: 26.25rem;
+  margin-top: 1.75rem;
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 82% 18%, rgb(255 255 255 / 35%), transparent 22%),
+    radial-gradient(circle at 78% 78%, rgb(255 255 255 / 20%), transparent 28%),
+    linear-gradient(135deg, #6d4726, #9d6e3e 50%, #d3ae69);
+  box-shadow: var(--shadow-card);
+}
+
+.hero::after {
+  position: absolute;
+  right: -3rem;
+  bottom: -5rem;
+  width: 27rem;
+  height: 27rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3.5rem rgb(255 255 255 / 6%), 0 0 0 7rem rgb(255 255 255 / 4%);
+  content: '';
+}
+
+.heroOverlay,
+.heroCaption { display: none; }
+.eyebrow::before, .sectionEyebrow::before { display: none; }
+
+.heroContent {
+  width: 100%;
+  padding: 4.25rem;
+}
+
+.hero h1 {
+  max-width: 44rem;
+  margin: .75rem 0 1.1rem;
+  font-family: var(--font-body);
+  font-size: clamp(2.8rem, 4.5vw, 3.25rem);
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+
+.heroLead { max-width: 44rem; font-size: 1.1rem; line-height: 1.75; }
+.searchBox { width: min(100%, 44rem); margin-top: 1.75rem; border-radius: 1rem; box-shadow: 0 16px 40px rgb(51 33 18 / 18%); }
+.discoverSection { padding-top: 4.5rem; }
+.sectionHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; }
+.sectionHeading h2, .featuredHeading h2 { margin-top: .3rem; font-family: var(--font-body); font-size: 2rem; letter-spacing: -.025em; }
+.sectionHeading p { max-width: 40rem; }
+.categoryList { margin-top: 1.5rem; gap: .75rem; }
+.categoryList button { min-height: 2.8rem; padding: .65rem 1rem; border-color: var(--color-border); background: white; }
+.categoryList button:hover { border-color: #d4b98e; color: var(--color-text-soft); background: #fbf4e8; box-shadow: none; }
+.moreCategories { min-height: 2.8rem; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: white; }
+.categorySectionLink { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .4rem; color: var(--color-primary); font-weight: 800; }
+.featuredSection { padding-block: 4.5rem 0; }
+.featuredHeading { margin-bottom: 1.5rem; }
+.journeySection,
+.communitySection {
+  display: flex;
+  width: min(100% - 3.5rem, var(--container-width));
+  margin: 4.5rem auto 0;
+  padding: 2.35rem 2.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.625rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  background: var(--color-surface-muted);
+  text-align: left;
+}
+.journeyContent h2,
+.communitySection h2 { max-width: none; margin: .35rem 0 .5rem; font-family: var(--font-body); font-size: 1.75rem; letter-spacing: -.025em; }
+.journeyContent > p,
+.communitySection p { max-width: 44rem; margin: 0; line-height: 1.65; }
+.journeyContent ul { display: none; }
+.journeyCta,
+.communitySection > a { flex: 0 0 auto; min-height: 2.75rem; padding: .7rem 1rem; border-radius: .75rem; }
+.communitySection { margin-top: 1.35rem; margin-bottom: 4.5rem; background: white; }
+.communitySection > div { min-width: 0; }
+
+@media (max-width: 55rem) {
+  .hero { width: calc(100% - 2rem); min-height: 25rem; }
+  .heroContent { padding: 3rem; }
+  .sectionHeading { align-items: flex-start; flex-direction: column; }
+  .journeySection, .communitySection { width: calc(100% - 2rem); align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 40rem) {
+  .hero { width: calc(100% - 1rem); min-height: 35rem; border-radius: 1.4rem; }
+  .heroContent { padding: 2rem 1rem; }
+  .hero h1 { font-size: 2.65rem; }
+  .journeySection, .communitySection { padding: 1.5rem; }
 }

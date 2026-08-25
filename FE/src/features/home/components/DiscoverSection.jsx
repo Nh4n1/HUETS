@@ -1,48 +1,31 @@
-import {
-  BankOutlined,
-  CameraOutlined,
-  CoffeeOutlined,
-  CompassOutlined,
-  ShopOutlined,
-} from '@ant-design/icons'
+import { ArrowRightOutlined } from '@ant-design/icons'
+import { Link } from 'react-router'
+import { CategoryIcon } from '../../../shared/config/categoryPresentation'
 import styles from '../../../pages/HomePage.module.css'
 
-const categories = [
-  { code: '', name: 'Tất cả', icon: <CompassOutlined /> },
-  { code: 'historical_site', name: 'Di sản', icon: <BankOutlined /> },
-  { code: 'restaurant', name: 'Ẩm thực', icon: <ShopOutlined /> },
-  { code: 'cafe', name: 'Cà phê', icon: <CoffeeOutlined /> },
-  { code: 'natural_attraction', name: 'Thiên nhiên', icon: <CameraOutlined /> },
-  { code: 'market_shopping', name: 'Chợ địa phương', icon: <ShopOutlined /> },
-]
-
-export function DiscoverSection({ activeCategory, onCategorySelect }) {
+export function DiscoverSection({ categories, onCategorySelect }) {
   return (
     <section className={styles.discoverSection} id="discover">
       <div className={styles.sectionHeading}>
         <div>
-          <span className={styles.sectionEyebrow}>Bắt đầu từ điều bạn yêu thích</span>
-          <h2>Mỗi góc Huế, một câu chuyện</h2>
+          <span className={styles.sectionEyebrow}>Đi nhanh</span>
+          <h2>Khám phá nhanh</h2>
+          <p>5 chủ đề đầu theo thứ tự hiển thị của hệ thống. Chọn một chủ đề để đi thẳng tới danh sách địa điểm.</p>
         </div>
-        <p>
-          Chọn một chủ đề để xem những địa điểm mới nhất được cộng đồng
-          HueTrip chia sẻ.
-        </p>
+        <Link className={styles.categorySectionLink} to="/explore#categories">
+          Khám phá tất cả chủ đề <ArrowRightOutlined />
+        </Link>
       </div>
-
-      <div className={styles.categoryList} aria-label="Lọc địa điểm theo chủ đề">
+      <div className={styles.categoryList} aria-label="Khám phá địa điểm theo chủ đề">
         {categories.map((category) => (
-          <button
-            type="button"
-            key={category.code || 'all'}
-            className={activeCategory === category.code ? styles.activeCategory : ''}
-            aria-pressed={activeCategory === category.code}
-            onClick={() => onCategorySelect(category.code)}
-          >
-            {category.icon}
+          <button type="button" key={category.code} onClick={() => onCategorySelect(category.code)}>
+            <CategoryIcon code={category.code} />
             <span>{category.name}</span>
           </button>
         ))}
+        <Link className={styles.moreCategories} to="/explore#categories">
+          Xem thêm <ArrowRightOutlined />
+        </Link>
       </div>
     </section>
   )
