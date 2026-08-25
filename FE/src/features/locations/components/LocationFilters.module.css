@@ -60,6 +60,37 @@
   gap: 1rem;
 }
 
+.filterSection {
+  display: grid;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
+  gap: .7rem;
+}
+
+.filterSection:first-child { padding-top: 0; border-top: 0; }
+
+.filterSectionTitle {
+  color: var(--color-text-soft);
+  font-size: .7rem;
+  font-weight: 850;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.filterSection > :global(.ant-select) { width: 100%; }
+
+.filterSection label { display: grid; gap: .4rem; }
+
+.tagHint { margin: 0; color: var(--color-text-muted); font-size: .76rem; line-height: 1.5; }
+
+.tagGroup { display: grid; gap: .5rem; }
+.tagGroup + .tagGroup { padding-top: .75rem; border-top: 1px solid var(--color-border-light); }
+.tagGroupHeading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.tagGroupHeading strong { color: var(--color-text-soft); font-size: .78rem; }
+.tagGroupHeading button { padding: 0; border: 0; color: var(--color-primary); background: transparent; cursor: pointer; font-size: .7rem; font-weight: 700; }
+.tagChoices { display: grid; max-height: 10rem; padding-right: .2rem; overflow-y: auto; gap: .4rem; }
+.tagChoices :global(.ant-checkbox-wrapper), .tagChoices :global(.ant-radio-wrapper) { margin: 0; color: var(--color-text-muted); font-size: .78rem; line-height: 1.4; }
+
 .fields label {
   display: grid;
   gap: 0.45rem;

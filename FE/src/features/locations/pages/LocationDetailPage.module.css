@@ -32,6 +32,11 @@
 .section h2, .infoCard h2 { margin: 0.35rem 0 1rem; font-size: 1.65rem; letter-spacing: -0.03em; }
 .description { margin: 0; color: var(--color-text-soft); font-size: 1rem; line-height: 1.85; white-space: pre-line; }
 .aliases { margin: 1.2rem 0 0; color: var(--color-text-muted); font-size: 0.85rem; }
+.locationInfoGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.locationInfoGrid > div { display: grid; min-height: 5rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: .875rem; align-content: start; gap: .4rem; background: white; }
+.locationInfoGrid span { color: var(--color-text-muted); font-size: .75rem; }
+.locationInfoGrid strong { color: var(--color-text-soft); font-size: .88rem; line-height: 1.5; }
+.locationInfoWide { grid-column: 1 / -1; }
 .tags { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .tags span { padding: 0.55rem 0.8rem; border-radius: var(--radius-pill); color: var(--color-secondary-dark); background: var(--color-secondary-soft); font-size: 0.78rem; font-weight: 700; }
 .mapWrap { overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
@@ -55,7 +60,9 @@
 .sideRow strong { color: var(--color-text-soft); text-align: right; }
 .sideNote { margin: .75rem 0 1rem; color: var(--color-text-muted); font-size: .8rem; line-height: 1.6; }
 .relatedSection { order: 4; padding-top: clamp(3rem, 6vw, 4.5rem); }
-.relatedSection h2 { margin: .35rem 0 1.5rem; font-size: clamp(1.8rem, 3vw, 2.5rem); }
+.relatedHeading { display: flex; margin-bottom: 1.5rem; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.relatedSection h2 { margin: .35rem 0 0; font-size: clamp(1.8rem, 3vw, 2.5rem); }
+.relatedHeading > a { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .4rem; color: var(--color-primary); font-weight: 800; }
 .relatedGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
 .relatedGrid > :global(.ant-skeleton) { width: 100% !important; height: 22rem !important; }
 .skeletonHero { height: 30rem; margin: 1.5rem 0; border-radius: var(--radius-xl); background: var(--color-surface-muted); }
@@ -79,5 +86,8 @@
   .rating { width: 100%; }
   .bookmarkAction:global(.ant-btn) { width: 100%; }
   .relatedGrid { grid-template-columns: 1fr; }
+  .locationInfoGrid { grid-template-columns: 1fr; }
+  .locationInfoWide { grid-column: auto; }
+  .relatedHeading { align-items: flex-start; flex-direction: column; }
   .externalMap { padding: 0.7rem 0; }
 }

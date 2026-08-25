@@ -1,7 +1,7 @@
 import { ArrowDownOutlined, ArrowRightOutlined, CompassOutlined, SearchOutlined } from '@ant-design/icons'
 import { Alert, Button, Empty, Input, Modal, Skeleton } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { getCategoriesApi } from '../../../shared/api/referenceApi'
 import { CategoryIcon } from '../../../shared/config/categoryPresentation'
 import { getActiveCategories } from '../../../shared/config/categoryUtils'
@@ -9,14 +9,15 @@ import { getPublicLocationsApi } from '../../locations/api/locationApi'
 import { LocationDiscoveryCard } from '../../locations/components/LocationDiscoveryCard'
 import styles from './ExplorePage.module.css'
 
-function LocationCollection({ id, eyebrow, title, description, locations, loading, error }) {
+function LocationCollection({ id, eyebrow, title, description, showAllTo, locations, loading, error }) {
   return (
     <section className={styles.collection} id={id}>
       <div className={styles.sectionHeading}>
         <div><span>{eyebrow}</span><h2>{title}</h2></div>
         <p>{description}</p>
+        <Link className={styles.sectionLink} to={showAllTo}>Xem tất cả <ArrowRightOutlined /></Link>
       </div>
-      {error ? <Alert type="warning" showIcon message={error} /> : null}
+      {error ? <Alert type="warning" showIcon title={error} /> : null}
       {loading ? (
         <div className={styles.locationGrid}>{[0, 1, 2, 3].map((item) => <Skeleton.Node key={item} active className={styles.cardSkeleton} />)}</div>
       ) : null}
@@ -30,6 +31,7 @@ function LocationCollection({ id, eyebrow, title, description, locations, loadin
 
 export function ExplorePage() {
   const navigate = useNavigate()
+  const routerLocation = useLocation()
   const [categories, setCategories] = useState([])
   const [highRated, setHighRated] = useState([])
   const [newest, setNewest] = useState([])
@@ -42,8 +44,8 @@ export function ExplorePage() {
     let active = true
     Promise.allSettled([
       getCategoriesApi(),
-      getPublicLocationsApi({ page: 1, pageSize: 4, sortBy: 'rating_desc' }),
-      getPublicLocationsApi({ page: 1, pageSize: 4, sortBy: 'newest' }),
+      getPublicLocationsApi({ page: 1, pageSize: 6, sortBy: 'rating_desc' }),
+      getPublicLocationsApi({ page: 1, pageSize: 6, sortBy: 'newest' }),
     ]).then(([categoryResult, ratingResult, newestResult]) => {
       if (!active) return
       if (categoryResult.status === 'fulfilled') setCategories(getActiveCategories(categoryResult.value))
@@ -59,9 +61,17 @@ export function ExplorePage() {
     return () => { active = false }
   }, [])
 
+  useEffect(() => {
+    if (routerLocation.hash !== '#categories') return
+    window.requestAnimationFrame(() => {
+      document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [routerLocation.hash])
+
   const filteredCategories = useMemo(() => {
-    const normalized = categoryQuery.trim().toLocaleLowerCase('vi')
-    return normalized ? categories.filter((category) => category.name.toLocaleLowerCase('vi').includes(normalized)) : categories
+    const normalize = (value) => value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('vi').trim()
+    const normalized = normalize(categoryQuery)
+    return normalized ? categories.filter((category) => normalize(category.name).includes(normalized)) : categories
   }, [categories, categoryQuery])
 
   const openCategory = (code) => {
@@ -86,7 +96,7 @@ export function ExplorePage() {
           <div><span>Chủ đề</span><h2>Khám phá theo sở thích</h2></div>
           <p>Một số chủ đề được ưu tiên theo thứ tự hiển thị. Danh sách đầy đủ được mở riêng để trang luôn gọn.</p>
         </div>
-        {errors.categories ? <Alert type="warning" showIcon message={errors.categories} /> : null}
+        {errors.categories ? <Alert type="warning" showIcon title={errors.categories} /> : null}
         {loading ? <div className={styles.categoryGrid}>{Array.from({ length: 8 }, (_, item) => <Skeleton.Node active key={item} />)}</div> : null}
         {!loading ? (
           <div className={styles.categoryGrid}>
@@ -105,9 +115,11 @@ export function ExplorePage() {
       </section>
 
       <LocationCollection id="high-rated" eyebrow="Cộng đồng yêu thích" title="Được đánh giá cao"
-        description="Những địa điểm có điểm đánh giá tốt từ cộng đồng HueTrip." locations={highRated} loading={loading} error={errors.rating} />
+        description="Những địa điểm có điểm đánh giá tốt từ cộng đồng HueTrip." showAllTo="/locations?sortBy=rating_desc"
+        locations={highRated} loading={loading} error={errors.rating} />
       <LocationCollection id="newest" eyebrow="Vừa được chia sẻ" title="Mới trên HueTrip"
-        description="Các địa điểm công khai gần đây nhất trong danh mục." locations={newest} loading={loading} error={errors.newest} />
+        description="Các địa điểm công khai gần đây nhất trong danh mục." showAllTo="/locations?sortBy=newest"
+        locations={newest} loading={loading} error={errors.newest} />
 
       <section className={styles.catalogCta}>
         <CompassOutlined /><div><h2>Sẵn sàng thu hẹp lựa chọn?</h2><p>Tìm kiếm, lọc và sắp xếp trong toàn bộ danh mục địa điểm.</p></div>

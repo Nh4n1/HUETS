@@ -57,6 +57,10 @@ describe('public location sorting', () => {
             'ratingSummary.count': -1,
             _id: -1,
         });
-        expect(getPublicLocationSort('newest')).toEqual({ createdAt: -1, _id: -1 });
+        expect(getPublicLocationSort('newest')).toEqual({
+            'moderation.reviewedAt': -1,
+            createdAt: -1,
+            _id: -1,
+        });
     });
 });

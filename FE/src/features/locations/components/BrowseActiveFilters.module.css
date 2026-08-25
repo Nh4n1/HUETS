@@ -1,0 +1,4 @@
+.filters { display: flex; margin-bottom: 1.1rem; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.filters button { display: inline-flex; min-height: 2rem; padding: .38rem .65rem; border: 1px solid #dccdb7; border-radius: var(--radius-pill); align-items: center; gap: .4rem; color: #72502c; background: #fbf4e8; cursor: pointer; font-size: .78rem; font-weight: 700; }
+.filters button:hover { border-color: var(--color-primary); }
+.filters .clear { padding-inline: .35rem; border-color: transparent; color: var(--color-primary); background: transparent; }

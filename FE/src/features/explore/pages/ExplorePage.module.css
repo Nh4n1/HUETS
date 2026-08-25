@@ -10,6 +10,7 @@
 .sectionHeading { display: flex; margin-bottom: 1.5rem; align-items: flex-end; justify-content: space-between; gap: 1.5rem; }
 .sectionHeading h2 { margin: .3rem 0 0; font-size: 2rem; letter-spacing: -.025em; }
 .sectionHeading p { max-width: 40rem; margin: 0; color: var(--color-text-muted); line-height: 1.65; }
+.sectionLink { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .4rem; color: var(--color-primary); font-weight: 800; }
 .categoryGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 .categoryGrid > :global(.ant-skeleton),
 .categoryGrid :global(.ant-skeleton-element),

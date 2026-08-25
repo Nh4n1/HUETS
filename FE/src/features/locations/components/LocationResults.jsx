@@ -25,7 +25,7 @@ export function LocationResults({ query, locations, meta, page, pageSize, loadin
             Bộ lọc{activeFilterCount ? ` (${activeFilterCount})` : ''}</Button>
         </div>
       </div>
-      {errorMessage ? <Alert type="error" showIcon message={errorMessage} description="Vui lòng kiểm tra kết nối và thử lại."
+      {errorMessage ? <Alert type="error" showIcon title={errorMessage} description="Vui lòng kiểm tra kết nối và thử lại."
         action={<Button size="small" onClick={onRetry}>Thử lại</Button>} /> : null}
       {loading ? <div className={styles.list} aria-label="Đang tải địa điểm" aria-busy="true">
         {Array.from({ length: 4 }, (_, index) => <div className={styles.skeletonCard} key={index}>
@@ -37,7 +37,7 @@ export function LocationResults({ query, locations, meta, page, pageSize, loadin
       {!loading && !errorMessage && locations.length === 0 ? <div className={styles.emptyState}>
         <Empty image={<EnvironmentOutlined className={styles.emptyIcon} />} description={<span>
           <strong>Chưa tìm thấy địa điểm phù hợp.</strong> Hãy bỏ bớt tiêu chí bắt buộc hoặc thử từ khóa rộng hơn.</span>}>
-          {hasCriteria ? <Button onClick={onResetCriteria}>Xóa tiêu chí tìm kiếm</Button> : null}</Empty></div> : null}
+          {hasCriteria ? <Button onClick={onResetCriteria}>{searchMode ? 'Xóa tiêu chí tìm kiếm' : 'Xóa bộ lọc'}</Button> : null}</Empty></div> : null}
     </section>
   )
 }

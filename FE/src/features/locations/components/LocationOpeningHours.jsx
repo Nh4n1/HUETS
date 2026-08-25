@@ -42,7 +42,7 @@ export function LocationOpeningHours({ openingHours }) {
   return (
     <section className={styles.section} aria-labelledby="opening-hours-heading">
       <span className={styles.eyebrow}>Thời gian ghé thăm</span>
-      <h2 id="opening-hours-heading">Giờ mở cửa</h2>
+      <h2 id="opening-hours-heading">Giờ hoạt động</h2>
       <div className={styles.summary}>
         <ClockCircleOutlined />
         <div><strong>Hôm nay</strong><span>{summary}</span></div>

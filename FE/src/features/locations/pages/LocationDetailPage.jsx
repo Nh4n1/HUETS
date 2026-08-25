@@ -1,5 +1,6 @@
 import {
   ArrowLeftOutlined,
+  ArrowRightOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
   EnvironmentOutlined,
@@ -86,10 +87,10 @@ export function LocationDetailPage() {
     if (!categoryCode) return undefined
     let active = true
     Promise.resolve().then(() => active && setRelatedLoading(true))
-    getPublicLocationsApi({ page: 1, pageSize: 5, categoryCode, sortBy: 'recommended' })
+    getPublicLocationsApi({ page: 1, pageSize: 6, categoryCode, sortBy: 'recommended' })
       .then((payload) => {
         if (!active) return
-        setRelatedLocations((payload.data ?? []).filter((item) => item.id !== locationId).slice(0, 4))
+        setRelatedLocations((payload.data ?? []).filter((item) => item.id !== locationId).slice(0, 3))
         setRelatedError('')
       })
       .catch(() => active && setRelatedError('Không thể tải các địa điểm liên quan.'))
@@ -103,7 +104,7 @@ export function LocationDetailPage() {
   if (!location) {
     return (
       <main className={styles.errorPage}>
-        <Alert type="error" showIcon message={errorMessage} />
+        <Alert type="error" showIcon title={errorMessage} />
         <div>
           <Link to="/locations"><Button icon={<ArrowLeftOutlined />}>Về danh sách</Button></Link>
           <Button type="primary" onClick={() => setReloadKey((value) => value + 1)}>Thử lại</Button>
@@ -185,6 +186,18 @@ export function LocationDetailPage() {
             ) : null}
           </section>
 
+          <section className={styles.section}>
+            <span className={styles.eyebrow}>Thông tin</span>
+            <h2>Thông tin địa điểm</h2>
+            <div className={styles.locationInfoGrid}>
+              <div><span>Khu vực</span><strong>{location.address?.wardName || 'Chưa cập nhật'}</strong></div>
+              <div><span>Địa chỉ</span><strong>{location.address?.addressLine || 'Chưa cập nhật'}</strong></div>
+              {location.address?.locationNote ? (
+                <div className={styles.locationInfoWide}><span>Ghi chú vị trí</span><strong>{location.address.locationNote}</strong></div>
+              ) : null}
+            </div>
+          </section>
+
           <LocationOpeningHours openingHours={location.openingHours} />
 
           {location.tagCodes?.length ? (
@@ -227,9 +240,7 @@ export function LocationDetailPage() {
           <div className={styles.sideCard}>
             <h2>Thông tin hữu ích</h2>
             <div className={styles.sideRow}><span>Danh mục</span><strong>{location.category?.name}</strong></div>
-            <div className={styles.sideRow}><span>Khu vực</span><strong>{location.address?.wardName}</strong></div>
             <div className={styles.sideRow}><span>Đánh giá</span><strong>{getRatingLabel(location)}</strong></div>
-            {location.address?.locationNote ? <p className={styles.sideNote}>{location.address.locationNote}</p> : null}
           </div>
           <div className={styles.sideCard}>
             <h2>Lên kế hoạch</h2>
@@ -249,15 +260,23 @@ export function LocationDetailPage() {
         </aside>
       </div>
 
-      <section className={styles.relatedSection} aria-labelledby="related-heading">
-        <span className={styles.eyebrow}>Tiếp tục khám phá</span>
-        <h2 id="related-heading">Địa điểm liên quan</h2>
-        {relatedError ? <Alert type="warning" showIcon message={relatedError} /> : null}
-        {relatedLoading ? <div className={styles.relatedGrid}>{[0, 1, 2, 3].map((item) => <Skeleton.Node active key={item} />)}</div> : null}
-        {!relatedLoading && !relatedError && relatedLocations.length ? (
-          <div className={styles.relatedGrid}>{relatedLocations.map((item) => <LocationDiscoveryCard key={item.id} location={item} />)}</div>
-        ) : null}
-      </section>
+      {relatedLoading || relatedError || relatedLocations.length ? (
+        <section className={styles.relatedSection} aria-labelledby="related-heading">
+          <div className={styles.relatedHeading}>
+            <div><span className={styles.eyebrow}>Tiếp tục khám phá</span><h2 id="related-heading">Địa điểm cùng chủ đề</h2></div>
+            {location.category?.code ? (
+              <Link to={`/locations?categoryCode=${encodeURIComponent(location.category.code)}`}>
+                Xem thêm {location.category.name} <ArrowRightOutlined />
+              </Link>
+            ) : null}
+          </div>
+          {relatedError ? <Alert type="warning" showIcon title={relatedError} /> : null}
+          {relatedLoading ? <div className={styles.relatedGrid}>{[0, 1, 2].map((item) => <Skeleton.Node active key={item} />)}</div> : null}
+          {!relatedLoading && !relatedError && relatedLocations.length ? (
+            <div className={styles.relatedGrid}>{relatedLocations.map((item) => <LocationDiscoveryCard key={item.id} location={item} />)}</div>
+          ) : null}
+        </section>
+      ) : null}
 
       <ReportModal
         open={reportOpen}

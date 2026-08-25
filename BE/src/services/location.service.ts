@@ -37,6 +37,7 @@ const RATING_DESC_LOCATION_SORT: Record<string, 1 | -1> = {
 };
 
 const NEWEST_LOCATION_SORT: Record<string, 1 | -1> = {
+    'moderation.reviewedAt': -1,
     createdAt: -1,
     _id: -1,
 };
