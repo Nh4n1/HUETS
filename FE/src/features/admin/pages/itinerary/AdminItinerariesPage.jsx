@@ -307,6 +307,7 @@ export function AdminItinerariesPage() {
       </section>
 
       <Modal
+        className={styles.hideItineraryModal}
         title="Ẩn lịch trình"
         open={!!hideTarget}
         confirmLoading={submittingId === hideTarget?.id}
@@ -323,7 +324,7 @@ export function AdminItinerariesPage() {
         cancelText="Huỷ"
       >
         <Input.TextArea
-          rows={3}
+          rows={4}
           maxLength={500}
           showCount
           placeholder="Lý do ẩn (bắt buộc)"

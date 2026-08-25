@@ -118,6 +118,8 @@
 
 .detailHeading > :global(.ant-tag) { width: max-content; }
 .detail :global(.ant-alert-description p) { margin: 0 0 0.35rem; }
+.reportDecisionModal :global(.ant-modal-body) { padding-bottom: 1.25rem; }
+.reportDecisionModal :global(.ant-input-textarea-show-count) { margin-bottom: 1.25rem; }
 
 @media (max-width: 48rem) {
   .header { align-items: stretch; flex-direction: column; }

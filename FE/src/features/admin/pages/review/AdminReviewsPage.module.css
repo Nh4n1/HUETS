@@ -68,6 +68,8 @@
 .moderationContext { display: grid; margin: .8rem 0 1rem; padding: .85rem; border-left: 3px solid var(--color-accent); border-radius: .4rem; gap: .18rem; background: var(--color-surface-muted); }
 .moderationContext span { color: var(--color-text-muted); font-size: .78rem; }
 .moderationContext p { margin: .35rem 0 0; color: var(--color-text-soft); }
+.hideReviewModal :global(.ant-modal-body) { padding-bottom: 1.25rem; }
+.hideReviewModal :global(.ant-input-textarea-show-count) { margin-bottom: 1.25rem; }
 @media (max-width: 64rem) { .toolbar { align-items: stretch; flex-direction: column; } .filters { width: 100%; } .search { max-width: none; flex: 1 1 auto; } .toolbar > button { align-self: flex-end; } }
 @media (max-width: 48rem) { .pageHeader { padding: 1.2rem; } .filters { display: grid; grid-template-columns: 1fr 1fr; } .search { width: 100%; grid-column: 1 / -1; } .select { width: 100%; } }
 @media (max-width: 30rem) { .page { gap: .8rem; } .filters { grid-template-columns: 1fr; } .search { grid-column: auto; } .toolbar > button { width: 100%; } .table :global(.ant-pagination-total-text) { display: none; } .table :global(.ant-pagination) { justify-content: center; } }

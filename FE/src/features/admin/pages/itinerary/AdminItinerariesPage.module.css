@@ -123,6 +123,8 @@
 .actionMenuButton { width: 2rem; min-width: 2rem; height: 2rem; padding: 0; border-radius: 50%; }
 .actionMenuButton:hover { color: var(--color-primary) !important; background: var(--color-primary-soft) !important; }
 .table :global(.ant-table-cell-fix-right) { box-shadow: -6px 0 12px rgb(68 48 33 / 5%); }
+.hideItineraryModal :global(.ant-modal-body) { padding-bottom: 1.25rem; }
+.hideItineraryModal :global(.ant-input-textarea-show-count) { margin-bottom: 1.25rem; }
 
 @media (max-width: 48rem) {
   .page { gap: .85rem; }

@@ -391,6 +391,7 @@ export function AdminReportsPage() {
       </Drawer>
 
       <Modal
+        className={styles.reportDecisionModal}
         title={decisionStatus === 'resolved' ? 'Kết luận báo cáo' : 'Bỏ qua báo cáo'}
         open={Boolean(decisionStatus)}
         okText={decisionStatus === 'resolved' ? 'Xác nhận đã xử lý' : 'Xác nhận bỏ qua'}

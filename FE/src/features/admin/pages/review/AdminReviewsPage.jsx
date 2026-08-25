@@ -262,7 +262,7 @@ export function AdminReviewsPage() {
         <Table className={styles.table} size="small" rowKey="id" loading={loading} dataSource={reviews} columns={columns} scroll={{ x: 1010 }} locale={{ emptyText: hasFilters ? 'Không có đánh giá phù hợp bộ lọc.' : 'Chưa có đánh giá.' }} pagination={{ current: page, pageSize: PAGE_SIZE, total, showSizeChanger: false, showTotal: (value) => `${value} đánh giá`, onChange: (value) => { setLoading(true); setPage(value) } }} />
       </section>
 
-      <Modal title="Ẩn đánh giá" open={Boolean(hideTarget)} okText="Ẩn đánh giá" cancelText="Hủy" confirmLoading={submitting} okButtonProps={{ danger: true }} onOk={hideReview} onCancel={() => { if (!submitting) { setHideTarget(null); setHideReason('') } }}>
+      <Modal className={styles.hideReviewModal} title="Ẩn đánh giá" open={Boolean(hideTarget)} okText="Ẩn đánh giá" cancelText="Hủy" confirmLoading={submitting} okButtonProps={{ danger: true }} onOk={hideReview} onCancel={() => { if (!submitting) { setHideTarget(null); setHideReason('') } }}>
         {hideTarget ? (
           <div className={styles.moderationContext}>
             <strong>{hideTarget.location.name}</strong>
@@ -271,7 +271,7 @@ export function AdminReviewsPage() {
           </div>
         ) : null}
         <Typography.Paragraph type="secondary">Đánh giá bị ẩn sẽ không còn hiển thị công khai và không được tính vào điểm trung bình.</Typography.Paragraph>
-        <Input.TextArea rows={3} maxLength={500} showCount autoFocus placeholder="Lý do ẩn (bắt buộc)" value={hideReason} onChange={(event) => setHideReason(event.target.value)} />
+        <Input.TextArea rows={4} maxLength={500} showCount autoFocus placeholder="Lý do ẩn (bắt buộc)" value={hideReason} onChange={(event) => setHideReason(event.target.value)} />
       </Modal>
     </main>
   )
