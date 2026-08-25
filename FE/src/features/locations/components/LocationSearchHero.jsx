@@ -24,9 +24,9 @@ export function LocationSearchHero({ query, loading, onSearch }) {
     <header className={styles.hero}>
       <div className={styles.inner}>
         <div className={styles.copy}>
-          <span className={styles.eyebrow}>Khám phá theo cách của bạn</span>
-          <h1>Tìm một góc Huế hợp với bạn</h1>
-          <p>Tìm theo tên, khu vực hoặc trải nghiệm bạn đang mong muốn.</p>
+          <span className={styles.eyebrow}>Danh mục công khai</span>
+          <h1>Tất cả địa điểm tại Huế</h1>
+          <p>Xem toàn bộ địa điểm hoặc dùng tìm kiếm tự nhiên để nhanh chóng thu hẹp lựa chọn.</p>
         </div>
         <form className={styles.searchBar} onSubmit={submitSearch} role="search">
           <Input value={value} onChange={(event) => setValue(event.target.value)} prefix={<SearchOutlined />}

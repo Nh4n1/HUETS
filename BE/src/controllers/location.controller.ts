@@ -34,10 +34,10 @@ export const getPublicLocations = asyncHandler(async (req: Request, res: Respons
     if (wardCode) query.wardCode = wardCode;
     if (tagCodes !== undefined) query.tagCodes = tagCodes;
     if (sortBy) {
-        if (sortBy !== 'rating_desc') {
+        if (!['recommended', 'rating_desc', 'newest'].includes(sortBy)) {
             throw new ApiError(400, 'VALIDATION_ERROR', 'sortBy không hợp lệ.');
         }
-        query.sortBy = sortBy;
+        query.sortBy = sortBy as locationService.PublicLocationSortBy;
     }
 
     const result = await locationService.getPublicLocations(query);

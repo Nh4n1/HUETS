@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPublicLocationFilter } from './location.service.ts';
+import { buildPublicLocationFilter, getPublicLocationSort } from './location.service.ts';
 
 describe('public location filters', () => {
     it('always limits results to approved locations', () => {
@@ -41,5 +41,26 @@ describe('public location filters', () => {
         expect(buildPublicLocationFilter({
             tagCodes: Array.from({ length: 11 }, (_, index) => `tag_${index}`).join(','),
         }).tagCodes).toEqual({ $all: Array.from({ length: 11 }, (_, index) => `tag_${index}`) });
+    });
+});
+
+describe('public location sorting', () => {
+    it('uses deterministic recommended, rating and newest orders', () => {
+        expect(getPublicLocationSort('recommended')).toEqual({
+            'ratingSummary.average': -1,
+            'ratingSummary.count': -1,
+            createdAt: -1,
+            _id: -1,
+        });
+        expect(getPublicLocationSort('rating_desc')).toEqual({
+            'ratingSummary.average': -1,
+            'ratingSummary.count': -1,
+            _id: -1,
+        });
+        expect(getPublicLocationSort('newest')).toEqual({
+            'moderation.reviewedAt': -1,
+            createdAt: -1,
+            _id: -1,
+        });
     });
 });

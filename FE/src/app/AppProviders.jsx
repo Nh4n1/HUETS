@@ -7,32 +7,32 @@ export function AppProviders({ children }) {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#7c3f20',
+          colorPrimary: '#8b5e34',
           colorSuccess: '#35745a',
           colorWarning: '#a96d17',
           colorError: '#b93b3b',
           colorInfo: '#356a8a',
-          colorText: '#2d2925',
-          colorTextSecondary: '#746d66',
-          colorBgLayout: '#fffdf9',
-          colorBorder: '#ded5cb',
+          colorText: '#27231f',
+          colorTextSecondary: '#6f6a62',
+          colorBgLayout: '#fbfaf7',
+          colorBorder: '#e6dfd4',
           borderRadius: 12,
           fontFamily:
-            "'Segoe UI', Arial, system-ui, -apple-system, sans-serif",
+            "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           controlHeight: 42,
         },
         components: {
           Button: {
             fontWeight: 700,
             primaryShadow:
-              '0 7px 18px rgb(124 63 32 / 18%)',
+              '0 7px 18px rgb(139 94 52 / 18%)',
           },
           Card: {
             borderRadiusLG: 16,
           },
           Input: {
             activeShadow:
-              '0 0 0 3px rgb(124 63 32 / 10%)',
+              '0 0 0 3px rgb(139 94 52 / 10%)',
           },
         },
       }}

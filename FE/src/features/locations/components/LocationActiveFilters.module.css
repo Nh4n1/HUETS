@@ -1,0 +1,72 @@
+.filters {
+  display: flex;
+  margin-bottom: 1.1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filterChip {
+  display: inline-flex;
+  min-height: 2rem;
+  border: 1px solid #dccdb7;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  align-items: stretch;
+  color: #72502c;
+  background: #fbf4e8;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.filterChip:hover {
+  border-color: var(--color-primary);
+}
+
+.chipMain,
+.chipRemove,
+.clear {
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+
+button.chipMain,
+.chipRemove,
+.clear {
+  cursor: pointer;
+}
+
+.chipMain {
+  display: inline-flex;
+  padding: 0.38rem 0.35rem 0.38rem 0.65rem;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chipMain span {
+  padding: 0.12rem 0.32rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-primary-dark);
+  background: rgb(255 255 255 / 65%);
+  font-size: 0.64rem;
+}
+
+.chipRemove {
+  display: grid;
+  min-width: 1.8rem;
+  padding: 0 0.48rem 0 0.25rem;
+  place-items: center;
+}
+
+.chipRemove:hover,
+button.chipMain:hover {
+  color: var(--color-primary-dark);
+}
+
+.clear {
+  min-height: 2rem;
+  padding-inline: 0.35rem;
+  color: var(--color-primary);
+}
