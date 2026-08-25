@@ -1,28 +1,17 @@
 .hero {
   position: relative;
   overflow: hidden;
-  padding: clamp(2.25rem, 5vw, 3.75rem) 1rem;
-  color: var(--color-cream);
-  background:
-    radial-gradient(circle at 80% 0%, rgb(214 168 75 / 28%), transparent 34%),
-    linear-gradient(120deg, #3c271b, #75401f 72%, #87522e);
+  padding: 3.35rem max(1.75rem, calc((100vw - var(--container-width)) / 2)) 1.75rem;
+  color: var(--color-text);
+  background: var(--color-background);
 }
 
-.hero::after {
-  position: absolute;
-  right: -5rem;
-  bottom: -8rem;
-  width: 20rem;
-  height: 20rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 50%;
-  content: '';
-}
+.hero::after { display: none; }
 
 .inner {
   position: relative;
   z-index: 1;
-  width: min(100%, 62rem);
+  width: min(100%, var(--container-width));
   margin-inline: auto;
 }
 
@@ -31,7 +20,7 @@
 }
 
 .eyebrow {
-  color: var(--color-accent-light);
+  color: #9a6d3b;
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -39,33 +28,35 @@
 }
 
 .copy h1 {
-  margin: 0.45rem 0 0.55rem;
-  font-size: clamp(2rem, 4vw, 3.35rem);
+  margin: .35rem 0 .6rem;
+  font-size: clamp(2.5rem, 4vw, 2.65rem);
   line-height: 1.08;
   letter-spacing: -0.04em;
 }
 
 .copy p {
   margin: 0;
-  color: rgb(255 249 242 / 78%);
+  max-width: 49rem;
+  color: var(--color-text-muted);
   font-size: 0.98rem;
 }
 
 .searchBar {
   display: grid;
-  max-width: 50rem;
+  max-width: 48.75rem;
   margin-top: 1.5rem;
   padding: 0.4rem;
-  border: 1px solid rgb(255 255 255 / 18%);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   grid-template-columns: minmax(0, 1fr) auto;
   background: white;
-  box-shadow: 0 18px 45px rgb(25 15 8 / 26%);
+  box-shadow: none;
   transition: box-shadow var(--transition-fast);
 }
 
 .searchBar:focus-within {
-  box-shadow: 0 20px 50px rgb(25 15 8 / 32%), 0 0 0 3px rgb(255 255 255 / 16%);
+  border-color: #cdb28d;
+  box-shadow: 0 0 0 3px rgb(139 94 52 / 9%);
 }
 
 .searchBar :global(.ant-input-affix-wrapper) {
@@ -86,17 +77,17 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  color: rgb(255 249 242 / 72%);
+  color: var(--color-text-muted);
   font-size: 0.78rem;
 }
 
 .suggestions button {
   min-height: 2rem;
   padding: 0.32rem 0.7rem;
-  border: 1px solid rgb(255 255 255 / 20%);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  color: var(--color-cream);
-  background: rgb(255 255 255 / 8%);
+  color: var(--color-primary);
+  background: white;
   cursor: pointer;
   font: inherit;
   transition: background var(--transition-fast), border-color var(--transition-fast);
@@ -104,8 +95,8 @@
 
 .suggestions button:hover,
 .suggestions button:focus-visible {
-  border-color: rgb(255 255 255 / 45%);
-  background: rgb(255 255 255 / 16%);
+  border-color: #d4b98e;
+  background: #fbf4e8;
 }
 
 @media (max-width: 40rem) {

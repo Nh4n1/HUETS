@@ -49,6 +49,8 @@ export function ItineraryEditorPage() {
   const editing = Boolean(itineraryId)
   const aiMode = Boolean(planId)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const prefillLocationId = editing ? '' : (searchParams.get('locationId') ?? '')
   const [form, setForm] = useState(emptyItineraryForm)
   const [loading, setLoading] = useState(editing || aiMode)
   const [saving, setSaving] = useState(false)
@@ -79,6 +81,23 @@ export function ItineraryEditorPage() {
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [aiMode, editing, itineraryId, planId])
+
+  useEffect(() => {
+    if (!prefillLocationId) return undefined
+    let active = true
+    Promise.resolve().then(() => active && setLoading(true))
+    getPublicLocationByIdApi(prefillLocationId)
+      .then((location) => {
+        if (!active) return
+        setForm((current) => ({
+          ...current,
+          days: [{ ...current.days[0], items: [{ ...current.days[0].items[0], locationId: location.id, location }] }, ...current.days.slice(1)],
+        }))
+      })
+      .catch((requestError) => active && setError(errorMessage(requestError, 'Không thể thêm sẵn địa điểm vào lịch trình.')))
+      .finally(() => active && setLoading(false))
+    return () => { active = false }
+  }, [prefillLocationId])
 
   const validation = useMemo(() => getItineraryFormErrors(form), [form])
   const scheduleValidation = useMemo(

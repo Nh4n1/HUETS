@@ -5,48 +5,45 @@ import { CommunitySection } from '../features/home/components/CommunitySection'
 import { DiscoverSection } from '../features/home/components/DiscoverSection'
 import { FeaturedLocationsSection } from '../features/home/components/FeaturedLocationsSection'
 import { HomeHero } from '../features/home/components/HomeHero'
-import { HomePromiseBar } from '../features/home/components/HomePromiseBar'
 import { JourneySection } from '../features/home/components/JourneySection'
 import { getPublicLocationsApi } from '../features/locations/api/locationApi'
+import { getCategoriesApi } from '../shared/api/referenceApi'
+import { getActiveCategories } from '../shared/config/categoryUtils'
+import { pickDiverseLocations } from '../features/home/homeDiscovery'
 import styles from './HomePage.module.css'
 
 export function HomePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [locations, setLocations] = useState([])
+  const [categories, setCategories] = useState([])
   const [loadStatus, setLoadStatus] = useState('loading')
-  const [activeCategory, setActiveCategory] = useState('')
   const [query, setQuery] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
 
-    getPublicLocationsApi({
-      page: 1,
-      pageSize: 8,
-      sortBy: 'rating_desc',
-      ...(activeCategory ? { categoryCode: activeCategory } : {}),
-    })
-      .then((payload) => {
+    Promise.allSettled([
+      getPublicLocationsApi({ page: 1, pageSize: 8, sortBy: 'recommended' }),
+      getCategoriesApi(),
+    ])
+      .then(([locationResult, categoryResult]) => {
         if (cancelled) return
-        setLocations(payload.data ?? [])
-        setLoadStatus('success')
-      })
-      .catch(() => {
-        if (cancelled) return
-        setLocations([])
-        setLoadStatus('error')
+        if (locationResult.status === 'fulfilled') {
+          setLocations(pickDiverseLocations(locationResult.value.data ?? [], 4))
+          setLoadStatus('success')
+        } else {
+          setLocations([])
+          setLoadStatus('error')
+        }
+        setCategories(categoryResult.status === 'fulfilled'
+          ? getActiveCategories(categoryResult.value).slice(0, 5)
+          : [])
       })
 
     return () => { cancelled = true }
-  }, [activeCategory, reloadKey])
-
-  const scrollToFeatured = () => {
-    window.requestAnimationFrame(() => {
-      document.getElementById('featured')?.scrollIntoView({ behavior: 'smooth' })
-    })
-  }
+  }, [reloadKey])
 
   const runSearch = (value) => {
     const normalizedQuery = value.trim()
@@ -59,12 +56,7 @@ export function HomePage() {
     runSearch(query)
   }
 
-  const handleCategory = (code, shouldScroll = false) => {
-    setLoadStatus('loading')
-    setActiveCategory(code)
-    setQuery('')
-    if (shouldScroll) scrollToFeatured()
-  }
+  const handleCategory = (code) => navigate(`/locations?categoryCode=${encodeURIComponent(code)}`)
 
   const handleRetry = () => {
     setLoadStatus('loading')
@@ -77,11 +69,10 @@ export function HomePage() {
         query={query}
         onQueryChange={setQuery}
         onSearch={handleSearch}
-        onCategorySelect={handleCategory}
+        onSuggestion={runSearch}
       />
-      <HomePromiseBar />
       <DiscoverSection
-        activeCategory={activeCategory}
+        categories={categories}
         onCategorySelect={handleCategory}
       />
       <FeaturedLocationsSection

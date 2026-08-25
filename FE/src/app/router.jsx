@@ -27,6 +27,7 @@ import { AdminTagGroupsPage } from '../features/admin/pages/reference/AdminTagGr
 import { AdminFeedbackPage } from '../features/admin/pages/feedback/AdminFeedbackPage'
 
 import { HomePage } from '../pages/HomePage'
+import { ExplorePage } from '../features/explore/pages/ExplorePage'
 
 import { LocationDetailPage } from '../features/locations/pages/LocationDetailPage'
 import { LocationsPage } from '../features/locations/pages/LocationsPage'
@@ -67,7 +68,7 @@ export const router = createBrowserRouter([
 
       {
         path: 'explore',
-        Component: LocationsPage,
+        Component: ExplorePage,
       },
 
       {

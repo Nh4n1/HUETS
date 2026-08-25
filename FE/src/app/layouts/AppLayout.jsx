@@ -100,8 +100,8 @@ export function AppLayout() {
           </NavLink>
 
           <nav className={styles.desktopNav} aria-label="Điều hướng chính">
-            <NavLink to="/">Trang chủ</NavLink>
             <NavLink to="/explore">Khám phá</NavLink>
+            <NavLink to="/locations">Địa điểm</NavLink>
             <NavLink to="/itineraries">Lịch trình</NavLink>
           </nav>
 
@@ -161,8 +161,8 @@ export function AppLayout() {
             aria-label="Điều hướng trên di động"
             onClick={() => setMenuOpen(false)}
           >
-            <NavLink to="/">Trang chủ</NavLink>
             <Link to="/explore">Khám phá</Link>
+            <Link to="/locations">Địa điểm</Link>
             <Link to="/itineraries">Lịch trình</Link>
             {user ? (
               <>
@@ -206,7 +206,9 @@ export function AppLayout() {
 
           <div className={styles.footerColumn}>
             <h2>Khám phá</h2>
+            <Link to="/explore">Gợi ý khám phá</Link>
             <Link to="/locations">Địa điểm</Link>
+            <Link to="/itineraries">Lịch trình cộng đồng</Link>
           </div>
 
           <div className={styles.footerColumn}>

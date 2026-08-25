@@ -1,0 +1,11 @@
+.section { padding: 2.5rem 0; border-bottom: 1px solid var(--color-border-light); }
+.eyebrow { color: var(--color-primary); font-size: .72rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.section h2 { margin: .35rem 0 1rem; font-size: 1.65rem; letter-spacing: -.03em; }
+.summary { display: grid; padding: 1.35rem; border: 1px solid var(--color-border); border-radius: 1.125rem; grid-template-columns: auto 1fr auto; align-items: center; gap: .8rem; background: var(--color-surface); }
+.summary > :global(.anticon) { color: var(--color-primary); font-size: 1.3rem; }
+.summary div { display: grid; gap: .2rem; }
+.summary span { color: var(--color-text-muted); font-size: .85rem; }
+.weeklyList { display: grid; max-height: 70vh; overflow-y: auto; }
+.weeklyList div { display: flex; padding: 1rem .2rem; border-bottom: 1px solid var(--color-border-light); justify-content: space-between; gap: 1rem; }
+.weeklyList span { color: var(--color-text-muted); text-align: right; }
+@media (max-width: 36rem) { .summary { grid-template-columns: auto 1fr; } .summary :global(.ant-btn) { grid-column: 1 / -1; justify-self: start; } }

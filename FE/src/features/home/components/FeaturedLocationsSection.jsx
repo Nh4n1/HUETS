@@ -1,7 +1,7 @@
 import { ArrowRightOutlined, CompassOutlined } from '@ant-design/icons'
 import { Button } from 'antd'
 import styles from '../../../pages/HomePage.module.css'
-import { LocationCard } from './LocationCard'
+import { LocationDiscoveryCard } from '../../locations/components/LocationDiscoveryCard'
 import { LocationSkeleton } from './LocationSkeleton'
 
 export function FeaturedLocationsSection({
@@ -14,14 +14,14 @@ export function FeaturedLocationsSection({
     <section className={styles.featuredSection} id="featured" aria-labelledby="featured-heading">
       <div className={styles.featuredHeading}>
         <div>
-          <h2 id="featured-heading">Điểm đến đáng ghé</h2>
+          <h2 id="featured-heading">Gợi ý cho bạn bắt đầu</h2>
         </div>
         <Button
           type="text"
           className={styles.showAllButton}
           onClick={onShowAll}
         >
-          Khám phá tất cả <ArrowRightOutlined />
+          Xem tất cả <ArrowRightOutlined />
         </Button>
       </div>
 
@@ -34,7 +34,7 @@ export function FeaturedLocationsSection({
       {loadStatus === 'success' && locations.length > 0 ? (
         <div className={styles.locationGrid}>
           {locations.slice(0, 4).map((location) => (
-            <LocationCard key={location.id} location={location} />
+            <LocationDiscoveryCard key={location.id} location={location} />
           ))}
         </div>
       ) : null}

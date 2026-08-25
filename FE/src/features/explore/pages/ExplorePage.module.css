@@ -1,0 +1,44 @@
+.page { padding-top: 3.5rem; background: var(--color-background); }
+.hero { width: min(100% - 3.5rem, var(--container-width)); margin-inline: auto; padding: 2.9rem; border: 1px solid var(--color-border); border-radius: 1.75rem; color: var(--color-text); background: linear-gradient(135deg, #f1eadf, #fbf6ee); }
+.eyebrow, .sectionHeading span { color: #9a6d3b; font-size: .75rem; font-weight: 850; letter-spacing: .17em; text-transform: uppercase; }
+.hero h1 { margin: .75rem 0; font-size: clamp(2.7rem, 5vw, 2.9rem); line-height: 1.05; letter-spacing: -.035em; }
+.hero > p { max-width: 45rem; margin: 0; color: var(--color-text-muted); font-size: 1.05rem; line-height: 1.7; }
+.heroActions { display: flex; margin-top: 1.5rem; align-items: center; flex-wrap: wrap; gap: .9rem; }
+.heroActions a:first-child { display: inline-flex; min-height: 2.75rem; padding: .7rem 1rem; border-radius: .75rem; align-items: center; gap: .55rem; color: white; background: var(--color-primary); font-weight: 800; }
+.heroActions a:last-child { color: var(--color-primary); font-weight: 800; }
+.categories, .collection { width: min(100% - 3.5rem, var(--container-width)); margin-inline: auto; padding-top: 4.5rem; scroll-margin-top: 5.5rem; }
+.sectionHeading { display: flex; margin-bottom: 1.5rem; align-items: flex-end; justify-content: space-between; gap: 1.5rem; }
+.sectionHeading h2 { margin: .3rem 0 0; font-size: 2rem; letter-spacing: -.025em; }
+.sectionHeading p { max-width: 40rem; margin: 0; color: var(--color-text-muted); line-height: 1.65; }
+.sectionLink { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .4rem; color: var(--color-primary); font-weight: 800; }
+.categoryGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.categoryGrid > :global(.ant-skeleton),
+.categoryGrid :global(.ant-skeleton-element),
+.categoryGrid :global(.ant-skeleton-image),
+.categoryGrid :global(.ant-skeleton-button) { display: block; width: 100% !important; height: 9.6rem !important; border-radius: 1.125rem; }
+.categoryGrid button { display: block; min-height: 9.6rem; padding: 1.35rem 1.1rem; border: 1px solid var(--color-border); border-radius: 1.125rem; color: var(--color-text); background: white; text-align: left; cursor: pointer; transition: .2s; }
+.categoryGrid button:hover { border-color: #d9c3a2; box-shadow: var(--shadow-card); transform: translateY(-3px); }
+.categoryGrid button > :global(.anticon):first-child { display: grid; width: 2.75rem; height: 2.75rem; margin-bottom: .9rem; border-radius: .875rem; place-items: center; color: #785635; background: var(--color-primary-soft); font-size: 1.1rem; }
+.categoryGrid button > :global(.anticon):last-child { display: none; }
+.categoryGrid button span { display: block; }
+.categoryGrid strong { display: block; }
+.categoryGrid small { display: block; margin-top: .3rem; color: var(--color-text-muted); font-size: .75rem; line-height: 1.45; }
+.allCategoriesButton { display: flex; margin: 1.35rem auto 0; border-color: var(--color-border); border-radius: .75rem; }
+.locationGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+.cardSkeleton { width: 100% !important; height: 22rem !important; }
+.catalogCta { display: flex; width: min(100% - 3.5rem, var(--container-width)); margin: 4.5rem auto; padding: 2.35rem 2.5rem; border: 1px solid var(--color-border); border-radius: 1.625rem; align-items: center; justify-content: space-between; gap: 1.5rem; color: var(--color-text); background: white; }
+.catalogCta > :global(.anticon) { color: var(--color-primary); font-size: 2rem; }
+.catalogCta div { flex: 1; }
+.catalogCta h2, .catalogCta p { margin: 0; }
+.catalogCta h2 { font-size: 1.65rem; }
+.catalogCta p { margin-top: .35rem; color: var(--color-text-muted); }
+.catalogCta a { display: inline-flex; padding: .7rem 1rem; border-radius: .75rem; align-items: center; gap: .5rem; color: white; background: var(--color-primary); font-weight: 800; }
+.modalSearch { margin-bottom: 1rem; background: var(--color-background); }
+.modalCategoryList { display: grid; max-height: calc(70vh - 9rem); padding: .1rem; overflow-y: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+.modalCategoryList button { display: grid; min-height: 4rem; padding: .8rem; border: 1px solid var(--color-border); border-radius: .875rem; grid-template-columns: 2.4rem 1fr auto; align-items: center; gap: .7rem; color: var(--color-text); background: white; text-align: left; cursor: pointer; }
+.modalCategoryList button:hover { border-color: #d7c09e; background: #fbf6ee; }
+.modalCategoryList button > :global(.anticon):first-child { display: grid; width: 2.4rem; height: 2.4rem; border-radius: .75rem; place-items: center; color: #785635; background: var(--color-primary-soft); }
+.modalCategoryList > :global(.ant-empty) { grid-column: 1 / -1; }
+@media (max-width: 68rem) { .categoryGrid, .locationGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 42rem) { .page { padding-top: 1rem; } .hero, .categories, .collection, .catalogCta { width: calc(100% - 2rem); } .hero { padding: 2rem 1.25rem; } .sectionHeading { align-items: flex-start; flex-direction: column; gap: .75rem; } .categoryGrid, .locationGrid, .modalCategoryList { grid-template-columns: 1fr; } .catalogCta { align-items: flex-start; flex-direction: column; } }
+@media (prefers-reduced-motion: reduce) { .categoryGrid button { transition: none; } }
