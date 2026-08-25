@@ -1,5 +1,8 @@
 export const REPORT_DETAIL_MAX_LENGTH = 500
 export const REPORT_OTHER_DETAIL_MIN_LENGTH = 10
+export const REPORT_MAX_IMAGES = 3
+export const REPORT_MAX_IMAGE_BYTES = 5 * 1024 * 1024
+export const REPORT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 export const REPORT_TARGETS = {
   location: {
@@ -35,12 +38,13 @@ export const REPORT_REASON_OPTIONS = Object.entries(REPORT_REASONS).map(([value,
   label,
 }))
 
-export function normalizeReportPayload({ targetType, targetId, reasonCode, detail }) {
+export function normalizeReportPayload({ targetType, targetId, reasonCode, detail, imageAssetTokens }) {
   return {
     targetType,
     targetId,
     reasonCode,
     detail: typeof detail === 'string' ? detail.trim() : '',
+    ...(Array.isArray(imageAssetTokens) ? { imageAssetTokens } : {}),
   }
 }
 

@@ -74,4 +74,13 @@ describe('report domain', () => {
     })).toBe('/locations/location-3')
     expect(getReportTargetLink({ targetType: 'locationReview', targetId: '3' })).toBeNull()
   })
+
+  it('keeps report evidence tokens in the normalized payload', () => {
+    expect(normalizeReportPayload({
+      targetType: 'location',
+      targetId: 'location-id',
+      reasonCode: 'spam',
+      imageAssetTokens: ['token-1'],
+    })).toMatchObject({ imageAssetTokens: ['token-1'] })
+  })
 })
