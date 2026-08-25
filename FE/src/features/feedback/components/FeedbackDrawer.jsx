@@ -70,7 +70,7 @@ export function FeedbackDrawer({ open, user, onClose }) {
   }
 
   return (
-    <Drawer title="Góp ý cho HueTrip" open={open} width={520} destroyOnHidden onClose={close}>
+    <Drawer title="Góp ý cho HueTrip" open={open} size={520} destroyOnHidden onClose={close}>
       {submitted ? (
         <Result
           status="success"
