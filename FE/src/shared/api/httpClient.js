@@ -74,8 +74,10 @@ httpClient.interceptors.response.use(
     const isPublicAuthRequest = [
       '/auth/login',
       '/auth/register',
+      '/auth/register/verify',
+      '/auth/register/resend',
       '/auth/logout',
-    ].some((path) => requestUrl.includes(path))
+    ].some((path) => requestUrl === path || requestUrl.startsWith(`${path}?`))
 
     if (
       error.response?.status !== 401 ||

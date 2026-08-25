@@ -9,4 +9,11 @@ const config = {
     passwordResetTokenExpiresInMs: 60 * 60 * 1000, // 1 hour
 };
 
+export const REGISTRATION_VERIFICATION = {
+    OTP_TTL_MINUTES: 10,
+    RESEND_COOLDOWN_SECONDS: 60,
+    MAX_ATTEMPTS: 5,
+    MAX_RESENDS: 5,
+} as const;
+
 export default config;

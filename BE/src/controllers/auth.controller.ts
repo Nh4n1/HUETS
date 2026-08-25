@@ -10,8 +10,20 @@ import {
 
 //[POST] /api/auth/register
 export const register = asyncHandler(async (req: Request, res: Response) => {
-    const user = await authService.register(req.body);
+    const registration = await authService.startRegistration(req.body);
+    return sendSuccess(res, 202, registration);
+});
+
+//[POST] /api/auth/register/verify
+export const verifyRegister = asyncHandler(async (req: Request, res: Response) => {
+    const user = await authService.verifyRegistration(req.body);
     return sendSuccess(res, 201, user);
+});
+
+//[POST] /api/auth/register/resend
+export const resendRegister = asyncHandler(async (req: Request, res: Response) => {
+    const registration = await authService.resendRegistrationCode(req.body);
+    return sendSuccess(res, 200, registration);
 });
 //[POST] /api/auth/login
 export const login = asyncHandler(async (req: Request, res: Response) => {

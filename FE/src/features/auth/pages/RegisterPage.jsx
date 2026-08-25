@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { registerApi } from '../api/authApi'
 import { useAuth } from '../context/useAuth'
+import { saveRegistrationVerification } from '../utils/registrationVerificationStorage'
 import styles from './AuthPage.module.css'
 
 export function RegisterPage() {
@@ -16,9 +17,10 @@ export function RegisterPage() {
     try {
       setSubmitting(true)
       setErrorMessage('')
-      await registerApi(values)
-      message.success('Đăng ký thành công. Bạn có thể đăng nhập ngay.')
-      navigate('/login', { replace: true })
+      const registration = await registerApi(values)
+      saveRegistrationVerification(registration)
+      message.success('Mã xác thực đã được gửi tới email của bạn.')
+      navigate('/register/verify', { replace: true })
     } catch (error) {
       setErrorMessage(
         error.response?.data?.message ?? 'Đăng ký không thành công.',
