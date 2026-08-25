@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../../features/auth/context/useAuth'
 import { FeedbackDrawer } from '../../features/feedback/components/FeedbackDrawer'
+import { NotificationBell } from '../../features/notifications/components/NotificationBell'
 import styles from './AppLayout.module.css'
 
 function Brand() {
@@ -106,21 +107,24 @@ export function AppLayout() {
 
           <div className={styles.headerActions}>
             {user ? (
-              <Dropdown
-                menu={{ items: userMenuItems, onClick: handleUserMenu }}
-                placement="bottomRight"
-                trigger={['click']}
-              >
-                <Button className={styles.userButton} loading={loggingOut}>
-                  <Avatar
-                    size={30}
-                    src={user.avatarUrl}
-                    icon={<UserOutlined />}
-                  />
-                  <span className={styles.userName}>{user.displayName}</span>
-                  <DownOutlined className={styles.chevron} />
-                </Button>
-              </Dropdown>
+              <>
+                <NotificationBell />
+                <Dropdown
+                  menu={{ items: userMenuItems, onClick: handleUserMenu }}
+                  placement="bottomRight"
+                  trigger={['click']}
+                >
+                  <Button className={styles.userButton} loading={loggingOut}>
+                    <Avatar
+                      size={30}
+                      src={user.avatarUrl}
+                      icon={<UserOutlined />}
+                    />
+                    <span className={styles.userName}>{user.displayName}</span>
+                    <DownOutlined className={styles.chevron} />
+                  </Button>
+                </Dropdown>
+              </>
             ) : (
               <>
                 <Button

@@ -2,7 +2,6 @@ import {
   ArrowDownOutlined,
   ArrowLeftOutlined,
   ArrowUpOutlined,
-  BookOutlined,
   CalendarOutlined,
   DeleteOutlined,
   EnvironmentOutlined,
@@ -10,32 +9,32 @@ import {
   LockOutlined,
   PlusOutlined,
   SaveOutlined,
-  SearchOutlined,
 } from '@ant-design/icons'
-import { Alert, Button, Empty, Input, Spin, TimePicker, message } from 'antd'
+import { Alert, Button, Input, Select, Spin, TimePicker, message } from 'antd'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
-import { useBookmarks } from '../../bookmarks/context/useBookmarks'
-import { getPublicLocationByIdApi, searchPublicLocationsApi } from '../../locations/api/locationApi'
+import { Link, useNavigate, useParams } from 'react-router'
+import { LocationPicker } from '../components/LocationPicker'
+import { PlanningIssues } from '../components/PlanningIssues'
+import { getAiItineraryPlanApi, saveAiItineraryPlanApi, updateAiItineraryPlanApi } from '../api/aiItineraryApi'
 import { createItineraryApi, getItineraryApi, updateItineraryApi } from '../api/itineraryApi'
 import {
+  aiDraftToForm,
+  createItemFromLocation,
   emptyDay,
   emptyItem,
   emptyItineraryForm,
+  formToAiDraftPayload,
   formToItineraryPayload,
   getItineraryFormError,
   getItineraryFormErrors,
   itineraryToForm,
 } from '../itineraryForm'
+import { validateDraftSchedule } from '../utils/validateScheduleItem'
 import styles from './Itinerary.module.css'
 
 const errorMessage = (error, fallback) => error.response?.data?.message ?? fallback
 const itemKey = (dayIndex, itemIndex) => `${dayIndex}:${itemIndex}`
-
-function categoryName(location) {
-  return location?.category?.name ?? location?.category?.code ?? 'Địa điểm'
-}
 
 function derivedEndTime(startTime, durationMinutes) {
   if (!startTime || !durationMinutes || Number(durationMinutes) < 1) return ''
@@ -45,146 +44,43 @@ function derivedEndTime(startTime, durationMinutes) {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-function LocationThumb({ location }) {
-  return location?.coverImageUrl
-    ? <img className={styles.locationThumb} src={location.coverImageUrl} alt="" />
-    : <span className={styles.locationThumbPlaceholder}><EnvironmentOutlined /></span>
-}
-
-function LocationPicker({ value, selectedLocation, disabledIds, error, onChange }) {
-  const { bookmarks } = useBookmarks()
-  const [mode, setMode] = useState('search')
-  const [changing, setChanging] = useState(!value)
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [searchError, setSearchError] = useState('')
-  const [checkingId, setCheckingId] = useState('')
-  const [unavailableIds, setUnavailableIds] = useState(() => new Set())
-
-  const savedLocations = useMemo(() => bookmarks
-    .filter((bookmark) => bookmark.targetType === 'location')
-    .map((bookmark) => ({ id: bookmark.targetId, ...(bookmark.snapshot ?? {}) })), [bookmarks])
-
-  useEffect(() => {
-    const normalized = query.trim()
-    if (mode !== 'search' || normalized.length < 2) {
-      return undefined
-    }
-
-    let active = true
-    const timer = window.setTimeout(() => {
-      setLoading(true)
-      setSearchError('')
-      searchPublicLocationsApi({ q: normalized, page: 1, pageSize: 10 })
-        .then((payload) => { if (active) setResults(payload.data ?? []) })
-        .catch((requestError) => { if (active) setSearchError(errorMessage(requestError, 'Không thể tìm địa điểm.')) })
-        .finally(() => { if (active) setLoading(false) })
-    }, 400)
-
-    return () => {
-      active = false
-      window.clearTimeout(timer)
-    }
-  }, [mode, query])
-
-  const commitChoice = (location) => {
-    onChange(location)
-    setChanging(false)
-    setQuery('')
-  }
-
-  const choose = async (location) => {
-    if (mode !== 'saved') {
-      commitChoice(location)
-      return
-    }
-    try {
-      setCheckingId(location.id)
-      const currentLocation = await getPublicLocationByIdApi(location.id)
-      commitChoice(currentLocation)
-    } catch {
-      setUnavailableIds((current) => new Set([...current, location.id]))
-    } finally {
-      setCheckingId('')
-    }
-  }
-
-  if (value && selectedLocation && !changing) {
-    return (
-      <div className={styles.selectedLocation}>
-        <LocationThumb location={selectedLocation} />
-        <div>
-          <strong>{selectedLocation.name}</strong>
-          <span>{categoryName(selectedLocation)} · {selectedLocation.formattedAddress || 'Huế'}</span>
-        </div>
-        <Button onClick={() => setChanging(true)}>Đổi</Button>
-      </div>
-    )
-  }
-
-  const visibleLocations = mode === 'saved' ? savedLocations : query.trim().length >= 2 ? results : []
-  return (
-    <div className={styles.locationPicker}>
-      <div className={styles.pickerTabs} role="tablist" aria-label="Nguồn địa điểm">
-        <button className={mode === 'search' ? styles.selectedPickerTab : ''} type="button" role="tab" aria-selected={mode === 'search'} onClick={() => setMode('search')}><SearchOutlined /> Tìm địa điểm</button>
-        <button className={mode === 'saved' ? styles.selectedPickerTab : ''} type="button" role="tab" aria-selected={mode === 'saved'} onClick={() => setMode('saved')}><BookOutlined /> Đã lưu ({savedLocations.length})</button>
-      </div>
-      {mode === 'search' ? (
-        <Input
-          allowClear
-          prefix={<SearchOutlined />}
-          placeholder="Nhập ít nhất 2 ký tự..."
-          value={query}
-          status={error ? 'error' : undefined}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      ) : null}
-      <div className={styles.locationResults} aria-live="polite">
-        {loading ? <div className={styles.pickerState}><Spin size="small" /> Đang tìm địa điểm...</div> : null}
-        {searchError ? <Alert showIcon type="error" message={searchError} /> : null}
-        {!loading && mode === 'search' && query.trim().length < 2 ? <div className={styles.pickerState}>Nhập tên hoặc địa chỉ để tìm kiếm.</div> : null}
-        {!loading && mode === 'search' && query.trim().length >= 2 && !visibleLocations.length && !searchError ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không tìm thấy địa điểm phù hợp." /> : null}
-        {!loading && mode === 'saved' && !visibleLocations.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Bạn chưa lưu địa điểm nào." /> : null}
-        {!loading && visibleLocations.map((location) => {
-          const alreadyAdded = disabledIds.has(location.id)
-          const unavailable = unavailableIds.has(location.id)
-          const disabled = alreadyAdded || unavailable
-          return (
-            <div className={styles.locationResult} key={location.id}>
-              <LocationThumb location={location} />
-              <div><strong>{location.name}</strong><span>{unavailable ? '⚠ Địa điểm không còn khả dụng' : `${categoryName(location)} · ${location.formattedAddress || 'Huế'}`}</span></div>
-              <Button type="primary" ghost disabled={disabled} loading={checkingId === location.id} onClick={() => choose(location)}>{unavailable ? 'Không thể thêm' : alreadyAdded ? 'Đã thêm' : 'Thêm'}</Button>
-            </div>
-          )
-        })}
-      </div>
-      {error ? <p className={styles.fieldError}>{error}</p> : null}
-    </div>
-  )
-}
-
 export function ItineraryEditorPage() {
-  const { itineraryId } = useParams()
+  const { itineraryId, planId } = useParams()
   const editing = Boolean(itineraryId)
+  const aiMode = Boolean(planId)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const prefillLocationId = editing ? '' : (searchParams.get('locationId') ?? '')
   const [form, setForm] = useState(emptyItineraryForm)
-  const [loading, setLoading] = useState(editing)
+  const [loading, setLoading] = useState(editing || aiMode)
   const [saving, setSaving] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [manualReady, setManualReady] = useState(editing || aiMode)
+  const [manualDays, setManualDays] = useState(2)
+  const [setupError, setSetupError] = useState('')
+  const [aiRequest, setAiRequest] = useState(null)
+  const [aiWarnings, setAiWarnings] = useState([])
+  const [backendIssues, setBackendIssues] = useState([])
 
   useEffect(() => {
-    if (!editing) return undefined
+    if (!editing && !aiMode) return undefined
     let active = true
-    getItineraryApi(itineraryId)
-      .then((itinerary) => { if (active) setForm(itineraryToForm(itinerary)) })
+    const request = aiMode ? getAiItineraryPlanApi(planId) : getItineraryApi(itineraryId)
+    request
+      .then((payload) => {
+        if (!active) return
+        setForm(aiMode ? aiDraftToForm(payload) : itineraryToForm(payload))
+        if (aiMode) {
+          setAiRequest(payload.request)
+          setAiWarnings(payload.warnings ?? [])
+        }
+      })
       .catch((requestError) => { if (active) setError(errorMessage(requestError, 'Không thể tải dữ liệu trình chỉnh sửa.')) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [editing, itineraryId])
+  }, [aiMode, editing, itineraryId, planId])
 
   useEffect(() => {
     if (!prefillLocationId) return undefined
@@ -204,6 +100,12 @@ export function ItineraryEditorPage() {
   }, [prefillLocationId])
 
   const validation = useMemo(() => getItineraryFormErrors(form), [form])
+  const scheduleValidation = useMemo(
+    () => validateDraftSchedule(form, aiRequest?.dailyTimeRange),
+    [aiRequest, form],
+  )
+  const aiIncomplete = aiMode && form.days.some((day) => day.items.some((item) =>
+    !item.startTime || !item.durationMinutes || Number(item.durationMinutes) < 1))
   const itemTimeValue = (value) => value ? dayjs(value, 'HH:mm') : null
   const updateRoot = (field, value) => setForm((current) => ({ ...current, [field]: value }))
   const updateItem = (dayIndex, itemIndex, field, value) => setForm((current) => ({
@@ -248,23 +150,64 @@ export function ItineraryEditorPage() {
     }),
   }))
 
+  const moveItemToDay = (dayIndex, itemIndex, targetDayIndex) => setForm((current) => {
+    if (dayIndex === targetDayIndex || current.days[targetDayIndex]?.items.length >= 20) return current
+    const moved = current.days[dayIndex]?.items[itemIndex]
+    if (!moved) return current
+    return {
+      ...current,
+      days: current.days.map((day, index) => {
+        if (index === dayIndex) return { ...day, items: day.items.filter((_, currentIndex) => currentIndex !== itemIndex) }
+        if (index === targetDayIndex) return { ...day, items: [...day.items, moved] }
+        return day
+      }),
+    }
+  })
+
+  const beginManual = (locations) => {
+    const days = Array.from({ length: manualDays }, () => ({ items: [] }))
+    locations.forEach((location, index) => days[index % manualDays].items.push(createItemFromLocation(location)))
+    days.forEach((day) => { if (!day.items.length) day.items.push(emptyItem()) })
+    setForm({
+      ...emptyItineraryForm(),
+      title: `Chuyến đi Huế ${manualDays} ngày`,
+      days,
+    })
+    setSetupError('')
+    setManualReady(true)
+  }
+
   const submit = async (event) => {
     event.preventDefault()
     setSubmitted(true)
-    if (getItineraryFormError(form)) {
+    if (getItineraryFormError(form) || aiIncomplete || scheduleValidation.issues.some(({ level }) => level === 'error')) {
+      if (aiIncomplete) setError('Mỗi địa điểm trong bản nháp AI cần có giờ bắt đầu và thời lượng.')
       document.querySelector('[aria-invalid="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
     try {
       setSaving(true)
       setError('')
-      const itinerary = editing
-        ? await updateItineraryApi(itineraryId, formToItineraryPayload(form))
-        : await createItineraryApi(formToItineraryPayload(form))
+      setBackendIssues([])
+      let itinerary
+      if (aiMode) {
+        await updateAiItineraryPlanApi(planId, formToAiDraftPayload(form))
+        itinerary = await saveAiItineraryPlanApi({
+          planId,
+          title: form.title.trim(),
+          description: form.description.trim(),
+          visibility: form.visibility,
+        })
+      } else {
+        itinerary = editing
+          ? await updateItineraryApi(itineraryId, formToItineraryPayload(form))
+          : await createItineraryApi(formToItineraryPayload(form))
+      }
       message.success(editing ? 'Đã cập nhật lịch trình.' : 'Đã tạo lịch trình.')
       navigate(`/itineraries/mine/${itinerary.id}`)
     } catch (requestError) {
       setError(errorMessage(requestError, 'Không thể lưu lịch trình. Vui lòng kiểm tra lại dữ liệu.'))
+      setBackendIssues(requestError.response?.data?.details?.issues ?? [])
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setSaving(false)
@@ -273,14 +216,55 @@ export function ItineraryEditorPage() {
 
   if (loading) return <div className={styles.fullState}><Spin size="large" tip="Đang chuẩn bị lịch trình..." /></div>
 
+  if (!manualReady) {
+    return (
+      <main className={`${styles.page} ${styles.manualSetupPage}`}>
+        <div className={styles.editorHeader}>
+          <Link to="/itineraries/new"><Button type="text" icon={<ArrowLeftOutlined />}>Quay lại</Button></Link>
+          <div><span className={styles.eyebrow}>Tạo lịch trình</span><h1>Tự chọn địa điểm</h1><p>Bạn chọn những nơi muốn đi, HueTrip hỗ trợ sắp xếp.</p></div>
+        </div>
+        {setupError ? <Alert showIcon type="error" message={setupError} /> : null}
+        <section className={styles.manualSetupCard}>
+          <label htmlFor="manual-days">Số ngày</label>
+          <Input id="manual-days" type="number" min="1" max="14" value={manualDays} onChange={(event) => setManualDays(Math.max(1, Math.min(14, Number(event.target.value) || 1)))} />
+          <h2>Chọn địa điểm</h2>
+          <LocationPicker multiple onConfirm={beginManual} />
+        </section>
+      </main>
+    )
+  }
+
+  const saveDraft = async () => {
+    setSubmitted(true)
+    if (getItineraryFormError(form) || aiIncomplete || scheduleValidation.issues.some(({ level }) => level === 'error')) {
+      if (aiIncomplete) setError('Mỗi địa điểm trong bản nháp AI cần có giờ bắt đầu và thời lượng.')
+      return
+    }
+    try {
+      setSavingDraft(true)
+      setError('')
+      setBackendIssues([])
+      const updated = await updateAiItineraryPlanApi(planId, formToAiDraftPayload(form))
+      setAiWarnings(updated.warnings ?? [])
+      message.success('Đã lưu bản nháp AI.')
+    } catch (requestError) {
+      setError(errorMessage(requestError, 'Không thể lưu bản nháp AI.'))
+      setBackendIssues(requestError.response?.data?.details?.issues ?? [])
+    } finally {
+      setSavingDraft(false)
+    }
+  }
+
   return (
     <main className={`${styles.page} ${styles.editorPage}`}>
       <div className={styles.editorHeader}>
-        <Link to={editing ? `/itineraries/mine/${itineraryId}` : '/itineraries/mine'}><Button type="text" icon={<ArrowLeftOutlined />}>Quay lại</Button></Link>
-        <div><span className={styles.eyebrow}>{editing ? 'Chỉnh sửa hành trình' : 'Tạo thủ công'}</span><h1>{editing ? 'Chỉnh sửa lịch trình' : 'Tạo lịch trình mới'}</h1><p>Chọn từng địa điểm từ kết quả tìm kiếm hoặc danh sách đã lưu của bạn.</p></div>
+        <Link to={editing ? `/itineraries/mine/${itineraryId}` : aiMode ? '/itineraries/new/ai' : '/itineraries/mine'}><Button type="text" icon={<ArrowLeftOutlined />}>Quay lại</Button></Link>
+        <div><span className={styles.eyebrow}>{editing ? 'Chỉnh sửa hành trình' : aiMode ? 'Bản nháp AI' : 'Tự chọn địa điểm'}</span><h1>{editing ? 'Chỉnh sửa lịch trình' : aiMode ? 'Xem lại lịch trình AI' : 'Tạo lịch trình mới'}</h1><p>{aiMode ? 'Hãy chỉnh bản nháp nếu cần. AI không được tự lưu thành lịch trình thật.' : 'Thêm, phân ngày và chỉnh thời gian cho các địa điểm bạn đã chọn.'}</p></div>
       </div>
 
       {error ? <Alert className={styles.editorAlert} showIcon type="error" message={error} closable onClose={() => setError('')} /> : null}
+      {backendIssues.length ? <PlanningIssues issues={backendIssues} /> : null}
+      {aiWarnings.length ? <Alert className={styles.editorAlert} showIcon type="warning" message="Lưu ý từ bản nháp AI" description={<ul>{aiWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>} /> : null}
       {editing && form.status === 'hidden' ? <Alert className={styles.editorAlert} showIcon type="warning" message="Lịch trình đang bị ẩn khỏi cộng đồng" description={form.moderation?.hiddenReason ? `Lý do: ${form.moderation.hiddenReason}. Bạn có thể sửa nội dung nhưng không thể đổi quyền riêng tư.` : 'Bạn có thể sửa nội dung nhưng không thể đổi quyền riêng tư.'} /> : null}
 
       <form className={styles.editorLayout} onSubmit={submit}>
@@ -296,7 +280,7 @@ export function ItineraryEditorPage() {
 
           <div className={styles.daysHeading}>
             <div><span className={styles.eyebrow}>Timeline</span><h2>Lịch trình từng ngày</h2></div>
-            <Button icon={<PlusOutlined />} onClick={addDay} disabled={form.days.length >= 14}>Thêm ngày</Button>
+            <Button icon={<PlusOutlined />} onClick={addDay} disabled={aiMode || form.days.length >= 14}>Thêm ngày</Button>
           </div>
 
           {form.days.map((day, dayIndex) => (
@@ -304,13 +288,17 @@ export function ItineraryEditorPage() {
               <header className={styles.dayHeader}>
                 <div className={styles.dayNumber}>{dayIndex + 1}</div>
                 <div><strong>Ngày {dayIndex + 1}</strong><small>{day.items.length} điểm dừng</small></div>
-                <Button type="text" danger icon={<DeleteOutlined />} disabled={form.days.length === 1} onClick={() => removeDay(dayIndex)}>Xóa ngày</Button>
+                <Button type="text" danger icon={<DeleteOutlined />} disabled={aiMode || form.days.length === 1} onClick={() => removeDay(dayIndex)}>Xóa ngày</Button>
               </header>
 
               <div className={styles.timelineEditor}>
                 {day.items.map((item, itemIndex) => {
                   const errors = submitted ? validation.items[itemKey(dayIndex, itemIndex)] ?? {} : {}
-                  const disabledIds = new Set(day.items.filter((_, index) => index !== itemIndex).map((entry) => entry.locationId).filter(Boolean))
+                  const disabledIds = new Set(form.days.flatMap((currentDay, currentDayIndex) => currentDay.items
+                    .filter((_, currentItemIndex) => currentDayIndex !== dayIndex || currentItemIndex !== itemIndex)
+                    .map((entry) => entry.locationId)).filter(Boolean))
+                  const scheduleIssues = item.locationId ? scheduleValidation.byItem[itemKey(dayIndex, itemIndex)] ?? [] : []
+                  const mustVisit = aiRequest?.mustVisitLocationIds?.includes(item.locationId)
                   return (
                     <article className={styles.itemEditor} key={`item-${itemIndex}`}>
                       <div className={styles.timelineRail}><span>{itemIndex + 1}</span></div>
@@ -327,14 +315,19 @@ export function ItineraryEditorPage() {
                           <label className={styles.fieldLabel}>Thời lượng (phút)</label>
                           <Input min="1" type="number" status={errors.durationMinutes ? 'error' : undefined} value={item.durationMinutes} onChange={(event) => updateItem(dayIndex, itemIndex, 'durationMinutes', event.target.value)} />
                         </div>
-                        <div className={styles.derivedTime}><span>Kết thúc</span><strong>{item.endTime || '—'}</strong><small>Tự động tính</small></div>
+                        <div className={styles.derivedTime}><span>Kết thúc</span><strong>{item.endTime || derivedEndTime(item.startTime, item.durationMinutes) || '—'}</strong><small>Tự động tính</small></div>
                         {errors.durationMinutes ? <p className={`${styles.fieldError} ${styles.timeError}`}>{errors.durationMinutes}</p> : null}
                         <div className={styles.noteField}><label className={styles.fieldLabel}>Ghi chú</label><Input placeholder="Ăn sáng, tham quan, chụp ảnh..." value={item.note} onChange={(event) => updateItem(dayIndex, itemIndex, 'note', event.target.value)} /></div>
+                        <div className={styles.dayAssignment}>
+                          <label className={styles.fieldLabel}>Phân ngày nhanh</label>
+                          <Select value={dayIndex} onChange={(target) => moveItemToDay(dayIndex, itemIndex, target)} options={form.days.map((_, index) => ({ value: index, label: `Ngày ${index + 1}` }))} />
+                        </div>
+                        <div className={styles.itemPlanningIssues}><PlanningIssues issues={scheduleIssues} /></div>
                       </div>
                       <div className={styles.itemActions}>
                         <Button aria-label="Đưa lên" title="Đưa lên" icon={<ArrowUpOutlined />} disabled={itemIndex === 0} onClick={() => moveItem(dayIndex, itemIndex, -1)} />
                         <Button aria-label="Đưa xuống" title="Đưa xuống" icon={<ArrowDownOutlined />} disabled={itemIndex === day.items.length - 1} onClick={() => moveItem(dayIndex, itemIndex, 1)} />
-                        <Button danger aria-label="Xóa địa điểm" title="Xóa địa điểm" icon={<DeleteOutlined />} disabled={day.items.length === 1} onClick={() => removeItem(dayIndex, itemIndex)} />
+                        <Button danger aria-label="Xóa địa điểm" title={mustVisit ? 'Must Visit không thể bị bỏ khỏi bản nháp AI' : 'Xóa địa điểm'} icon={<DeleteOutlined />} disabled={day.items.length === 1 || mustVisit} onClick={() => removeItem(dayIndex, itemIndex)} />
                       </div>
                     </article>
                   )
@@ -349,7 +342,7 @@ export function ItineraryEditorPage() {
           <div className={styles.formCard}>
             <h2>Thông tin chuyến đi</h2>
             <label className={styles.fieldLabel} htmlFor="start-date"><CalendarOutlined /> Ngày bắt đầu</label>
-            <Input id="start-date" type="date" value={form.startDate} onChange={(event) => updateRoot('startDate', event.target.value)} />
+            <Input id="start-date" type="date" disabled={aiMode} value={form.startDate} onChange={(event) => updateRoot('startDate', event.target.value)} />
             <fieldset className={styles.visibilityBlock}>
               <legend>Ai có thể xem?</legend>
               <div className={styles.visibilityChoice}>
@@ -362,7 +355,8 @@ export function ItineraryEditorPage() {
               <span><CalendarOutlined /> {form.days.length} ngày</span>
               <span><EnvironmentOutlined /> {form.days.reduce((total, day) => total + day.items.length, 0)} điểm dừng</span>
             </div>
-            <Button block size="large" type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>{saving ? 'Đang lưu...' : editing ? 'Lưu lịch trình' : 'Tạo lịch trình'}</Button>
+            {aiMode ? <Button block onClick={saveDraft} loading={savingDraft}>Lưu bản nháp</Button> : null}
+            <Button block size="large" type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>{saving ? 'Đang lưu...' : editing ? 'Lưu lịch trình' : aiMode ? 'Lưu thành lịch trình' : 'Tạo lịch trình'}</Button>
           </div>
         </aside>
       </form>

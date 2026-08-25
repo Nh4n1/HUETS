@@ -4,6 +4,7 @@ import type { IItinerary, ItineraryVisibility } from '../models/itinerary.model.
 import Location from '../models/location.model.ts';
 import User from '../models/user.model.ts';
 import { ApiError } from '../utils/apiError.ts';
+import { itineraryDayOfWeek, validateItinerarySchedule } from './itineraryScheduleValidator.service.ts';
 
 interface Actor {
     id: string;
@@ -219,13 +220,6 @@ const parseDays = (value: unknown): ValidatedDay[] => {
     return days.sort((left, right) => left.dayNumber - right.dayNumber);
 };
 
-const isoDayOfWeek = (startDate: Date, dayNumber: number) => {
-    const date = new Date(startDate);
-    date.setUTCDate(date.getUTCDate() + dayNumber - 1);
-    const sundayBasedDay = date.getUTCDay();
-    return sundayBasedDay === 0 ? 7 : sundayBasedDay;
-};
-
 const assertLocationsAndOpeningHours = async (days: ValidatedDay[], startDate: Date | null) => {
     const ids = [...new Set(days.flatMap((day) => day.items.map((item) => item.locationId.toString())))];
     const locations = await Location.find({ _id: { $in: ids }, isDeleted: { $ne: true } })
@@ -245,36 +239,20 @@ const assertLocationsAndOpeningHours = async (days: ValidatedDay[], startDate: D
         });
     }
 
-    if (!startDate) return;
-    for (const day of days) {
-        const dayOfWeek = isoDayOfWeek(startDate, day.dayNumber);
-        for (const item of day.items) {
-            const location = locationMap.get(item.locationId.toString());
-            if (!location || location.openingHours.status !== 'scheduled') continue;
-            const period = location.openingHours.periods.find((candidate) => candidate.dayOfWeek === dayOfWeek);
-            if (!period) {
-                throw new ApiError(422, 'VALIDATION_ERROR', 'Location đóng cửa vào ngày đã xếp trong Itinerary.', {
-                    locationId: item.locationId.toString(),
-                    dayNumber: day.dayNumber,
-                    dayOfWeek,
-                });
-            }
-
-            const startMinutes = item.startTime ? timeToMinutes(item.startTime) : null;
-            const endMinutes = itemEndMinutes(item);
-            if (startMinutes === null || endMinutes === null) continue;
-            const fitsOpeningRange = period.ranges.some((range) =>
-                startMinutes >= timeToMinutes(range.open) && endMinutes <= timeToMinutes(range.close));
-            if (!fitsOpeningRange) {
-                throw new ApiError(422, 'VALIDATION_ERROR', 'Thời gian item nằm ngoài giờ mở cửa của Location.', {
-                    locationId: item.locationId.toString(),
-                    dayNumber: day.dayNumber,
-                    dayOfWeek,
-                    startTime: item.startTime,
-                    endTime: item.endTime,
-                });
-            }
-        }
+    const result = validateItinerarySchedule({
+        days,
+        locationsById: locationMap,
+        startDate,
+    });
+    const firstError = result.issues.find(({ level }) => level === 'error');
+    if (firstError) {
+        throw new ApiError(422, 'VALIDATION_ERROR', firstError.message, {
+            ...firstError,
+            ...(startDate && firstError.dayNumber
+                ? { dayOfWeek: itineraryDayOfWeek(startDate, firstError.dayNumber) }
+                : {}),
+            issues: result.issues,
+        });
     }
 };
 
@@ -305,7 +283,7 @@ const daysFromDocument = (itinerary: IItinerary): ValidatedDay[] => itinerary.da
 const locationMapFor = async (itinerary: IItinerary) => {
     const ids = [...new Set(itinerary.days.flatMap((day) => day.items.map((item) => item.locationId.toString())))];
     const locations = await Location.find({ _id: { $in: ids }, isDeleted: { $ne: true } })
-        .select({ name: 1, status: 1, address: 1, images: 1 })
+        .select({ name: 1, categoryCode: 1, status: 1, address: 1, images: 1, openingHours: 1 })
         .lean();
     return new Map(locations.map((location) => [location._id.toString(), location]));
 };
@@ -336,8 +314,11 @@ const toResponse = async (itinerary: IItinerary) => {
                     location: available ? {
                         id: location._id.toString(),
                         name: location.name,
+                        category: { code: location.categoryCode, name: location.categoryCode },
                         formattedAddress: [location.address.addressLine, location.address.wardNameSnapshot].filter(Boolean).join(', '),
                         coverImageUrl: [...location.images].sort((a, b) => a.position - b.position)[0]?.url ?? null,
+                        openingHours: location.openingHours,
+                        status: location.status,
                     } : null,
                 };
             }),

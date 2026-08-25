@@ -37,6 +37,8 @@ import { MyContributionsPage } from '../features/locations/pages/MyContributions
 import { ItinerariesPage } from '../features/itineraries/pages/ItinerariesPage'
 import { ItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
 import { ItineraryEditorPage } from '../features/itineraries/pages/ItineraryEditorPage'
+import { ItineraryCreateChoicePage } from '../features/itineraries/pages/ItineraryCreateChoicePage'
+import { AIItineraryCreatePage } from '../features/itineraries/pages/AIItineraryCreatePage'
 import { CommunityItinerariesPage } from '../features/itineraries/pages/CommunityItinerariesPage'
 import { CommunityItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
 
@@ -136,6 +138,21 @@ export const router = createBrowserRouter([
 
           {
             path: 'itineraries/new',
+            Component: ItineraryCreateChoicePage,
+          },
+
+          {
+            path: 'itineraries/new/manual',
+            Component: ItineraryEditorPage,
+          },
+
+          {
+            path: 'itineraries/new/ai',
+            Component: AIItineraryCreatePage,
+          },
+
+          {
+            path: 'itineraries/ai/:planId',
             Component: ItineraryEditorPage,
           },
 

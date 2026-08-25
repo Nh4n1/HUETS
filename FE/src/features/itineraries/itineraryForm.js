@@ -9,6 +9,27 @@ export const emptyItem = () => ({
 
 export const emptyDay = () => ({ items: [emptyItem()] })
 
+const categoryMinutes = {
+  historical_site: 120,
+  religious_site: 90,
+  museum_cultural: 90,
+  craft_village: 90,
+  natural_attraction: 120,
+  cafe: 60,
+  restaurant: 75,
+  market_shopping: 90,
+  entertainment: 120,
+}
+
+export const recommendedVisitMinutes = (location) => categoryMinutes[location?.category?.code] ?? 90
+
+export const createItemFromLocation = (location) => ({
+  ...emptyItem(),
+  locationId: location.id,
+  location,
+  durationMinutes: recommendedVisitMinutes(location),
+})
+
 export const emptyItineraryForm = () => ({
   title: '',
   description: '',
@@ -39,6 +60,42 @@ export function itineraryToForm(itinerary) {
           note: item.note ?? '',
         })),
     })) ?? [emptyDay()],
+  }
+}
+
+export function aiDraftToForm(plan) {
+  return {
+    title: plan.title ?? '',
+    description: '',
+    startDate: dateInputValue(plan.request?.startDate),
+    visibility: 'private',
+    status: 'active',
+    days: plan.days?.map((day) => ({
+      items: day.items.map((item) => ({
+        id: item.id,
+        locationId: item.locationId,
+        location: item.location,
+        startTime: item.startTime ?? '',
+        endTime: item.endTime ?? '',
+        durationMinutes: item.durationMinutes ?? '',
+        note: item.note ?? '',
+      })),
+    })) ?? [],
+  }
+}
+
+export function formToAiDraftPayload(form) {
+  return {
+    title: form.title.trim(),
+    days: form.days.map((day, dayIndex) => ({
+      dayNumber: dayIndex + 1,
+      items: day.items.map((item) => ({
+        locationId: item.locationId,
+        suggestedStartTime: item.startTime,
+        durationMinutes: Number(item.durationMinutes),
+        note: item.note.trim() || null,
+      })),
+    })),
   }
 }
 
