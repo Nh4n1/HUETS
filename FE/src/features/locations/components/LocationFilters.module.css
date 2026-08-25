@@ -1,17 +1,20 @@
 .desktopPanel {
   position: sticky;
   top: 6.35rem;
-  display: grid;
+  display: flex;
+  max-height: calc(100dvh - 7.4rem);
   padding: 1.35rem;
   border: 1px solid var(--color-border);
   border-radius: 1.125rem;
+  overflow: hidden;
+  flex-direction: column;
   gap: 1.1rem;
   background: var(--color-surface);
-  box-shadow: none;
 }
 
 .heading {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 0.7rem;
 }
@@ -26,13 +29,14 @@
   background: var(--color-primary-soft);
 }
 
-.heading>div {
+.heading > div {
   display: grid;
+  min-width: 0;
   flex: 1;
   gap: 0.05rem;
 }
 
-.heading>div span {
+.heading > div span {
   color: var(--color-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
@@ -45,63 +49,168 @@
   font-size: 1.05rem;
 }
 
-.heading button {
+.heading button,
+.singleGroupClear {
   padding: 0;
   border: 0;
   color: var(--color-primary);
   background: transparent;
   cursor: pointer;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
 .fields {
-  display: grid;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
   gap: 1rem;
 }
 
-.filterSection {
+.basicFilters {
   display: grid;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border-light);
-  gap: .7rem;
+  flex: 0 0 auto;
+  gap: 1rem;
 }
 
-.filterSection:first-child { padding-top: 0; border-top: 0; }
+.filterField {
+  display: grid;
+  gap: 0.45rem;
+}
 
-.filterSectionTitle {
+.filterField > :global(.ant-select) {
+  width: 100%;
+}
+
+.filterLabel {
   color: var(--color-text-soft);
-  font-size: .7rem;
+  font-size: 0.7rem;
   font-weight: 850;
-  letter-spacing: .1em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.filterSection > :global(.ant-select) { width: 100%; }
-
-.filterSection label { display: grid; gap: .4rem; }
-
-.tagHint { margin: 0; color: var(--color-text-muted); font-size: .76rem; line-height: 1.5; }
-
-.tagGroup { display: grid; gap: .5rem; }
-.tagGroup + .tagGroup { padding-top: .75rem; border-top: 1px solid var(--color-border-light); }
-.tagGroupHeading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-.tagGroupHeading strong { color: var(--color-text-soft); font-size: .78rem; }
-.tagGroupHeading button { padding: 0; border: 0; color: var(--color-primary); background: transparent; cursor: pointer; font-size: .7rem; font-weight: 700; }
-.tagChoices { display: grid; max-height: 10rem; padding-right: .2rem; overflow-y: auto; gap: .4rem; }
-.tagChoices :global(.ant-checkbox-wrapper), .tagChoices :global(.ant-radio-wrapper) { margin: 0; color: var(--color-text-muted); font-size: .78rem; line-height: 1.4; }
-
-.fields label {
-  display: grid;
-  gap: 0.45rem;
-  color: var(--color-text-soft);
-  font-size: 0.8rem;
-  font-weight: 700;
+.featureSection {
+  display: flex;
+  min-height: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
+  flex: 1;
+  flex-direction: column;
+  gap: 0.55rem;
 }
 
-.fields label :global(.ant-select) {
+.featureScroller {
+  min-height: 0;
+  padding-right: 0.2rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.tagHint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.tagLoading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.featureScroller :global(.ant-collapse-header) {
+  padding: 0.65rem 0 !important;
+}
+
+.featureScroller :global(.ant-collapse-content-box) {
+  padding: 0 0 0.75rem !important;
+}
+
+.tagGroupHeading {
+  display: flex;
+  min-width: 0;
   width: 100%;
-  font-weight: 400;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tagGroupHeading strong {
+  overflow: hidden;
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagGroupHeading > span {
+  min-width: 1.35rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.tagChoices {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tagChoice {
+  display: flex;
+  min-width: 0;
+  padding: 0.18rem 0.25rem;
+  border-radius: 0.5rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tagChoice > :global(.ant-checkbox-wrapper),
+.tagChoice > :global(.ant-radio-wrapper) {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  flex: 1;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.tagChoiceText {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.preferredChoice {
+  background: #fffaf1;
+}
+
+.tagState {
+  flex: 0 0 auto;
+  padding: 0.18rem 0.4rem;
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.requiredBadge {
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+}
+
+.preferredBadge {
+  color: #8a601d;
+  background: #fff3d9;
 }
 
 .mobileDrawer :global(.ant-drawer-content) {
@@ -112,6 +221,12 @@
   display: grid;
   align-content: start;
   gap: 1rem;
+}
+
+.mobileDrawer .fields,
+.mobileDrawer .featureScroller {
+  min-height: auto;
+  overflow: visible;
 }
 
 @media (max-width: 62rem) {

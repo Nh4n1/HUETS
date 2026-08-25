@@ -37,7 +37,7 @@ export function LocationResults({ query, locations, meta, page, pageSize, loadin
       {!loading && !errorMessage && locations.length === 0 ? <div className={styles.emptyState}>
         <Empty image={<EnvironmentOutlined className={styles.emptyIcon} />} description={<span>
           <strong>Chưa tìm thấy địa điểm phù hợp.</strong> Hãy bỏ bớt tiêu chí bắt buộc hoặc thử từ khóa rộng hơn.</span>}>
-          {hasCriteria ? <Button onClick={onResetCriteria}>{searchMode ? 'Xóa tiêu chí tìm kiếm' : 'Xóa bộ lọc'}</Button> : null}</Empty></div> : null}
+          {hasCriteria ? <Button onClick={onResetCriteria}>{searchMode ? 'Xóa tìm kiếm' : 'Xóa bộ lọc'}</Button> : null}</Empty></div> : null}
     </section>
   )
 }

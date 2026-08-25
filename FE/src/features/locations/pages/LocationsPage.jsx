@@ -12,7 +12,7 @@ import {
 } from "../api/locationSearchApi";
 import { searchPublicLocationsApi } from "../api/locationApi";
 import { LocationFilters } from "../components/LocationFilters";
-import { BrowseActiveFilters } from "../components/BrowseActiveFilters";
+import { LocationActiveFilters } from "../components/LocationActiveFilters";
 import { LocationResults } from "../components/LocationResults";
 import { LocationSearchHero } from "../components/LocationSearchHero";
 import { SearchInterpretation } from "../components/SearchInterpretation";
@@ -20,9 +20,15 @@ import {
   buildBrowseFilterItems,
   buildBrowseResetParams,
   parseCodeList,
+  parseSearchKeywords,
   removeBrowseFilter,
-  replaceTagGroupSelection,
+  serializeSearchKeywords,
 } from "../locationBrowseFilters";
+import {
+  buildSearchFilterItems,
+  removeSelectedTag,
+  toggleTagPriority,
+} from "../locationFilterState";
 import styles from "./LocationsPage.module.css";
 
 const PAGE_SIZE = 8;
@@ -37,6 +43,7 @@ export function LocationsPage() {
   const urlWard = searchParams.get("wardCode") ?? "";
   const urlTags = searchParams.get("tagCodes") ?? "";
   const urlPreferredTags = searchParams.get("preferredTagCodes") ?? "";
+  const urlKeywords = searchParams.get("keywords") ?? "";
   const requestedSort = searchParams.get("sortBy");
   const urlSortBy = ["rating_desc", "newest"].includes(requestedSort)
     ? requestedSort
@@ -59,6 +66,10 @@ export function LocationsPage() {
     () => structuredUrl ? parseCodeList(urlPreferredTags) : [],
     [structuredUrl, urlPreferredTags],
   );
+  const structuredKeywords = useMemo(
+    () => structuredUrl ? parseSearchKeywords(urlKeywords) : [],
+    [structuredUrl, urlKeywords],
+  );
 
   const [locations, setLocations] = useState([]);
   const [meta, setMeta] = useState(EMPTY_META);
@@ -75,6 +86,7 @@ export function LocationsPage() {
   const [tagGroups, setTagGroups] = useState([]);
   const [referencesLoading, setReferencesLoading] = useState(true);
   const [tagsLoading, setTagsLoading] = useState(false);
+  const [tagError, setTagError] = useState("");
   const [referenceError, setReferenceError] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const filterMode = query || searchMode || structuredUrl ? "search" : "browse";
@@ -118,7 +130,11 @@ export function LocationsPage() {
   useEffect(() => {
     let active = true;
     if (!categoryCode) {
-      Promise.resolve().then(() => active && setTagGroups([]));
+      Promise.resolve().then(() => {
+        if (!active) return;
+        setTagGroups([]);
+        setTagError("");
+      });
       return () => {
         active = false;
       };
@@ -127,13 +143,18 @@ export function LocationsPage() {
       if (!active) return;
       setTagGroups([]);
       setTagsLoading(true);
+      setTagError("");
     });
     getTagsByCategoryApi(categoryCode)
-      .then((result) => active && setTagGroups(result.groups ?? []))
+      .then((result) => {
+        if (!active) return;
+        setTagGroups(result.groups ?? []);
+        setTagError("");
+      })
       .catch(
         (error) =>
           active &&
-          setReferenceError(
+          setTagError(
             getErrorMessage(error, "Không thể tải bộ lọc đặc điểm."),
           ),
       )
@@ -189,17 +210,6 @@ export function LocationsPage() {
     return () => { active = false; };
   }, [page, query, reloadKey, searchMode, structuredUrl]);
 
-  const tagOptions = useMemo(
-    () =>
-      tagGroups.flatMap((group) =>
-        group.tags.map((tag) => ({
-          value: tag.code,
-          label: tag.name,
-        })),
-      ),
-    [tagGroups],
-  );
-
   const browseFilterItems = useMemo(() => buildBrowseFilterItems({
     categoryCode: urlCategory,
     wardCode: urlWard,
@@ -208,6 +218,10 @@ export function LocationsPage() {
     wards,
     tagGroups,
   }), [browseTags, categories, tagGroups, urlCategory, urlWard, wards]);
+  const searchFilterItems = useMemo(
+    () => buildSearchFilterItems(interpretation),
+    [interpretation],
+  );
 
   function updateSearchParams(updates) {
     const next = new URLSearchParams(searchParams);
@@ -245,7 +259,7 @@ export function LocationsPage() {
         wardCode: urlWard || null,
         requiredTagCodes: browseTags,
         preferredTagCodes: structuredPreferredTags,
-        keywords: [],
+        keywords: structuredKeywords,
         openCondition: urlOpenCondition,
         sortBy: requestedSort === "rating_desc" ? "rating_desc" : "relevance",
       },
@@ -261,7 +275,7 @@ export function LocationsPage() {
       setErrorMessage(getErrorMessage(error, "Không thể áp dụng tiêu chí tìm kiếm."));
     }).finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [browseTags, page, requestedSort, searchMode, structuredPreferredTags, structuredUrl, urlCategory, urlOpenCondition, urlSortBy, urlWard]);
+  }, [browseTags, page, requestedSort, searchMode, structuredKeywords, structuredPreferredTags, structuredUrl, urlCategory, urlOpenCondition, urlSortBy, urlWard]);
 
   async function runCriteria(
     nextCriteria,
@@ -269,9 +283,7 @@ export function LocationsPage() {
     { markAdjusted = false } = {},
   ) {
     if (markAdjusted) setCriteriaAdjusted(true);
-    const executableCriteria = markAdjusted
-      ? { ...nextCriteria, keywords: [] }
-      : nextCriteria;
+    const executableCriteria = nextCriteria;
     const useStructuredUrl = markAdjusted || criteriaAdjusted;
     setLoading(true);
     setErrorMessage("");
@@ -290,6 +302,9 @@ export function LocationsPage() {
         tagCodes: executableCriteria.requiredTagCodes,
         preferredTagCodes: useStructuredUrl
           ? executableCriteria.preferredTagCodes
+          : undefined,
+        keywords: useStructuredUrl
+          ? serializeSearchKeywords(executableCriteria.keywords)
           : undefined,
         openMode: useStructuredUrl ? executableCriteria.openCondition?.mode : undefined,
         openDay: useStructuredUrl && executableCriteria.openCondition?.mode === "at"
@@ -341,7 +356,7 @@ export function LocationsPage() {
       wardCode: urlWard || null,
       requiredTagCodes: browseTags,
       preferredTagCodes: structuredPreferredTags,
-      keywords: query ? [query.slice(0, 50)] : [],
+      keywords: query ? [query.slice(0, 50)] : structuredKeywords,
       openCondition: urlOpenCondition,
       sortBy: "relevance",
     };
@@ -352,30 +367,33 @@ export function LocationsPage() {
     );
   }
 
-  function removeChip(type, code) {
-    if (!criteria) return;
-    if (type === "category")
-      runCriteria(
-        { ...criteria, categoryCode: null, requiredTagCodes: [], preferredTagCodes: [] },
-        1,
-        { markAdjusted: true },
-      );
-    if (type === "ward")
-      runCriteria({ ...criteria, wardCode: null }, 1, { markAdjusted: true });
-    if (type === "required")
-      runCriteria(
-        { ...criteria, requiredTagCodes: criteria.requiredTagCodes.filter((item) => item !== code) },
-        1,
-        { markAdjusted: true },
-      );
-    if (type === "preferred")
-      runCriteria(
-        { ...criteria, preferredTagCodes: criteria.preferredTagCodes.filter((item) => item !== code) },
-        1,
-        { markAdjusted: true },
-      );
-    if (type === "opening")
-      runCriteria({ ...criteria, openCondition: null }, 1, { markAdjusted: true });
+  function updateTagState(nextTagState) {
+    if (filterMode === "browse") {
+      updateBrowseFilters({ tagCodes: nextTagState.requiredTagCodes });
+      return;
+    }
+    updateSearchCriteria(nextTagState);
+  }
+
+  function removeSearchFilter(filter) {
+    if (filter.type === "category") {
+      updateSearchCriteria({ categoryCode: null, requiredTagCodes: [], preferredTagCodes: [] });
+      return;
+    }
+    if (filter.type === "ward") {
+      updateSearchCriteria({ wardCode: null });
+      return;
+    }
+    if (["required", "preferred"].includes(filter.type)) {
+      updateSearchCriteria(removeSelectedTag({ requiredTagCodes, preferredTagCodes, code: filter.code }));
+      return;
+    }
+    if (filter.type === "opening") updateSearchCriteria({ openCondition: null });
+  }
+
+  function toggleSearchFilterPriority(filter) {
+    if (!["required", "preferred"].includes(filter.type)) return;
+    updateSearchCriteria(toggleTagPriority({ requiredTagCodes, preferredTagCodes, code: filter.code }));
   }
 
   function resetSearchCriteria() {
@@ -402,7 +420,8 @@ export function LocationsPage() {
     preferredTagCodes.length;
   const activeCriteriaCount = filterMode === "browse"
     ? browseFilterItems.length
-    : searchFilterCount + Number(Boolean(criteria?.openCondition));
+    : searchFilterCount + Number(Boolean(criteria?.openCondition ?? urlOpenCondition));
+  const activeFilterItems = filterMode === "browse" ? browseFilterItems : searchFilterItems;
 
   return (
     <main className={styles.page}>
@@ -425,9 +444,9 @@ export function LocationsPage() {
           categories={categories}
           wards={wards}
           tagGroups={tagGroups}
-          tagOptions={tagOptions}
           referencesLoading={referencesLoading}
           tagsLoading={tagsLoading}
+          tagError={tagError}
           onClose={() => setFilterDrawerOpen(false)}
           onReset={filterMode === "browse" ? resetBrowseFilters : resetSearchCriteria}
           onCategoryChange={(value) => filterMode === "browse"
@@ -436,25 +455,7 @@ export function LocationsPage() {
           onWardChange={(value) => filterMode === "browse"
             ? updateBrowseFilters({ wardCode: value })
             : updateSearchCriteria({ wardCode: value ?? null })}
-          onBrowseTagGroupChange={(group, selectedCodes) => updateBrowseFilters({
-            tagCodes: replaceTagGroupSelection(browseTags, group, selectedCodes),
-          })}
-          onRequiredTagsChange={(value) =>
-            updateSearchCriteria({
-              requiredTagCodes: value,
-              preferredTagCodes: preferredTagCodes.filter(
-                (code) => !value.includes(code),
-              ),
-            })
-          }
-          onPreferredTagsChange={(value) =>
-            updateSearchCriteria({
-              preferredTagCodes: value,
-              requiredTagCodes: requiredTagCodes.filter(
-                (code) => !value.includes(code),
-              ),
-            })
-          }
+          onTagStateChange={updateTagState}
         />
         <div className={styles.resultColumn}>
           {notice ? (
@@ -469,11 +470,14 @@ export function LocationsPage() {
           ) : null}
           <SearchInterpretation
             interpretation={filterMode === "search" ? interpretation : null}
-            onRemove={removeChip}
           />
-          {filterMode === "browse" ? (
-            <BrowseActiveFilters filters={browseFilterItems} onRemove={removeBrowseFilterItem} onClear={resetBrowseFilters} />
-          ) : null}
+          <LocationActiveFilters
+            mode={filterMode}
+            filters={activeFilterItems}
+            onRemove={filterMode === "browse" ? removeBrowseFilterItem : removeSearchFilter}
+            onToggle={toggleSearchFilterPriority}
+            onClear={filterMode === "browse" ? resetBrowseFilters : resetSearchCriteria}
+          />
           <LocationResults
             query={query}
             locations={locations}
@@ -487,11 +491,13 @@ export function LocationsPage() {
             sortBy={sortBy}
             criteriaAdjusted={criteriaAdjusted}
             searchMode={filterMode === "search"}
-            onSortChange={(value) =>
-              criteria
-                ? runCriteria({ ...criteria, sortBy: value }, 1, { markAdjusted: true })
-                : updateSearchParams({ sortBy: value === "recommended" ? undefined : value, page: undefined })
-            }
+            onSortChange={(value) => {
+              if (filterMode === "search") {
+                updateSearchCriteria({ sortBy: value });
+                return;
+              }
+              updateSearchParams({ sortBy: value === "recommended" ? undefined : value, page: undefined });
+            }}
             onOpenFilters={() => setFilterDrawerOpen(true)}
             onRetry={() =>
               criteria

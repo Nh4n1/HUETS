@@ -2,6 +2,31 @@ export function parseCodeList(value = '') {
   return [...new Set(String(value).split(',').map((code) => code.trim()).filter(Boolean))]
 }
 
+export function serializeSearchKeywords(keywords = []) {
+  const normalized = keywords
+    .filter((item) => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 5)
+  return normalized.length ? JSON.stringify(normalized) : undefined
+}
+
+export function parseSearchKeywords(value) {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed)
+      ? parsed
+        .filter((item) => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 5)
+      : []
+  } catch {
+    return []
+  }
+}
+
 export function replaceTagGroupSelection(currentCodes, group, selectedCodes) {
   const groupCodes = new Set((group.tags ?? []).map((tag) => tag.code))
   return [

@@ -3,13 +3,22 @@ import {
   buildBrowseFilterItems,
   buildBrowseResetParams,
   parseCodeList,
+  parseSearchKeywords,
   removeBrowseFilter,
   replaceTagGroupSelection,
+  serializeSearchKeywords,
 } from './locationBrowseFilters'
 
 describe('browse location filter helpers', () => {
   it('parses a unique CSV code list', () => {
     expect(parseCodeList('wifi, quiet,wifi,,')).toEqual(['wifi', 'quiet'])
+  })
+
+  it('serializes and parses structured search keywords safely', () => {
+    const serialized = serializeSearchKeywords([' Chùa Từ Hiếu ', '', 'yên tĩnh'])
+    expect(parseSearchKeywords(serialized)).toEqual(['Chùa Từ Hiếu', 'yên tĩnh'])
+    expect(parseSearchKeywords('not-json')).toEqual([])
+    expect(serializeSearchKeywords([])).toBeUndefined()
   })
 
   it('replaces only tags belonging to the changed group', () => {
