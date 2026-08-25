@@ -1,18 +1,17 @@
 import {
   AppstoreOutlined,
-  BellOutlined,
   CalendarOutlined,
   DashboardOutlined,
   DatabaseOutlined,
   EnvironmentOutlined,
   FlagOutlined,
   HomeOutlined,
-  SettingOutlined,
   StarOutlined,
   TeamOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   MessageOutlined,
+  SettingOutlined,
 } from '@ant-design/icons'
 import { Button, Layout, Menu, Space, Typography } from 'antd'
 import { useMemo, useState } from 'react'
@@ -170,6 +169,7 @@ export function AdminLayout() {
         </div>
         {collapsed ? null : <div className={styles.menuLabel}>Điều hướng</div>}
         <Menu
+          key={location.pathname}
           className={styles.menu}
           theme="dark"
           mode="inline"
@@ -213,7 +213,6 @@ export function AdminLayout() {
 
           <Space className={styles.userActions} size="middle">
             <Link to="/">Về trang chủ</Link>
-            <BellOutlined aria-label="Thông báo" />
             <Typography.Text className={styles.userName}>{user?.displayName}</Typography.Text>
             <Button size="small" loading={loggingOut} onClick={handleLogout}>
               Đăng xuất

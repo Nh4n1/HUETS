@@ -278,6 +278,7 @@ export function SavedContentPage() {
 
           <div className={styles.toolbar}>
             <Input.Search
+              className={styles.search}
               allowClear
               value={query}
               placeholder={

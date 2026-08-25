@@ -16,7 +16,6 @@ import {
   Input,
   Modal,
   Select,
-  Space,
   Table,
   Tag,
   Typography,
@@ -33,7 +32,6 @@ import {
   restoreLocationApi,
 } from "../../api/adminLocationsApi";
 import {
-  formatDateTime,
   LOCATION_STATUS,
 } from "../../components/location/locationPresentation";
 import styles from "./AdminLocationsPage.module.css";
@@ -252,7 +250,7 @@ export function AdminLocationsPage({
       title: "Tên địa điểm",
       dataIndex: "name",
       key: "name",
-      width: 300,
+      width: 270,
       render: (name, record) => (
         <div className={styles.locationCell}>
           {record.coverImageUrl ? (
@@ -301,102 +299,28 @@ export function AdminLocationsPage({
       render: (_, record) => record.category?.name,
     },
     {
-      title: "Người đóng góp",
-      key: "contributor",
-      render: (_, record) =>
-        record.contributor?.displayName ?? "Không xác định",
-    },
-    {
-      title: "Cập nhật",
-      dataIndex: "updatedAt",
-      key: "updatedAt",
-      render: formatDateTime,
-    },
-    {
-      title: "Thao tác",
+      title: <MoreOutlined aria-label="Thao tác" />,
       key: "actions",
-      width: 310,
+      width: 64,
+      align: "center",
       fixed: "right",
       render: (_, record) => (
-        <Space size={6} wrap>
-          {record.status === "pending" ? (
-            <>
-              <Button
-                size="small"
-                type="primary"
-                loading={moderatingId === record.id}
-                disabled={moderatingId !== null && moderatingId !== record.id}
-                onClick={() => handleApprove(record)}
-              >
-                Duyệt
-              </Button>
-              <Button
-                size="small"
-                danger
-                disabled={moderatingId !== null}
-                onClick={() => openRejectModal(record)}
-              >
-                Từ chối
-              </Button>
-            </>
-          ) : null}
-          {record.status === "approved" ? (
+        <div className={styles.rowActions}>
+          <Dropdown
+            trigger={["click"]}
+            placement="bottomRight"
+            menu={{ items: getActionItems(record) }}
+          >
             <Button
+              type="text"
               size="small"
-              icon={<EyeInvisibleOutlined />}
-              disabled={moderatingId !== null}
-              onClick={() => openHideModal(record)}
-            >
-              Ẩn
-            </Button>
-          ) : null}
-          {record.status === "hidden" ? (
-            <Button
-              size="small"
-              type="primary"
-              icon={<EyeOutlined />}
-              loading={moderatingId === record.id}
-              disabled={moderatingId !== null && moderatingId !== record.id}
-              onClick={() => handleRestore(record)}
-            >
-              Hiện lại
-            </Button>
-          ) : null}
-          <Link to={`/admin/locations/${record.id}`}>
-            <Button size="small">Chi tiết</Button>
-          </Link>
-          {isAdmin || record.status === "pending" ? (
-            <>
-              <Link to={`/admin/locations/${record.id}/edit`}>
-                <Button size="small" icon={<EditOutlined />}>Chỉnh sửa</Button>
-              </Link>
-              {isAdmin && DELETABLE_STATUSES.has(record.status) ? (
-                <Dropdown
-                  trigger={["click"]}
-                  menu={{
-                    items: [{
-                      key: "delete",
-                      danger: true,
-                      icon: <DeleteOutlined />,
-                      label: "Xóa khỏi hệ thống",
-                      onClick: () => openDeleteModal(record),
-                    }],
-                  }}
-                >
-                  <Button
-                    size="small"
-                    icon={<MoreOutlined />}
-                    loading={deletingId === record.id}
-                    disabled={deletingId !== null && deletingId !== record.id}
-                    aria-label={`Thao tác khác với ${record.name}`}
-                  >
-                    Khác
-                  </Button>
-                </Dropdown>
-              ) : null}
-            </>
-          ) : null}
-        </Space>
+              className={styles.actionMenuButton}
+              icon={<MoreOutlined />}
+              loading={moderatingId === record.id || deletingId === record.id}
+              aria-label={`Mở thao tác với ${record.name}`}
+            />
+          </Dropdown>
+        </div>
       ),
     },
   ];
@@ -410,7 +334,6 @@ export function AdminLocationsPage({
         item.name,
         item.formattedAddress,
         item.category?.name,
-        item.contributor?.displayName,
       ].some((value) => value?.toLocaleLowerCase("vi").includes(keyword)),
     );
   }, [locations, searchText]);
@@ -424,6 +347,78 @@ export function AdminLocationsPage({
     setLoading(true);
     setPage(1);
     setStatus(nextStatus);
+  }
+
+  function getActionItems(record) {
+    const busyWithAnotherRecord = moderatingId !== null && moderatingId !== record.id;
+    const items = [];
+
+    if (record.status === "pending") {
+      items.push(
+        {
+          key: "approve",
+          label: "Duyệt địa điểm",
+          disabled: busyWithAnotherRecord,
+          onClick: () => handleApprove(record),
+        },
+        {
+          key: "reject",
+          danger: true,
+          label: "Từ chối",
+          disabled: moderatingId !== null,
+          onClick: () => openRejectModal(record),
+        },
+      );
+    }
+
+    if (record.status === "approved") {
+      items.push({
+        key: "hide",
+        icon: <EyeInvisibleOutlined />,
+        label: "Ẩn khỏi nội dung công khai",
+        disabled: moderatingId !== null,
+        onClick: () => openHideModal(record),
+      });
+    }
+
+    if (record.status === "hidden") {
+      items.push({
+        key: "restore",
+        icon: <EyeOutlined />,
+        label: "Hiện lại địa điểm",
+        disabled: busyWithAnotherRecord,
+        onClick: () => handleRestore(record),
+      });
+    }
+
+    if (isAdmin) {
+      if (items.length > 0) items.push({ type: "divider" });
+      items.push({
+        key: "edit",
+        icon: <EditOutlined />,
+        label: <Link to={`/admin/locations/${record.id}/edit`}>Chỉnh sửa</Link>,
+      });
+
+      if (DELETABLE_STATUSES.has(record.status)) {
+        items.push({
+          key: "delete",
+          danger: true,
+          icon: <DeleteOutlined />,
+          label: "Xóa khỏi hệ thống",
+          disabled: deletingId !== null && deletingId !== record.id,
+          onClick: () => openDeleteModal(record),
+        });
+      }
+    }
+
+    return [
+      {
+        key: "detail",
+        icon: <EyeOutlined />,
+        label: <Link to={`/admin/locations/${record.id}`}>Xem chi tiết</Link>,
+      },
+      ...(items.length > 0 ? [{ type: "divider" }, ...items] : []),
+    ];
   }
 
   return (
@@ -500,10 +495,11 @@ export function AdminLocationsPage({
         </div>
         <Table
           rowKey="id"
+          size="small"
           loading={loading}
           dataSource={filteredLocations}
           columns={columns}
-          scroll={{ x: 1050 }}
+          scroll={{ x: 720 }}
           locale={{
             emptyText: searchText
               ? "Không có địa điểm phù hợp trong trang này."

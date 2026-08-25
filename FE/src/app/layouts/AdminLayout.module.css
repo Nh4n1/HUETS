@@ -17,6 +17,12 @@
   transition: all 200ms ease !important;
 }
 
+.sidebar :global(.ant-layout-sider-children) {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .brand {
   display: flex;
   height: 5.25rem;
@@ -75,9 +81,14 @@
 }
 
 .menu {
+  min-height: 0;
   padding: 0.35rem 0.75rem;
   border-inline-end: 0 !important;
   background: transparent !important;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  scrollbar-color: rgb(255 255 255 / 18%) transparent;
+  scrollbar-width: thin;
 }
 
 .menu :global(.ant-menu-item),
@@ -129,12 +140,10 @@
 }
 
 .sidebarFooter {
-  position: absolute;
-  right: 0.75rem;
-  bottom: 1rem;
-  left: 0.75rem;
+  margin: auto 0.75rem 1rem;
   padding-top: 0.85rem;
   border-top: 1px solid rgb(255 255 255 / 9%);
+  flex: 0 0 auto;
 }
 
 .homeLink {
@@ -171,10 +180,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 4rem;
   padding-inline: 1rem;
-  background: #fff;
+  background: rgb(255 255 255 / 92%);
   border-bottom: 1px solid var(--color-border-light);
   box-shadow: 0 4px 18px rgb(68 48 33 / 5%);
+  backdrop-filter: blur(12px);
+  line-height: normal;
 }
 
 .collapseButton {
@@ -194,7 +206,39 @@
 .content {
   padding: clamp(1rem, 3vw, 2rem);
   min-height: calc(100svh - 4rem);
+  min-width: 0;
+  overflow-x: hidden;
   background: var(--color-background);
+}
+
+.content :global(.page-container) {
+  width: 100%;
+  margin: 0;
+  padding-block: 0;
+}
+
+.userActions {
+  min-width: 0;
+  align-items: center;
+  line-height: normal;
+}
+
+.userActions > * {
+  line-height: normal;
+}
+
+.userName {
+  overflow: hidden;
+  max-width: 12rem;
+  padding: 0.38rem 0.7rem;
+  border: 1px solid rgb(124 63 32 / 10%);
+  border-radius: var(--radius-pill);
+  color: var(--color-primary) !important;
+  background: var(--color-primary-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 62rem) {
@@ -207,8 +251,7 @@
 @media (max-width: 40rem) {
   .header { padding-inline: 0.5rem; }
   .collapseButton span { display: none; }
-  .userName,
-  .userActions > :global(.anticon) { display: none; }
+  .userName { display: none; }
   .userActions { gap: 0.5rem !important; }
   .userActions a { font-size: 0.78rem; }
   .content { padding: 0.75rem; }

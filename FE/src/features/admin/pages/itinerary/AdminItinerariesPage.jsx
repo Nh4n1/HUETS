@@ -1,11 +1,11 @@
-import { SearchOutlined } from "@ant-design/icons";
+import { EyeOutlined, MoreOutlined, SearchOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
+  Dropdown,
   Input,
   Modal,
   Select,
-  Space,
   Table,
   Tag,
   Typography,
@@ -33,6 +33,7 @@ export function AdminItinerariesPage() {
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [submittingId, setSubmittingId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [hideTarget, setHideTarget] = useState(null);
@@ -74,11 +75,14 @@ export function AdminItinerariesPage() {
 
   const handleUnhide = async (record) => {
     try {
+      setSubmittingId(record.id);
       await moderateItineraryApi(record.id, { status: "active" });
       message.success("Đã hiện lại lịch trình.");
       reload();
     } catch (error) {
       message.error(error.response?.data?.message ?? "Không thể cập nhật.");
+    } finally {
+      setSubmittingId(null);
     }
   };
 
@@ -88,6 +92,7 @@ export function AdminItinerariesPage() {
       return;
     }
     try {
+      setSubmittingId(hideTarget.id);
       await moderateItineraryApi(hideTarget.id, {
         status: "hidden",
         reason: hideReason.trim(),
@@ -98,8 +103,22 @@ export function AdminItinerariesPage() {
       reload();
     } catch (error) {
       message.error(error.response?.data?.message ?? "Không thể cập nhật.");
+    } finally {
+      setSubmittingId(null);
     }
   };
+
+  const actionItems = (record) => [
+    {
+      key: "detail",
+      icon: <EyeOutlined />,
+      label: <Link to={`/admin/itineraries/${record.id}`}>Xem chi tiết</Link>,
+    },
+    { type: "divider" },
+    record.status === "hidden"
+      ? { key: "restore", label: "Hiện lại", disabled: submittingId !== null, onClick: () => handleUnhide(record) }
+      : { key: "hide", danger: true, label: "Ẩn lịch trình", disabled: submittingId !== null, onClick: () => setHideTarget(record) },
+  ];
 
   const columns = [
     {
@@ -162,33 +181,22 @@ export function AdminItinerariesPage() {
       ),
     },
     {
-      title: "Thao tác",
+      title: <MoreOutlined aria-label="Thao tác" />,
       key: "actions",
+      width: 64,
+      align: "center",
+      fixed: "right",
       render: (_, record) => (
-        <Space className={styles.actions} size={8}>
-          <Link to={`/admin/itineraries/${record.id}`}>
-            <Button className={styles.detailButton} size="small" type="link">
-              Chi tiết
-            </Button>
-          </Link>
-          {record.status === "hidden" ? (
-            <Button
-              className={styles.actionButton}
-              size="small"
-              onClick={() => handleUnhide(record)}
-            >
-              Hiện lại
-            </Button>
-          ) : (
-            <Button
-              className={styles.actionButton}
-              size="small"
-              onClick={() => setHideTarget(record)}
-            >
-              Ẩn
-            </Button>
-          )}
-        </Space>
+        <Dropdown trigger={["click"]} placement="bottomRight" menu={{ items: actionItems(record) }}>
+          <Button
+            className={styles.actionMenuButton}
+            type="text"
+            size="small"
+            icon={<MoreOutlined />}
+            loading={submittingId === record.id}
+            aria-label={`Mở thao tác với ${record.title}`}
+          />
+        </Dropdown>
       ),
     },
   ];
@@ -273,6 +281,7 @@ export function AdminItinerariesPage() {
       <section className={styles.contentCard}>
         <Table
           className={styles.table}
+          size="small"
           rowClassName={(record) =>
             record.status === "hidden" ? styles.hiddenRow : ""
           }
@@ -298,10 +307,16 @@ export function AdminItinerariesPage() {
       </section>
 
       <Modal
+        className={styles.hideItineraryModal}
         title="Ẩn lịch trình"
         open={!!hideTarget}
+        confirmLoading={submittingId === hideTarget?.id}
+        closable={submittingId === null}
+        keyboard={submittingId === null}
+        maskClosable={submittingId === null}
         onOk={confirmHide}
         onCancel={() => {
+          if (submittingId !== null) return;
           setHideTarget(null);
           setHideReason("");
         }}
@@ -309,7 +324,7 @@ export function AdminItinerariesPage() {
         cancelText="Huỷ"
       >
         <Input.TextArea
-          rows={3}
+          rows={4}
           maxLength={500}
           showCount
           placeholder="Lý do ẩn (bắt buộc)"
