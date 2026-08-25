@@ -36,6 +36,11 @@ const RATING_DESC_LOCATION_SORT: Record<string, 1 | -1> = {
     _id: -1,
 };
 
+const NEWEST_LOCATION_SORT: Record<string, 1 | -1> = {
+    createdAt: -1,
+    _id: -1,
+};
+
 interface Actor {
     id: string;
     role: 'user' | 'mod' | 'admin';
@@ -77,7 +82,7 @@ export interface CreateLocationInput {
     images?: unknown;
 }
 
-export type PublicLocationSortBy = 'rating_desc';
+export type PublicLocationSortBy = 'recommended' | 'rating_desc' | 'newest';
 
 export interface PublicLocationQuery {
     page?: string;
@@ -104,6 +109,13 @@ export interface ModerateLocationInput {
     expectedUpdatedAt?: unknown;
     reason?: unknown;
 }
+
+export const getPublicLocationSort = (sortBy?: PublicLocationSortBy): Record<string, 1 | -1> =>
+    sortBy === 'rating_desc'
+        ? RATING_DESC_LOCATION_SORT
+        : sortBy === 'newest'
+            ? NEWEST_LOCATION_SORT
+            : RECOMMENDED_LOCATION_SORT;
 
 export interface ModerateLocationVisibilityInput {
     expectedStatus?: unknown;
@@ -774,10 +786,7 @@ export const getPublicLocations = async (query: PublicLocationQuery) => {
      *
      * Khi client chủ động chọn rating_desc thì dùng sort đánh giá thuần.
      */
-    const sort: Record<string, 1 | -1> =
-        query.sortBy === 'rating_desc'
-            ? RATING_DESC_LOCATION_SORT
-            : RECOMMENDED_LOCATION_SORT;
+    const sort = getPublicLocationSort(query.sortBy);
 
     const [locations, total] = await Promise.all([
         Location.find(filter)
