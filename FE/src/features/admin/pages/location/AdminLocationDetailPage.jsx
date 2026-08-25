@@ -27,7 +27,7 @@ import {
   rejectLocationApi,
   restoreLocationApi,
 } from '../../api/adminLocationsApi'
-import { LocationMapPicker } from '../../../locations/components/LocationMapPicker'
+import { LocationMap } from '../../../locations/components/LocationMap'
 import {
   formatDateTime,
   LOCATION_STATUS,
@@ -385,9 +385,10 @@ export function AdminLocationDetailPage() {
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={12}>
             <Card title="Vị trí">
-              <LocationMapPicker
-                readOnly
-                value={{ lat: location.latitude, lng: location.longitude }}
+              <LocationMap
+                latitude={location.latitude}
+                longitude={location.longitude}
+                label={location.name}
               />
               <Typography.Text type="secondary">
                 {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}

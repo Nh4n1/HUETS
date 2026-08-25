@@ -43,6 +43,12 @@
   margin-top: 0.5rem;
 }
 
+.coordinateInfo { display: block; margin-top: .65rem; }
+.geocodeStatus { display: flex; margin-top: .4rem; align-items: center; gap: .45rem; }
+.addressSuggestion { display: grid; margin-top: .75rem; padding: .85rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); gap: .35rem; background: var(--color-surface-muted); }
+.suggestionApply { display: flex; margin-top: .25rem; align-items: center; justify-content: space-between; gap: .75rem; }
+.suggestionApply > span { display: grid; gap: .2rem; }
+
 .submitBar {
   display: flex;
   padding: 0.8rem;
@@ -59,4 +65,5 @@
   .form :global(.ant-card-body) { padding: 1rem; }
   .form :global(.ant-picker-range) { width: 100% !important; }
   .submitBar :global(.ant-btn) { flex: 1; }
+  .suggestionApply { align-items: stretch; flex-direction: column; }
 }

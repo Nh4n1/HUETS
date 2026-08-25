@@ -114,8 +114,6 @@ export function LocationDetailPage() {
   }
 
   const [coverImage, ...otherImages] = location.images ?? []
-  const mapUrl = `https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=17/${location.latitude}/${location.longitude}`
-
   return (
     <main className={styles.page}>
       <Link className={styles.backLink} to="/locations">
@@ -216,9 +214,6 @@ export function LocationDetailPage() {
             <div className={styles.mapWrap}>
               <LocationMap latitude={location.latitude} longitude={location.longitude} label={location.name} />
             </div>
-            <a className={styles.externalMap} href={mapUrl} target="_blank" rel="noreferrer">
-              Mở trên OpenStreetMap
-            </a>
           </section>
           <LocationReviews
             locationId={locationId}

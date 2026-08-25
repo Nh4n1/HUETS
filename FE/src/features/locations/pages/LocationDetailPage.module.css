@@ -39,9 +39,7 @@
 .locationInfoWide { grid-column: 1 / -1; }
 .tags { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .tags span { padding: 0.55rem 0.8rem; border-radius: var(--radius-pill); color: var(--color-secondary-dark); background: var(--color-secondary-soft); font-size: 0.78rem; font-weight: 700; }
-.mapWrap { overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
-.mapWrap :global(.public-location-map) { z-index: 0; width: 100%; height: 24rem; }
-.externalMap { display: inline-block; margin-top: 0.8rem; color: var(--color-primary); font-size: 0.82rem; font-weight: 700; }
+.mapWrap { min-width: 0; }
 
 .infoCard { position: sticky; top: 6.4rem; padding: 0; border: 0; background: transparent; box-shadow: none; }
 .infoCard h2 { margin-top: 0; }
@@ -89,5 +87,4 @@
   .locationInfoGrid { grid-template-columns: 1fr; }
   .locationInfoWide { grid-column: auto; }
   .relatedHeading { align-items: flex-start; flex-direction: column; }
-  .externalMap { padding: 0.7rem 0; }
 }

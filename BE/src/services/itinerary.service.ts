@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { formatLocationAddress } from '../helpers/locationAddress.helper.ts';
 import Itinerary, { MAX_ITEMS_PER_DAY, MAX_ITINERARY_DAYS } from '../models/itinerary.model.ts';
 import type { IItinerary, ItineraryVisibility } from '../models/itinerary.model.ts';
 import Location from '../models/location.model.ts';
@@ -336,7 +337,7 @@ const toResponse = async (itinerary: IItinerary) => {
                     location: available ? {
                         id: location._id.toString(),
                         name: location.name,
-                        formattedAddress: [location.address.addressLine, location.address.wardNameSnapshot].filter(Boolean).join(', '),
+                        formattedAddress: formatLocationAddress(location),
                         coverImageUrl: [...location.images].sort((a, b) => a.position - b.position)[0]?.url ?? null,
                     } : null,
                 };

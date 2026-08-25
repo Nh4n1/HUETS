@@ -1,4 +1,5 @@
 import { normalizeSearchText } from '../helpers/text.helper.ts';
+import { formatLocationAddress } from '../helpers/locationAddress.helper.ts';
 import Category from '../models/category.model.ts';
 import Location from '../models/location.model.ts';
 import type { SearchPlan } from '../schemas/locationSearch.schema.ts';
@@ -76,7 +77,7 @@ export const executeSearchPlan = async (criteria: SearchPlan, page: number, page
             id: String(location._id),
             name: location.name,
             category: { code: location.categoryCode, name: categoryNames.get(location.categoryCode) ?? location.categoryCode },
-            formattedAddress: [location.address?.addressLine, location.address?.wardNameSnapshot, 'Thành phố Huế'].filter(Boolean).join(', '),
+            formattedAddress: formatLocationAddress(location),
             coverImageUrl: [...(location.images ?? [])].sort((a, b) => a.position - b.position)[0]?.url ?? null,
             averageRating: location.ratingSummary?.average ?? 0,
             reviewCount: location.ratingSummary?.count ?? 0,

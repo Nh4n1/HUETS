@@ -1,0 +1,15 @@
+.mapShell { display: grid; min-width: 0; gap: .65rem; }
+.mapToolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .65rem; align-items: stretch; }
+.searchArea { min-width: 0; min-height: 2.5rem; }
+.searchArea :global(gmp-place-autocomplete) { width: 100%; height: 100%; }
+.currentLocationButton { height: 2.5rem; }
+.mapFrame { position: relative; height: 26.25rem; overflow: hidden; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); isolation: isolate; }
+.mapCanvas { width: 100%; height: 100%; }
+.mapLoading, .mapError { position: absolute; inset: 0; z-index: 1; display: grid; padding: 1rem; place-content: center; place-items: center; gap: .75rem; color: var(--color-text-muted); background: var(--color-surface-muted); text-align: center; }
+.warning { margin: 0; color: #ad6800; font-size: .8rem; line-height: 1.5; }
+
+@media (max-width: 40rem) {
+  .mapToolbar { grid-template-columns: 1fr; }
+  .currentLocationButton { width: 100%; }
+  .mapFrame { height: 20rem; }
+}

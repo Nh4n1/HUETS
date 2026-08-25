@@ -33,6 +33,7 @@ import {
   uploadFileToCloudinary,
 } from '../../../shared/api/uploadApi'
 import { createLocationApi } from '../api/locationSubmitApi'
+import { normalizeLocationAddressLine } from '../../../shared/maps/googleMapUtils'
 import { LocationMapPicker } from './LocationMapPicker'
 import styles from './LocationSubmitForm.module.css'
 
@@ -127,6 +128,9 @@ export function LocationSubmitForm({
   const [fileList, setFileList] = useState(() => imageFileListFromLocation(initialLocation))
   const [imageError, setImageError] = useState('')
   const [mapPositionError, setMapPositionError] = useState('')
+  const [addressSuggestion, setAddressSuggestion] = useState(null)
+  const [geocodeLoading, setGeocodeLoading] = useState(false)
+  const [geocodeError, setGeocodeError] = useState('')
 
   const [submitting, setSubmitting] = useState(false)
   const [submitPhase, setSubmitPhase] = useState('')
@@ -229,6 +233,23 @@ export function LocationSubmitForm({
   function handleMapPositionChange(lat, lng) {
     form.setFieldsValue({ latitude: lat, longitude: lng })
     setMapPositionError('')
+    setAddressSuggestion(null)
+    setGeocodeError('')
+  }
+
+  function handleAddressResolved(suggestion) {
+    setAddressSuggestion(suggestion)
+  }
+
+  function handleAddressStateChange({ loading, error }) {
+    setGeocodeLoading(loading)
+    setGeocodeError(error)
+  }
+
+  function handleApplyAddress() {
+    if (!addressSuggestion?.suggestedAddressLine) return
+    form.setFieldValue('addressLine', addressSuggestion.suggestedAddressLine)
+    form.validateFields(['addressLine'])
   }
 
   function handleFinishFailed({ errorFields }) {
@@ -532,7 +553,7 @@ export function LocationSubmitForm({
         categoryCode: values.categoryCode,
         tagCodes,
         wardCode: values.wardCode,
-        addressLine: values.addressLine,
+        addressLine: normalizeLocationAddressLine(values.addressLine),
         locationNote: values.locationNote || undefined,
         latitude: values.latitude,
         longitude: values.longitude,
@@ -679,13 +700,14 @@ export function LocationSubmitForm({
 
           <Form.Item
             name="addressLine"
-            label="Địa chỉ"
+            label="Địa chỉ cụ thể"
             rules={[
-              { required: true, whitespace: true, message: 'Vui lòng nhập địa chỉ.' },
+              { required: true, whitespace: true, message: 'Vui lòng nhập địa chỉ cụ thể.' },
               { max: 500, message: 'Địa chỉ không được vượt quá 500 ký tự.' },
             ]}
+            extra="Không cần nhập lại phường/xã hoặc Thành phố Huế."
           >
-            <Input placeholder="Số nhà, tên đường" />
+            <Input placeholder="Số nhà, tên đường, kiệt hoặc khu vực..." />
           </Form.Item>
 
           <Form.Item
@@ -712,12 +734,43 @@ export function LocationSubmitForm({
             <LocationMapPicker
               value={{ lat: mapLatitude, lng: mapLongitude }}
               onChange={handleMapPositionChange}
+              onAddressResolved={handleAddressResolved}
+              onAddressStateChange={handleAddressStateChange}
             />
-            <Typography.Text type="secondary">
+            <Typography.Text type="secondary" className={styles.coordinateInfo}>
               {typeof mapLatitude === 'number' && typeof mapLongitude === 'number'
                 ? `Đã chọn: ${mapLatitude.toFixed(6)}, ${mapLongitude.toFixed(6)}`
                 : 'Chưa chọn vị trí trên bản đồ.'}
             </Typography.Text>
+            {geocodeLoading ? (
+              <Typography.Text type="secondary" className={styles.geocodeStatus}>
+                <Spin size="small" /> Đang xác định địa chỉ...
+              </Typography.Text>
+            ) : null}
+            {geocodeError ? (
+              <Typography.Text type="warning" className={styles.geocodeStatus}>
+                {geocodeError}
+              </Typography.Text>
+            ) : null}
+            {addressSuggestion?.formattedAddress ? (
+              <div className={styles.addressSuggestion}>
+                <Typography.Text type="secondary">Google xác định:</Typography.Text>
+                <Typography.Text>{addressSuggestion.formattedAddress}</Typography.Text>
+                {addressSuggestion.suggestedAddressLine ? (
+                  <div className={styles.suggestionApply}>
+                    <span>
+                      <Typography.Text type="secondary">Đề xuất địa chỉ:</Typography.Text>
+                      <Typography.Text strong>{addressSuggestion.suggestedAddressLine}</Typography.Text>
+                    </span>
+                    <Button size="small" onClick={handleApplyAddress}>Áp dụng</Button>
+                  </div>
+                ) : (
+                  <Typography.Text type="secondary">
+                    Google chưa tách được địa chỉ cụ thể. Vui lòng tự nhập và xác nhận trường phía trên.
+                  </Typography.Text>
+                )}
+              </div>
+            ) : null}
           </Form.Item>
         </Card>
 

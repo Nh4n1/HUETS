@@ -1,0 +1,10 @@
+.locationMap { display: grid; gap: .75rem; }
+.mapCanvas { height: 24rem; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
+.actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.actions a { display: inline-flex; min-height: 2.4rem; padding: .55rem .85rem; border: 1px solid var(--color-primary); border-radius: var(--radius-md); align-items: center; gap: .4rem; color: var(--color-primary); font-size: .82rem; font-weight: 700; }
+.actions a:first-child { color: white; background: var(--color-primary); }
+
+@media (max-width: 40rem) {
+  .mapCanvas { height: 20rem; }
+  .actions a { flex: 1; justify-content: center; }
+}

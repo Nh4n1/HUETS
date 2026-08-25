@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { formatLocationAddress, normalizeLocationAddressLine } from '../helpers/locationAddress.helper.ts';
 import { verifyLocationImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
 import { normalizeSearchText } from '../helpers/text.helper.ts';
 import Category from '../models/category.model.ts';
@@ -157,6 +158,12 @@ const optionalString = (value: unknown, field: string, maxLength: number) => {
     }
     return trimmed || null;
 };
+
+const requiredAddressLine = (value: unknown) => requiredString(
+    typeof value === 'string' ? normalizeLocationAddressLine(value) : value,
+    'Địa chỉ',
+    500,
+);
 
 const parseCoordinate = (value: unknown, type: 'latitude' | 'longitude') => {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -455,12 +462,6 @@ const findDuplicateCandidates = async (
     return [...candidates.values()].slice(0, 5);
 };
 
-const formatAddress = (location: ILocation) => [
-    location.address.addressLine,
-    location.address.wardNameSnapshot,
-    'Thành phố Huế',
-].filter(Boolean).join(', ');
-
 const categoryMapFor = async (locations: ILocation[]) => {
     const categoryCodes = [...new Set(locations.map(({ categoryCode }) => categoryCode))];
     const categories = await Category.find({ code: { $in: categoryCodes } })
@@ -528,7 +529,7 @@ const toLocationSummary = (location: ILocation, categoryNames: Map<string, strin
         code: location.categoryCode,
         name: categoryNames.get(location.categoryCode) ?? location.categoryCode,
     },
-    formattedAddress: formatAddress(location),
+    formattedAddress: formatLocationAddress(location),
     coverImageUrl: [...location.images].sort((left, right) => left.position - right.position)[0]?.url ?? null,
     averageRating: location.ratingSummary.average,
     reviewCount: location.ratingSummary.count,
@@ -659,7 +660,7 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
     if (!ward) {
         throw new ApiError(422, 'INVALID_WARD', 'Mã phường/xã không hợp lệ hoặc đã ngừng hoạt động.');
     }
-    const addressLine = requiredString(input.addressLine, 'Địa chỉ', 500);
+    const addressLine = requiredAddressLine(input.addressLine);
     const locationNote = optionalString(input.locationNote, 'Ghi chú vị trí', 1000);
     const latitude = parseCoordinate(input.latitude, 'latitude');
     const longitude = parseCoordinate(input.longitude, 'longitude');
@@ -1002,7 +1003,7 @@ export const updateAdminLocation = async (
     if (!ward) {
         throw new ApiError(422, 'INVALID_WARD', 'Mã phường/xã không hợp lệ hoặc đã ngừng hoạt động.');
     }
-    const addressLine = requiredString(input.addressLine, 'Địa chỉ', 500);
+    const addressLine = requiredAddressLine(input.addressLine);
     const locationNote = optionalString(input.locationNote, 'Ghi chú vị trí', 1000);
     const latitude = parseCoordinate(input.latitude, 'latitude');
     const longitude = parseCoordinate(input.longitude, 'longitude');
