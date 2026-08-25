@@ -6,10 +6,16 @@ const config = {
     refreshTokenSecret: process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret_change_me',
     accessTokenExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
     refreshTokenExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-    passwordResetTokenExpiresInMs: 60 * 60 * 1000, // 1 hour
 };
 
 export const REGISTRATION_VERIFICATION = {
+    OTP_TTL_MINUTES: 10,
+    RESEND_COOLDOWN_SECONDS: 30,
+    MAX_ATTEMPTS: 5,
+    MAX_RESENDS: 5,
+} as const;
+
+export const PASSWORD_RESET_VERIFICATION = {
     OTP_TTL_MINUTES: 10,
     RESEND_COOLDOWN_SECONDS: 60,
     MAX_ATTEMPTS: 5,

@@ -66,6 +66,10 @@ export function LoginPage() {
             />
           </Form.Item>
 
+          <div className={styles.passwordActions}>
+            <Link to="/forgot-password">Quên mật khẩu?</Link>
+          </div>
+
           <Button
             type="primary"
             htmlType="submit"

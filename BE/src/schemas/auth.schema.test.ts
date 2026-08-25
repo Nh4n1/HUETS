@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+    forgotPasswordSchema,
     registerSchema,
     resendRegistrationSchema,
+    resetPasswordSchema,
     verifyRegistrationSchema,
 } from './auth.schema.ts';
 
@@ -26,5 +28,21 @@ describe('registration auth schemas', () => {
         expect(verifyRegistrationSchema.safeParse({ registrationId, code: '012345' }).success).toBe(true);
         expect(verifyRegistrationSchema.safeParse({ registrationId, code: '12345' }).success).toBe(false);
         expect(resendRegistrationSchema.safeParse({ registrationId: 'invalid' }).success).toBe(false);
+    });
+
+    it('validates forgot and reset password payloads', () => {
+        expect(forgotPasswordSchema.safeParse({ email: ' user@example.com ' }).success).toBe(true);
+        expect(resetPasswordSchema.safeParse({
+            email: 'user@example.com',
+            code: '012345',
+            newPassword: 'NewSecret123!',
+            confirmPassword: 'NewSecret123!',
+        }).success).toBe(true);
+        expect(resetPasswordSchema.safeParse({
+            email: 'user@example.com',
+            code: '12345',
+            newPassword: 'short',
+            confirmPassword: 'different',
+        }).success).toBe(false);
     });
 });

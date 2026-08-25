@@ -25,3 +25,9 @@
   justify-content: center;
   overflow-x: auto;
 }
+
+.passwordActions {
+  margin-top: -0.75rem;
+  margin-bottom: 1rem;
+  text-align: right;
+}

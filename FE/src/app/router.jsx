@@ -5,6 +5,8 @@ import { LoginPage } from '../features/auth/pages/LoginPage'
 import { ProfilePage } from '../features/auth/pages/ProfilePage'
 import { RegisterPage } from '../features/auth/pages/RegisterPage'
 import { RegisterVerificationPage } from '../features/auth/pages/RegisterVerificationPage'
+import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage'
+import { ResetPasswordPage } from '../features/auth/pages/ResetPasswordPage'
 
 import { SavedContentPage } from '../features/bookmarks/pages/SavedContentPage'
 
@@ -89,6 +91,16 @@ export const router = createBrowserRouter([
       {
         path: 'register/verify',
         Component: RegisterVerificationPage,
+      },
+
+      {
+        path: 'forgot-password',
+        Component: ForgotPasswordPage,
+      },
+
+      {
+        path: 'forgot-password/reset',
+        Component: ResetPasswordPage,
       },
 
       {
