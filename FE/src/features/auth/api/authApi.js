@@ -25,6 +25,21 @@ export async function resendRegistrationCodeApi(data) {
   return response.data
 }
 
+export async function forgotPasswordApi(data) {
+  const response = await httpClient.post('/auth/forgot-password', data)
+  return response.data
+}
+
+export async function resendPasswordResetCodeApi(data) {
+  const response = await httpClient.post('/auth/forgot-password/resend', data)
+  return response.data
+}
+
+export async function resetPasswordApi(data) {
+  const response = await httpClient.post('/auth/reset-password', data)
+  return response.data
+}
+
 export async function getMeApi() {
   const response = await httpClient.get('/me')
   return response.data

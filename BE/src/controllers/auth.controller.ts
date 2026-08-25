@@ -25,6 +25,24 @@ export const resendRegister = asyncHandler(async (req: Request, res: Response) =
     const registration = await authService.resendRegistrationCode(req.body);
     return sendSuccess(res, 200, registration);
 });
+
+//[POST] /api/auth/forgot-password
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+    const result = await authService.requestPasswordReset(req.body);
+    return sendSuccess(res, 200, result);
+});
+
+//[POST] /api/auth/forgot-password/resend
+export const resendPasswordReset = asyncHandler(async (req: Request, res: Response) => {
+    const result = await authService.resendPasswordResetCode(req.body);
+    return sendSuccess(res, 200, result);
+});
+
+//[POST] /api/auth/reset-password
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+    const result = await authService.resetPassword(req.body);
+    return sendSuccess(res, 200, result);
+});
 //[POST] /api/auth/login
 export const login = asyncHandler(async (req: Request, res: Response) => {
     const { refreshToken, ...result } = await authService.login({

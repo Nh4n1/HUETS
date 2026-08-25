@@ -76,6 +76,9 @@ httpClient.interceptors.response.use(
       '/auth/register',
       '/auth/register/verify',
       '/auth/register/resend',
+      '/auth/forgot-password',
+      '/auth/forgot-password/resend',
+      '/auth/reset-password',
       '/auth/logout',
     ].some((path) => requestUrl === path || requestUrl.startsWith(`${path}?`))
 
