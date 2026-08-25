@@ -4,6 +4,7 @@ import { ProtectedRoute } from '../features/auth/components/ProtectedRoute'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { ProfilePage } from '../features/auth/pages/ProfilePage'
 import { RegisterPage } from '../features/auth/pages/RegisterPage'
+import { RegisterVerificationPage } from '../features/auth/pages/RegisterVerificationPage'
 
 import { SavedContentPage } from '../features/bookmarks/pages/SavedContentPage'
 
@@ -83,6 +84,11 @@ export const router = createBrowserRouter([
       {
         path: 'register',
         Component: RegisterPage,
+      },
+
+      {
+        path: 'register/verify',
+        Component: RegisterVerificationPage,
       },
 
       {

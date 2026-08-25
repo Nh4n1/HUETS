@@ -15,6 +15,16 @@ export async function registerApi(data) {
   return response.data
 }
 
+export async function verifyRegistrationApi(data) {
+  const response = await httpClient.post('/auth/register/verify', data)
+  return response.data
+}
+
+export async function resendRegistrationCodeApi(data) {
+  const response = await httpClient.post('/auth/register/resend', data)
+  return response.data
+}
+
 export async function getMeApi() {
   const response = await httpClient.get('/me')
   return response.data
