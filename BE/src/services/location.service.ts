@@ -1416,9 +1416,6 @@ export const deleteAdminLocation = async (
         { new: true, runValidators: true },
     );
     if (!location) return throwAdminLocationConflict(locationId);
-    await Promise.allSettled([
-        Bookmark.deleteMany({ targetType: 'location', targetId: location._id }),
-    ]);
     return { deleted: true };
 };
 

@@ -51,8 +51,8 @@ export function ExplorePage() {
     Promise.allSettled([
       getCategoriesApi(),
       getPublicVouchersApi({ page: 1, pageSize: 4, sortBy: 'ending_soon' }),
-      getPublicLocationsApi({ page: 1, pageSize: 6, sortBy: 'rating_desc', includeVoucherSummary: true }),
-      getPublicLocationsApi({ page: 1, pageSize: 6, sortBy: 'newest', includeVoucherSummary: true }),
+      getPublicLocationsApi({ page: 1, pageSize: 8, sortBy: 'rating_desc', includeVoucherSummary: true }),
+      getPublicLocationsApi({ page: 1, pageSize: 8, sortBy: 'newest', includeVoucherSummary: true }),
     ]).then(([categoryResult, voucherResult, ratingResult, newestResult]) => {
       if (!active) return
       if (categoryResult.status === 'fulfilled') setCategories(getActiveCategories(categoryResult.value))
