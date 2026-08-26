@@ -1,6 +1,6 @@
 import { BookOutlined, EnvironmentOutlined, SearchOutlined } from '@ant-design/icons'
 import { Alert, Button, Empty, Input, Select, Spin } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useBookmarks } from '../../bookmarks/context/useBookmarks'
 import { getPublicLocationByIdApi, searchPublicLocationsApi } from '../../locations/api/locationApi'
 import { getCategoriesApi } from '../../../shared/api/referenceApi'
@@ -37,6 +37,7 @@ export function LocationPicker({
   const [requestError, setRequestError] = useState('')
   const [selectedLocations, setSelectedLocations] = useState(() => new Map())
   const [confirming, setConfirming] = useState(false)
+  const searchRequestRef = useRef(null)
 
   const savedLocations = useMemo(() => bookmarks
     .filter((bookmark) => bookmark.targetType === 'location')
@@ -53,6 +54,9 @@ export function LocationPicker({
   useEffect(() => {
     if (mode !== 'search') return undefined
     let active = true
+    const controller = new AbortController()
+    searchRequestRef.current?.abort()
+    searchRequestRef.current = controller
     const timer = window.setTimeout(() => {
       setLoading(true)
       setRequestError('')
@@ -61,12 +65,19 @@ export function LocationPicker({
         ...(categoryCode ? { categoryCode } : {}),
         page: 1,
         pageSize: 30,
-      })
+      }, { signal: controller.signal })
         .then((payload) => { if (active) setResults(payload.data ?? []) })
-        .catch((requestFailure) => { if (active) setRequestError(messageFor(requestFailure)) })
+        .catch((requestFailure) => {
+          if (active && requestFailure.code !== 'ERR_CANCELED') setRequestError(messageFor(requestFailure))
+        })
         .finally(() => { if (active) setLoading(false) })
     }, 300)
-    return () => { active = false; window.clearTimeout(timer) }
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+      controller.abort()
+      if (searchRequestRef.current === controller) searchRequestRef.current = null
+    }
   }, [categoryCode, mode, query])
 
   const visible = mode === 'saved' ? savedLocations : results
@@ -102,6 +113,14 @@ export function LocationPicker({
       setConfirming(false)
     }
   }
+  const changeMode = (nextMode) => {
+    if (nextMode === 'saved') {
+      searchRequestRef.current?.abort()
+      setLoading(false)
+      setRequestError('')
+    }
+    setMode(nextMode)
+  }
 
   if (!multiple && value && selectedLocation && !changing) {
     return (
@@ -116,12 +135,12 @@ export function LocationPicker({
   return (
     <div className={styles.locationPicker}>
       <div className={styles.pickerTabs} role="tablist" aria-label="Nguồn địa điểm">
-        <button role="tab" aria-selected={mode === 'search'} className={mode === 'search' ? styles.selectedPickerTab : ''} type="button" onClick={() => setMode('search')}><SearchOutlined /> Tất cả</button>
-        <button role="tab" aria-selected={mode === 'saved'} className={mode === 'saved' ? styles.selectedPickerTab : ''} type="button" onClick={() => setMode('saved')}><BookOutlined /> Đã lưu ({savedLocations.length})</button>
+        <button role="tab" aria-selected={mode === 'search'} className={mode === 'search' ? styles.selectedPickerTab : ''} type="button" onClick={() => changeMode('search')}><SearchOutlined /> Tất cả</button>
+        <button role="tab" aria-selected={mode === 'saved'} className={mode === 'saved' ? styles.selectedPickerTab : ''} type="button" onClick={() => changeMode('saved')}><BookOutlined /> Đã lưu ({savedLocations.length})</button>
       </div>
       {mode === 'search' ? (
         <div className={styles.pickerFilters}>
-          <Input allowClear prefix={<SearchOutlined />} placeholder="Tìm theo tên hoặc địa chỉ..." value={query} onChange={(event) => setQuery(event.target.value)} />
+          <Input allowClear maxLength={200} prefix={<SearchOutlined />} placeholder="Tìm theo tên hoặc địa chỉ..." value={query} onChange={(event) => setQuery(event.target.value)} />
           <Select allowClear placeholder="Tất cả danh mục" value={categoryCode || undefined} onChange={(next) => setCategoryCode(next ?? '')} options={categories.map((category) => ({ value: category.code, label: category.name }))} />
         </div>
       ) : null}
