@@ -72,16 +72,16 @@ export function OwnershipDetailPage() {
   }
 
   function handleCancel() {
-    modal.confirm({ title: 'Hủy yêu cầu này?', okText: 'Hủy yêu cầu', okButtonProps: { danger: true }, cancelText: 'Đóng', onOk: async () => { await cancelOwnershipApi(ownershipId); message.success('Đã hủy yêu cầu.'); navigate('/business') } })
+    modal.confirm({ title: 'Hủy yêu cầu này?', okText: 'Hủy yêu cầu', okButtonProps: { danger: true }, cancelText: 'Đóng', onOk: async () => { await cancelOwnershipApi(ownershipId); message.success('Đã hủy yêu cầu.'); navigate('/business/ownerships') } })
   }
 
   if (loading) return <main className={styles.page}><Skeleton active paragraph={{ rows: 10 }} /></main>
-  if (!ownership) return <main className={styles.page}><Alert type="error" showIcon message={errorMessage} /><Link to="/business">Về Business Center</Link></main>
+  if (!ownership) return <main className={styles.page}><Alert type="error" showIcon message={errorMessage} /><Link to="/business/ownerships">Về hồ sơ xác minh</Link></main>
   const latestReview = getLatestReview(ownership)
 
   return (
     <main className={styles.page}>
-      <header className={styles.hero}><div><span className={styles.eyebrow}>Hồ sơ ownership</span><Typography.Title level={2}>{ownership.location?.name}</Typography.Title><BusinessStatusTag ownership={ownership} /></div><Link to="/business"><Button>Business Center</Button></Link></header>
+      <header className={styles.hero}><div><span className={styles.eyebrow}>Hồ sơ ownership</span><Typography.Title level={2}>{ownership.location?.name}</Typography.Title><BusinessStatusTag ownership={ownership} /></div><Link to="/business/ownerships"><Button>Hồ sơ xác minh</Button></Link></header>
       {errorMessage ? <Alert type="error" showIcon message={errorMessage} /> : null}
       {latestReview?.reason ? <Alert type={ownership.status === 'rejected' ? 'warning' : 'info'} showIcon message={latestReview.reasonCode} description={latestReview.reason} /> : null}
       <div className={styles.detailGrid}>

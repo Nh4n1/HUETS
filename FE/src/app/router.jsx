@@ -33,9 +33,14 @@ import { LocationDetailPage } from '../features/locations/pages/LocationDetailPa
 import { LocationsPage } from '../features/locations/pages/LocationsPage'
 import { ContributeLocationPage } from '../features/locations/pages/ContributeLocationPage'
 import { MyContributionsPage } from '../features/locations/pages/MyContributionsPage'
+import { MyContributionDetailPage } from '../features/locations/pages/MyContributionDetailPage'
+import { EditMyContributionPage } from '../features/locations/pages/EditMyContributionPage'
 import { BusinessRegisterPage } from '../features/business/pages/BusinessRegisterPage'
 import { BusinessCenterPage } from '../features/business/pages/BusinessCenterPage'
+import { BusinessDashboardPage } from '../features/business/pages/BusinessDashboardPage'
+import { BusinessLocationsPage } from '../features/business/pages/BusinessLocationsPage'
 import { OwnershipDetailPage } from '../features/business/pages/OwnershipDetailPage'
+import { BusinessRoute } from '../features/business/components/BusinessRoute'
 import { AdminOwnershipsPage } from '../features/business/pages/AdminOwnershipsPage'
 import { AdminOwnershipDetailPage } from '../features/business/pages/AdminOwnershipDetailPage'
 import { OwnerVoucherListPage } from '../features/vouchers/pages/OwnerVoucherListPage'
@@ -48,8 +53,6 @@ import { VoucherClaimDetailPage } from '../features/vouchers/pages/VoucherClaimD
 import { OwnerDevicesPage } from '../features/redemption/pages/OwnerDevicesPage'
 import { RedemptionSetupPage } from '../features/redemption/pages/RedemptionSetupPage'
 import { RedemptionOperatorPage } from '../features/redemption/pages/RedemptionOperatorPage'
-import { MyContributionDetailPage } from '../features/locations/pages/MyContributionDetailPage'
-import { EditMyContributionPage } from '../features/locations/pages/EditMyContributionPage'
 
 import { ItinerariesPage } from '../features/itineraries/pages/ItinerariesPage'
 import { ItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
@@ -61,6 +64,7 @@ import { CommunityItineraryDetailPage } from '../features/itineraries/pages/Itin
 
 import { AdminLayout } from './layouts/AdminLayout'
 import { AppLayout } from './layouts/AppLayout'
+import { BusinessLayout } from './layouts/BusinessLayout'
 import { RedemptionLayout } from './layouts/RedemptionLayout'
 
 export const router = createBrowserRouter([
@@ -160,38 +164,13 @@ export const router = createBrowserRouter([
           },
 
           {
-            path: 'business/register',
-            Component: BusinessRegisterPage,
+            path: 'locations/mine/:locationId',
+            Component: MyContributionDetailPage,
           },
 
           {
-            path: 'business',
-            Component: BusinessCenterPage,
-          },
-
-          {
-            path: 'business/ownerships/:ownershipId',
-            Component: OwnershipDetailPage,
-          },
-
-          {
-            path: 'business/locations/:locationId/vouchers',
-            Component: OwnerVoucherListPage,
-          },
-
-          {
-            path: 'business/locations/:locationId/vouchers/new',
-            Component: OwnerVoucherCreatePage,
-          },
-
-          {
-            path: 'business/locations/:locationId/vouchers/:voucherId',
-            Component: OwnerVoucherDetailPage,
-          },
-
-          {
-            path: 'business/locations/:locationId/devices',
-            Component: OwnerDevicesPage,
+            path: 'locations/mine/:locationId/edit',
+            Component: EditMyContributionPage,
           },
 
           {
@@ -202,13 +181,6 @@ export const router = createBrowserRouter([
           {
             path: 'vouchers/mine/:claimId',
             Component: VoucherClaimDetailPage,
-            path: 'locations/mine/:locationId',
-            Component: MyContributionDetailPage,
-          },
-
-          {
-            path: 'locations/mine/:locationId/edit',
-            Component: EditMyContributionPage,
           },
 
           {
@@ -244,6 +216,32 @@ export const router = createBrowserRouter([
           {
             path: 'itineraries/mine/:itineraryId/edit',
             Component: ItineraryEditorPage,
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    path: 'business',
+    Component: ProtectedRoute,
+    children: [
+      {
+        Component: BusinessRoute,
+        children: [
+          {
+            Component: BusinessLayout,
+            children: [
+              { index: true, Component: BusinessDashboardPage },
+              { path: 'register', Component: BusinessRegisterPage },
+              { path: 'locations', Component: BusinessLocationsPage },
+              { path: 'ownerships', Component: BusinessCenterPage },
+              { path: 'ownerships/:ownershipId', Component: OwnershipDetailPage },
+              { path: 'locations/:locationId/vouchers', Component: OwnerVoucherListPage },
+              { path: 'locations/:locationId/vouchers/new', Component: OwnerVoucherCreatePage },
+              { path: 'locations/:locationId/vouchers/:voucherId', Component: OwnerVoucherDetailPage },
+              { path: 'locations/:locationId/devices', Component: OwnerDevicesPage },
+            ],
           },
         ],
       },

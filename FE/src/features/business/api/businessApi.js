@@ -10,6 +10,11 @@ export async function getBusinessSummaryApi() {
   return response.data
 }
 
+export async function getBusinessLocationsApi() {
+  const response = await httpClient.get('/business/locations')
+  return response.data
+}
+
 export async function createOwnershipApi(payload) {
   const response = await httpClient.post('/location-ownerships', payload)
   return response.data
