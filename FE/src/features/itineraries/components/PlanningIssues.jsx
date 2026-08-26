@@ -1,16 +1,15 @@
-import { Alert } from 'antd'
+import { ExclamationCircleOutlined, WarningOutlined } from '@ant-design/icons'
+import styles from '../pages/Itinerary.module.css'
 
-export function PlanningIssues({ issues = [] }) {
+export function PlanningIssues({ issues = [], compact = true }) {
   if (!issues.length) return null
   return (
-    <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+    <div className={compact ? styles.compactIssues : styles.planningIssues}>
       {issues.map((issue, index) => (
-        <Alert
-          key={`${issue.code}-${index}`}
-          showIcon
-          type={issue.level === 'error' ? 'error' : 'warning'}
-          message={issue.message}
-        />
+        <div className={issue.level === 'error' ? styles.issueError : styles.issueWarning} key={`${issue.code}-${index}`}>
+          {issue.level === 'error' ? <ExclamationCircleOutlined /> : <WarningOutlined />}
+          <span>{issue.message}</span>
+        </div>
       ))}
     </div>
   )

@@ -25,6 +25,7 @@
 .categoryGrid small { display: block; margin-top: .3rem; color: var(--color-text-muted); font-size: .75rem; line-height: 1.45; }
 .allCategoriesButton { display: flex; margin: 1.35rem auto 0; border-color: var(--color-border); border-radius: .75rem; }
 .locationGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+.voucherGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
 .cardSkeleton { width: 100% !important; height: 22rem !important; }
 .catalogCta { display: flex; width: min(100% - 3.5rem, var(--container-width)); margin: 4.5rem auto; padding: 2.35rem 2.5rem; border: 1px solid var(--color-border); border-radius: 1.625rem; align-items: center; justify-content: space-between; gap: 1.5rem; color: var(--color-text); background: white; }
 .catalogCta > :global(.anticon) { color: var(--color-primary); font-size: 2rem; }
@@ -39,6 +40,6 @@
 .modalCategoryList button:hover { border-color: #d7c09e; background: #fbf6ee; }
 .modalCategoryList button > :global(.anticon):first-child { display: grid; width: 2.4rem; height: 2.4rem; border-radius: .75rem; place-items: center; color: #785635; background: var(--color-primary-soft); }
 .modalCategoryList > :global(.ant-empty) { grid-column: 1 / -1; }
-@media (max-width: 68rem) { .categoryGrid, .locationGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 42rem) { .page { padding-top: 1rem; } .hero, .categories, .collection, .catalogCta { width: calc(100% - 2rem); } .hero { padding: 2rem 1.25rem; } .sectionHeading { align-items: flex-start; flex-direction: column; gap: .75rem; } .categoryGrid, .locationGrid, .modalCategoryList { grid-template-columns: 1fr; } .catalogCta { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 68rem) { .categoryGrid, .locationGrid, .voucherGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 42rem) { .page { padding-top: 1rem; } .hero, .categories, .collection, .catalogCta { width: calc(100% - 2rem); } .hero { padding: 2rem 1.25rem; } .sectionHeading { align-items: flex-start; flex-direction: column; gap: .75rem; } .categoryGrid, .locationGrid, .voucherGrid, .modalCategoryList { grid-template-columns: 1fr; } .catalogCta { align-items: flex-start; flex-direction: column; } }
 @media (prefers-reduced-motion: reduce) { .categoryGrid button { transition: none; } }

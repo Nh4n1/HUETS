@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
+import type { ClientSession } from 'mongoose';
 import { verifyLocationImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
 import { normalizeSearchText } from '../helpers/text.helper.ts';
 import Category from '../models/category.model.ts';
 import Bookmark from '../models/bookmark.model.ts';
 import Location from '../models/location.model.ts';
+import LocationOwnership from '../models/locationOwnership.model.ts';
 import Notification from '../models/notification.model.ts';
 import type {
     ILocation,
@@ -15,6 +17,7 @@ import type {
 } from '../models/location.model.ts';
 import TagGroup from '../models/tagGroup.model.ts';
 import User from '../models/user.model.ts';
+import Voucher from '../models/voucher.model.ts';
 import { getWardByCode } from './reference.service.ts';
 import { ApiError } from '../utils/apiError.ts';
 import { safeCreateLocationNotification } from './notification.service.ts';
@@ -95,6 +98,7 @@ export interface PublicLocationQuery {
     wardCode?: string;
     tagCodes?: string;
     sortBy?: PublicLocationSortBy;
+    includeVoucherSummary?: boolean;
 }
 
 export interface AdminLocationQuery extends PublicLocationQuery {
@@ -657,7 +661,11 @@ const toAdminLocationDetail = async (location: ILocation) => {
     };
 };
 
-export const createLocation = async (input: CreateLocationInput, actor: Actor) => {
+export const createLocation = async (
+    input: CreateLocationInput,
+    actor: Actor,
+    options: { session?: ClientSession } = {},
+) => {
     if (!mongoose.isValidObjectId(actor.id)) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Tài khoản không hợp lệ.');
     }
@@ -705,7 +713,7 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
         description,
     ].join(' '));
 
-    const location = await Location.create({
+    const location = new Location({
         createdBy: user._id,
         name,
         normalizedName,
@@ -743,6 +751,7 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
         deletedFromStatus: null,
         searchText,
     });
+    await location.save(options.session ? { session: options.session } : undefined);
 
     return {
         ...toLocationDetail(location, category.name),
@@ -827,10 +836,34 @@ export const getPublicLocations = async (query: PublicLocationQuery) => {
 
     const categoryNames = await categoryMapFor(locations);
 
+    let voucherLocationIds = new Set<string>();
+    if (query.includeVoucherSummary && locations.length > 0) {
+        const locationIds = locations.map((location) => location._id);
+        const ownerships = await LocationOwnership.find({
+            locationId: { $in: locationIds },
+            status: 'verified',
+        }).select({ _id: 1 }).lean();
+        if (ownerships.length > 0) {
+            const now = new Date();
+            const ids = await Voucher.find({
+                locationId: { $in: locationIds },
+                issuedByOwnershipId: { $in: ownerships.map((ownership) => ownership._id) },
+                status: 'active',
+                claimStartAt: { $lte: now },
+                claimEndAt: { $gte: now },
+                $expr: { $lt: ['$claimedCount', '$totalQuantity'] },
+            }).distinct('locationId');
+            voucherLocationIds = new Set(ids.map((id) => id.toString()));
+        }
+    }
+
     return {
-        data: locations.map((location) =>
-            toLocationSummary(location, categoryNames)
-        ),
+        data: locations.map((location) => ({
+            ...toLocationSummary(location, categoryNames),
+            ...(query.includeVoucherSummary ? {
+                voucherSummary: { hasClaimableVoucher: voucherLocationIds.has(location._id.toString()) },
+            } : {}),
+        })),
         meta: {
             page,
             pageSize,

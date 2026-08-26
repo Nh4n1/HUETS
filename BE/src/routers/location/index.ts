@@ -1,7 +1,9 @@
 import { Router } from "express";
 import * as locationController from "../../controllers/location.controller.ts";
-import { authenticate, authorize } from "../../middlewares/auth.middleware.ts";
+import { authenticate, authorize, optionalAuthenticate } from "../../middlewares/auth.middleware.ts";
 import * as locationReviewController from "../../controllers/locationReview.controller.ts";
+import * as locationOwnershipController from "../../controllers/locationOwnership.controller.ts";
+import * as voucherController from "../../controllers/voucher.controller.ts";
 
 const router = Router();
 export const ownerLocationRouter = Router();
@@ -14,6 +16,12 @@ router.post(
 );
 router.get("/", locationController.getPublicLocations);
 router.get("/search", locationController.searchPublicLocations);
+router.get("/:locationId/vouchers", optionalAuthenticate, voucherController.getPublicLocationVouchers);
+router.get(
+  "/:locationId/ownership-context",
+  optionalAuthenticate,
+  locationOwnershipController.getLocationOwnershipContext,
+);
 router.get("/:locationId/reviews", locationReviewController.getLocationReviews);
 router.get(
   "/:locationId/reviews/me",

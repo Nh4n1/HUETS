@@ -6,7 +6,9 @@
 .image img { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 300ms ease; }
 .card:hover img { transform: scale(1.04); }
 .placeholder { position: absolute; display: grid; inset: 0; place-items: center; color: rgb(124 63 32 / 30%); font-size: 2rem; }
-.category { position: absolute; z-index: 2; top: .85rem; left: .85rem; padding: .38rem .65rem; border-radius: var(--radius-pill); background: #fff7e8; color: #7b5527; font-size: .7rem; font-weight: 850; }
+.category { position: absolute; z-index: 2; top: .85rem; left: .85rem; max-width: calc(100% - 8.5rem); padding: .38rem .65rem; overflow: hidden; border-radius: var(--radius-pill); background: #fff7e8; color: #7b5527; font-size: .7rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.voucherBadge { position: absolute; z-index: 2; top: .85rem; right: .85rem; display: inline-flex; min-height: 1.8rem; padding: .35rem .65rem; border: 1px solid rgb(123 85 39 / 16%); border-radius: var(--radius-pill); align-items: center; gap: .35rem; color: #7b5527; background: rgb(255 247 232 / 94%); box-shadow: 0 .25rem .9rem rgb(48 35 22 / 10%); font-size: .7rem; font-weight: 850; line-height: 1; pointer-events: none; backdrop-filter: blur(6px); }
+.voucherBadge :global(.anticon) { font-size: .78rem; }
 .body { display: flex; flex: 1; padding: 1.125rem; flex-direction: column; }
 .heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
 .heading h3 { margin: 0; overflow: hidden; font-family: var(--font-body); font-size: 1.18rem; text-overflow: ellipsis; white-space: nowrap; }

@@ -3,10 +3,13 @@ import { Alert, Button, Empty, Input, Modal, Skeleton } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { getCategoriesApi } from '../../../shared/api/referenceApi'
+import { useAuth } from '../../auth/context/useAuth'
 import { CategoryIcon } from '../../../shared/config/categoryPresentation'
 import { getActiveCategories } from '../../../shared/config/categoryUtils'
 import { getPublicLocationsApi } from '../../locations/api/locationApi'
 import { LocationDiscoveryCard } from '../../locations/components/LocationDiscoveryCard'
+import { getPublicVouchersApi } from '../../vouchers/api/voucherApi'
+import { VoucherDiscoveryCard } from '../../vouchers/components/VoucherDiscoveryCard'
 import styles from './ExplorePage.module.css'
 
 function LocationCollection({ id, eyebrow, title, description, showAllTo, locations, loading, error }) {
@@ -30,28 +33,34 @@ function LocationCollection({ id, eyebrow, title, description, showAllTo, locati
 }
 
 export function ExplorePage() {
+  const { loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const routerLocation = useLocation()
   const [categories, setCategories] = useState([])
   const [highRated, setHighRated] = useState([])
   const [newest, setNewest] = useState([])
+  const [vouchers, setVouchers] = useState([])
   const [loading, setLoading] = useState(true)
   const [errors, setErrors] = useState({})
   const [modalOpen, setModalOpen] = useState(false)
   const [categoryQuery, setCategoryQuery] = useState('')
 
   useEffect(() => {
+    if (authLoading) return undefined
     let active = true
     Promise.allSettled([
       getCategoriesApi(),
-      getPublicLocationsApi({ page: 1, pageSize: 6, sortBy: 'rating_desc' }),
-      getPublicLocationsApi({ page: 1, pageSize: 6, sortBy: 'newest' }),
-    ]).then(([categoryResult, ratingResult, newestResult]) => {
+      getPublicVouchersApi({ page: 1, pageSize: 4, sortBy: 'ending_soon' }),
+      getPublicLocationsApi({ page: 1, pageSize: 6, sortBy: 'rating_desc', includeVoucherSummary: true }),
+      getPublicLocationsApi({ page: 1, pageSize: 6, sortBy: 'newest', includeVoucherSummary: true }),
+    ]).then(([categoryResult, voucherResult, ratingResult, newestResult]) => {
       if (!active) return
       if (categoryResult.status === 'fulfilled') setCategories(getActiveCategories(categoryResult.value))
+      if (voucherResult.status === 'fulfilled') setVouchers((voucherResult.value.data ?? []).slice(0, 4))
       if (ratingResult.status === 'fulfilled') setHighRated(ratingResult.value.data ?? [])
       if (newestResult.status === 'fulfilled') setNewest(newestResult.value.data ?? [])
       setErrors({
+        vouchers: voucherResult.status === 'rejected' ? 'Không thể tải Voucher.' : '',
         categories: categoryResult.status === 'rejected' ? 'Không thể tải danh sách chủ đề.' : '',
         rating: ratingResult.status === 'rejected' ? 'Không thể tải các địa điểm được đánh giá cao.' : '',
         newest: newestResult.status === 'rejected' ? 'Không thể tải các địa điểm mới.' : '',
@@ -59,7 +68,7 @@ export function ExplorePage() {
       setLoading(false)
     })
     return () => { active = false }
-  }, [])
+  }, [authLoading])
 
   useEffect(() => {
     if (routerLocation.hash !== '#categories') return
@@ -113,6 +122,17 @@ export function ExplorePage() {
           <Button className={styles.allCategoriesButton} onClick={() => setModalOpen(true)}>Xem tất cả chủ đề</Button>
         ) : null}
       </section>
+
+      {!loading && !errors.vouchers && vouchers.length ? (
+        <section className={styles.collection} id="vouchers">
+          <div className={styles.sectionHeading}>
+            <div><span>Ưu đãi</span><h2>Ưu đãi đang có</h2></div>
+            <p>Một số ưu đãi đang còn thời gian nhận tại các địa điểm trên HueTrip.</p>
+            <Link className={styles.sectionLink} to="/vouchers">Xem thêm <ArrowRightOutlined /></Link>
+          </div>
+          <div className={styles.voucherGrid}>{vouchers.map((voucher) => <VoucherDiscoveryCard key={voucher.id} voucher={voucher} />)}</div>
+        </section>
+      ) : null}
 
       <LocationCollection id="high-rated" eyebrow="Cộng đồng yêu thích" title="Được đánh giá cao"
         description="Những địa điểm có điểm đánh giá tốt từ cộng đồng HueTrip." showAllTo="/locations?sortBy=rating_desc"

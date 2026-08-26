@@ -7,14 +7,17 @@ import {
   MenuOutlined,
   MessageOutlined,
   PlusCircleOutlined,
+  ShopOutlined,
+  GiftOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { Avatar, Button, Dropdown, Layout } from 'antd'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../../features/auth/context/useAuth'
 import { FeedbackDrawer } from '../../features/feedback/components/FeedbackDrawer'
 import { NotificationBell } from '../../features/notifications/components/NotificationBell'
+import { getBusinessSummaryApi } from '../../features/business/api/businessApi'
 import styles from './AppLayout.module.css'
 
 function Brand() {
@@ -36,6 +39,16 @@ export function AppLayout() {
   const [loggingOut, setLoggingOut] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [businessSummary, setBusinessSummary] = useState(null)
+
+  useEffect(() => {
+    if (user?.role !== 'user') {
+      return
+    }
+    let active = true
+    getBusinessSummaryApi().then((summary) => active && setBusinessSummary(summary)).catch(() => {})
+    return () => { active = false }
+  }, [user?.id, user?.role])
 
   const openFeedback = () => {
     setFeedbackOpen(true)
@@ -68,7 +81,25 @@ export function AppLayout() {
         icon: <PlusCircleOutlined />,
         label: <Link to="/locations/contribute">Đóng góp địa điểm</Link>,
       },
+      {
+        key: 'my-vouchers',
+        icon: <GiftOutlined />,
+        label: <Link to="/vouchers/mine">Voucher của tôi</Link>,
+      },
     ]
+
+    if (user?.role === 'user') {
+      const businessLabel = businessSummary?.menuState === 'active_owner'
+        ? 'Quản lý doanh nghiệp'
+        : businessSummary?.menuState === 'has_requests'
+          ? 'Trạng thái đăng ký kinh doanh'
+          : 'Đăng ký địa điểm kinh doanh'
+      items.push({
+        key: 'business',
+        icon: <ShopOutlined />,
+        label: <Link to={businessSummary?.menuState === 'none' ? '/business/register' : '/business'}>{businessLabel}</Link>,
+      })
+    }
 
     if (user?.role === 'admin' || user?.role === 'mod') {
       items.push({
@@ -84,7 +115,7 @@ export function AppLayout() {
       { key: 'logout', danger: true, label: 'Đăng xuất' },
     )
     return items
-  }, [user?.role])
+  }, [businessSummary?.menuState, user?.role])
 
   const handleUserMenu = ({ key }) => {
     if (key === 'logout') handleLogout()
@@ -169,6 +200,8 @@ export function AppLayout() {
                 <Link to="/profile">Hồ sơ của tôi</Link>
                 <Link to="/itineraries/mine">Lịch trình của tôi</Link>
                 <Link to="/locations/contribute">Đóng góp địa điểm</Link>
+                <Link to="/vouchers/mine">Voucher của tôi</Link>
+                {user.role === 'user' ? <Link to="/business">Quản lý doanh nghiệp</Link> : null}
                 <Button type="text" onClick={openFeedback}>Góp ý cho HueTrip</Button>
                 {user.role === 'admin' || user.role === 'mod' ? <Link to="/admin">Trang quản trị</Link> : null}
                 <Button type="text" danger loading={loggingOut} onClick={handleLogout}>
@@ -214,6 +247,7 @@ export function AppLayout() {
           <div className={styles.footerColumn}>
             <h2>Tài khoản</h2>
             {user ? <Link to="/profile">Hồ sơ của tôi</Link> : <Link to="/login">Đăng nhập</Link>}
+            {user?.role === 'user' ? <Link to="/business">Quản lý doanh nghiệp</Link> : null}
             {user ? null : <Link to="/register">Tạo tài khoản</Link>}
             {user?.role === 'admin' || user?.role === 'mod' ? <Link to="/admin">Trang quản trị</Link> : null}
           </div>

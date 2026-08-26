@@ -26,6 +26,7 @@ export const getPublicLocations = asyncHandler(async (req: Request, res: Respons
     const wardCode = queryString(req.query.wardCode);
     const tagCodes = queryString(req.query.tagCodes);
     const sortBy = queryString(req.query.sortBy);
+    const includeVoucherSummary = queryString(req.query.includeVoucherSummary);
 
     if (page) query.page = page;
     if (pageSize) query.pageSize = pageSize;
@@ -33,6 +34,12 @@ export const getPublicLocations = asyncHandler(async (req: Request, res: Respons
     if (categoryCode) query.categoryCode = categoryCode;
     if (wardCode) query.wardCode = wardCode;
     if (tagCodes !== undefined) query.tagCodes = tagCodes;
+    if (includeVoucherSummary !== undefined) {
+        if (!['true', 'false'].includes(includeVoucherSummary)) {
+            throw new ApiError(400, 'VALIDATION_ERROR', 'includeVoucherSummary khÃ´ng há»£p lá»‡.');
+        }
+        query.includeVoucherSummary = includeVoucherSummary === 'true';
+    }
     if (sortBy) {
         if (!['recommended', 'rating_desc', 'newest'].includes(sortBy)) {
             throw new ApiError(400, 'VALIDATION_ERROR', 'sortBy không hợp lệ.');

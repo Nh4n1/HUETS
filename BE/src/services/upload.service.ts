@@ -2,8 +2,10 @@ import { v2 as cloudinary } from 'cloudinary';
 import { getCloudinaryConfig } from '../config/config.cloudinary.ts';
 import { locationImageUploadConfig } from '../config/config.upload.ts';
 import { signFeedbackImageAssetToken, signLocationImageAssetToken, signReportImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
+import { signOwnershipEvidenceAssetToken } from '../helpers/ownershipEvidenceAssetToken.helper.ts';
 import Feedback from '../models/feedback.model.ts';
 import Location from '../models/location.model.ts';
+import LocationOwnership from '../models/locationOwnership.model.ts';
 import Report from '../models/report.model.ts';
 import User from '../models/user.model.ts';
 import { ApiError } from '../utils/apiError.ts';
@@ -61,12 +63,13 @@ export const deleteUploadedImage = async (rawPublicId: unknown) => {
     const config = getCloudinaryConfig();
     assertPublicIdInUploadFolder(rawPublicId, config.uploadFolder);
 
-    const [isAttachedToLocation, isAttachedToFeedback, isAttachedToReport] = await Promise.all([
+    const [isAttachedToLocation, isAttachedToFeedback, isAttachedToReport, isAttachedToOwnership] = await Promise.all([
         Location.exists({ 'images.publicId': rawPublicId }),
         Feedback.exists({ 'images.publicId': rawPublicId }),
         Report.exists({ 'evidenceImages.publicId': rawPublicId }),
+        LocationOwnership.exists({ 'evidenceImages.publicId': rawPublicId }),
     ]);
-    if (isAttachedToLocation || isAttachedToFeedback || isAttachedToReport) {
+    if (isAttachedToLocation || isAttachedToFeedback || isAttachedToReport || isAttachedToOwnership) {
         throw new ApiError(403, 'FORBIDDEN', 'Ảnh đã được gắn vào nội dung và không thể xoá qua API cleanup.');
     }
 
@@ -224,6 +227,43 @@ export const confirmReportImageUploads = async (results: unknown, actorId: strin
     return {
         assets: validatedResults.map((result) => ({
             assetToken: signReportImageAssetToken({
+                sub: actorId,
+                url: result.secureUrl,
+                publicId: result.publicId,
+                mimeType: result.mimeType,
+                sizeBytes: result.bytes,
+            }, expiresIn),
+            previewUrl: result.secureUrl,
+            expiresAt,
+        })),
+    };
+};
+
+export const confirmOwnershipEvidenceUploads = async (results: unknown, actorId: string) => {
+    if (!Array.isArray(results) || results.length < 1 || results.length > locationImageUploadConfig.maxFiles) {
+        throw new ApiError(422, 'INVALID_IMAGE_COUNT', 'Hồ sơ phải có từ 1 đến 5 ảnh bằng chứng.');
+    }
+    const user = await User.findById(actorId).select({ role: 1, status: 1 }).lean();
+    if (!user) throw new ApiError(401, 'UNAUTHORIZED', 'Tài khoản không còn tồn tại.');
+    if (user.status === 'locked') throw new ApiError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị khóa.');
+    if (user.role !== 'user') {
+        throw new ApiError(403, 'FORBIDDEN', 'Tài khoản quản trị không thể gửi hồ sơ ownership.');
+    }
+
+    const config = getCloudinaryConfig();
+    const validatedResults = results.map((result) => (
+        validateCloudinaryResult(result, config.cloudName, config.uploadFolder)
+    ));
+    const totalSizeBytes = validatedResults.reduce((sum, result) => sum + result.bytes, 0);
+    if (totalSizeBytes > locationImageUploadConfig.maxTotalSizeBytes) {
+        throw new ApiError(422, 'INVALID_IMAGE_SIZE', 'Tổng dung lượng ảnh không được vượt quá 20 MB.');
+    }
+
+    const expiresIn = locationImageUploadConfig.assetTokenExpiresInSeconds;
+    const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+    return {
+        assets: validatedResults.map((result) => ({
+            assetToken: signOwnershipEvidenceAssetToken({
                 sub: actorId,
                 url: result.secureUrl,
                 publicId: result.publicId,

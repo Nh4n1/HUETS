@@ -1,5 +1,5 @@
-import { CalendarOutlined, CheckCircleOutlined, EllipsisOutlined, EnvironmentOutlined, EyeOutlined, FlagOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
-import { Alert, Avatar, Button, Dropdown, Empty, Input, Pagination, Select, Skeleton } from 'antd'
+import { CheckCircleOutlined, FlagOutlined, SearchOutlined } from '@ant-design/icons'
+import { Alert, Button, Empty, Input, Pagination, Select, Skeleton } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '../../auth/context/useAuth'
@@ -8,12 +8,11 @@ import { createItineraryBookmark } from '../../bookmarks/utils/bookmarkMappers'
 import { ReportModal } from '../../reports/components/ReportModal'
 import { getPublicItinerariesApi } from '../api/itineraryApi'
 import { ItineraryHubHeader } from '../components/ItineraryHubHeader'
+import { ItineraryCard } from '../components/ItineraryCard'
 import styles from './Itinerary.module.css'
 
 const PAGE_SIZE = 12
 const errorMessage = (error, fallback) => error.response?.data?.message ?? fallback
-const firstCover = (itinerary) => itinerary.days.flatMap((day) => day.items).find((item) => item.availability !== 'unavailable' && item.location?.coverImageUrl)?.location?.coverImageUrl
-const countItems = (itinerary) => itinerary.days.reduce((total, day) => total + day.items.length, 0)
 
 export function CommunityItinerariesPage() {
   const { isAuthenticated, user } = useAuth()
@@ -73,45 +72,32 @@ export function CommunityItinerariesPage() {
         <Input allowClear size="large" prefix={<SearchOutlined />} placeholder="Tìm lịch trình, địa điểm..." value={queryInput} onChange={(event) => setQueryInput(event.target.value)} onClear={() => updateParams({ q: '' })} />
         <Select size="large" aria-label="Số ngày" value={days} onChange={(value) => updateParams({ days: value })} options={[{ value: '', label: 'Tất cả số ngày' }, ...[1, 2, 3, 4, 5, 6, 7].map((value) => ({ value: String(value), label: `${value} ngày` }))]} />
         <Select size="large" aria-label="Sắp xếp" value={sort} onChange={(value) => updateParams({ sort: value })} options={[{ value: 'newest', label: 'Mới nhất' }, { value: 'updated', label: 'Cập nhật gần đây' }, { value: 'most_stops', label: 'Nhiều điểm dừng' }]} />
-        <Button size="large" htmlType="submit" type="primary">Tìm kiếm</Button>
       </form>
 
       {!loading && !error ? <div className={styles.resultLine}><strong>{meta.total} hành trình</strong><span>được cộng đồng chia sẻ</span></div> : null}
       {error ? <Alert showIcon type="error" message={error} action={<Button onClick={() => { setLoading(true); setReloadKey((value) => value + 1) }}>Thử lại</Button>} /> : null}
       {loading ? <div className={styles.cardGrid}>{[1, 2, 3, 4, 5, 6].map((key) => <Skeleton.Node key={key} active className={styles.cardSkeleton} />)}</div> : null}
-      {!loading && !error && itineraries.length === 0 ? <section className={styles.emptyPanel}><Empty description={q || days ? 'Không tìm thấy hành trình phù hợp.' : 'Chưa có hành trình nào được chia sẻ.'} /><p>Hãy là người đầu tiên chia sẻ cách bạn khám phá Huế.</p><Link to="/itineraries/new"><Button type="primary">Tạo lịch trình</Button></Link></section> : null}
+      {!loading && !error && itineraries.length === 0 ? <section className={styles.emptyPanel}><Empty description={q || days ? 'Không tìm thấy lịch trình phù hợp.' : 'Chưa có lịch trình nào được chia sẻ.'} /><p>{q || days ? 'Thử thay đổi từ khóa hoặc số ngày.' : 'Hãy là người đầu tiên chia sẻ cách bạn khám phá Huế.'}</p>{q || days ? <Button onClick={() => { setQueryInput(''); updateParams({ q: '', days: '' }) }}>Xóa bộ lọc</Button> : <Link to="/itineraries/new"><Button type="primary">Tạo lịch trình</Button></Link>}</section> : null}
       {!loading && itineraries.length > 0 ? (
         <>
           <section className={styles.cardGrid} aria-label="Lịch trình cộng đồng">
             {itineraries.map((itinerary) => (
-              <article className={styles.itineraryCard} key={itinerary.id}>
-                <div className={styles.cardCover}>{firstCover(itinerary) ? <img src={firstCover(itinerary)} alt="" loading="lazy" /> : <EnvironmentOutlined />}</div>
-                <div className={styles.cardBody}>
-                  <div className={styles.ownerLine}><Avatar size={28} src={itinerary.owner?.avatarUrl} icon={<UserOutlined />} /><span>{itinerary.owner?.displayName ?? 'Thành viên HueTrip'}</span><BookmarkButton bookmark={createItineraryBookmark(itinerary)} /></div>
-                  <div className={styles.updatedLine}>Cập nhật {new Date(itinerary.updatedAt).toLocaleDateString('vi-VN')}</div>
-                  <h2>{itinerary.title}</h2>
-                  <p className={styles.cardDescription}>{itinerary.description || 'Một hành trình khám phá Huế từ cộng đồng.'}</p>
-                  <div className={styles.cardStats}><span><CalendarOutlined /> {itinerary.days.length} ngày</span><span><EnvironmentOutlined /> {countItems(itinerary)} điểm dừng</span></div>
-                  <div className={styles.cardActions}>
-                    <Link to={`/itineraries/${itinerary.id}`}><Button type="primary" icon={<EyeOutlined />}>Xem hành trình</Button></Link>
-                    <Dropdown
-                      menu={{
-                        onClick: ({ key }) => { if (key === 'report') openReport(itinerary) },
-                        items: [{
-                          key: 'report',
-                          icon: reportedItineraryIds.has(itinerary.id) ? <CheckCircleOutlined /> : <FlagOutlined />,
-                          disabled: itinerary.owner?.id === user?.id || reportedItineraryIds.has(itinerary.id),
-                          label: itinerary.owner?.id === user?.id
-                            ? 'Lịch trình của bạn'
-                            : reportedItineraryIds.has(itinerary.id) ? 'Đã báo cáo' : 'Báo cáo',
-                        }],
-                      }}
-                    >
-                      <Button type="text" aria-label="Thêm hành động" icon={<EllipsisOutlined />} />
-                    </Dropdown>
-                  </div>
-                </div>
-              </article>
+              <ItineraryCard
+                key={itinerary.id}
+                itinerary={itinerary}
+                variant="community"
+                detailTo={`/itineraries/${itinerary.id}`}
+                bookmarkAction={<BookmarkButton bookmark={createItineraryBookmark(itinerary)} />}
+                onMenuClick={({ key }) => { if (key === 'report') openReport(itinerary) }}
+                menuItems={[{
+                  key: 'report',
+                  icon: reportedItineraryIds.has(itinerary.id) ? <CheckCircleOutlined /> : <FlagOutlined />,
+                  disabled: itinerary.owner?.id === user?.id || reportedItineraryIds.has(itinerary.id),
+                  label: itinerary.owner?.id === user?.id
+                    ? 'Lịch trình của bạn'
+                    : reportedItineraryIds.has(itinerary.id) ? 'Đã báo cáo' : 'Báo cáo',
+                }]}
+              />
             ))}
           </section>
           <div className={styles.pagination}><Pagination current={page} pageSize={PAGE_SIZE} total={meta.total} hideOnSinglePage onChange={(nextPage) => updateParams({ page: nextPage === 1 ? '' : nextPage })} /></div>
