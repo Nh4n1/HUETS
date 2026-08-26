@@ -48,6 +48,8 @@ import { VoucherClaimDetailPage } from '../features/vouchers/pages/VoucherClaimD
 import { OwnerDevicesPage } from '../features/redemption/pages/OwnerDevicesPage'
 import { RedemptionSetupPage } from '../features/redemption/pages/RedemptionSetupPage'
 import { RedemptionOperatorPage } from '../features/redemption/pages/RedemptionOperatorPage'
+import { MyContributionDetailPage } from '../features/locations/pages/MyContributionDetailPage'
+import { EditMyContributionPage } from '../features/locations/pages/EditMyContributionPage'
 
 import { ItinerariesPage } from '../features/itineraries/pages/ItinerariesPage'
 import { ItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
@@ -200,6 +202,13 @@ export const router = createBrowserRouter([
           {
             path: 'vouchers/mine/:claimId',
             Component: VoucherClaimDetailPage,
+            path: 'locations/mine/:locationId',
+            Component: MyContributionDetailPage,
+          },
+
+          {
+            path: 'locations/mine/:locationId/edit',
+            Component: EditMyContributionPage,
           },
 
           {

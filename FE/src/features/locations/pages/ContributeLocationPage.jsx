@@ -9,7 +9,7 @@ export function ContributeLocationPage() {
 
   function handleSuccess() {
     message.success('Cảm ơn bạn đã đóng góp! Địa điểm sẽ được hiển thị sau khi quản trị viên duyệt.')
-    navigate('/locations')
+    navigate('/locations/mine')
   }
 
   return (

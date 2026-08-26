@@ -82,6 +82,67 @@ export const getMyLocations = asyncHandler(async (req: Request, res: Response) =
     return sendSuccess(res, 200, result.data, result.meta);
 });
 
+// [GET] /api/me/locations/:locationId
+export const getMyLocationById = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    const locationId = req.params.locationId;
+    const location = await locationService.getMyLocationById(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.user,
+    );
+    return sendSuccess(res, 200, location);
+});
+
+// [PATCH] /api/me/locations/:locationId
+export const updateMyLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    const locationId = req.params.locationId;
+    const result = await locationService.updateMyLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body,
+        req.user,
+    );
+    await Promise.allSettled(result.removedPublicIds.map((publicId) => deleteLocationImage(publicId)));
+    return sendSuccess(res, 200, result.location);
+});
+
+// [POST] /api/me/locations/:locationId/resubmit
+export const resubmitMyLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    const locationId = req.params.locationId;
+    const location = await locationService.resubmitMyLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body,
+        req.user,
+    );
+    return sendSuccess(res, 200, location);
+});
+
+// [POST] /api/me/locations/:locationId/withdraw
+export const withdrawMyLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    const locationId = req.params.locationId;
+    const location = await locationService.withdrawMyLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body,
+        req.user,
+    );
+    return sendSuccess(res, 200, location);
+});
+
+// [DELETE] /api/me/locations/:locationId
+export const deleteMyWithdrawnLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    const locationId = req.params.locationId;
+    const result = await locationService.deleteMyWithdrawnLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body ?? {},
+        req.user,
+    );
+    await Promise.allSettled(result.removedPublicIds.map((publicId) => deleteLocationImage(publicId)));
+    return sendSuccess(res, 200, { deleted: result.deleted });
+});
+
 // [GET] /api/admin/locations/moderation
 export const getAdminLocations = asyncHandler(async (req: Request, res: Response) => {
     const query: locationService.AdminLocationQuery = {};
