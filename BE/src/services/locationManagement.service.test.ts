@@ -224,9 +224,9 @@ describe('admin location management', () => {
         expect(updateSpy).not.toHaveBeenCalled();
     });
 
-    it('soft deletes a location with an atomic updatedAt precondition', async () => {
+    it('soft deletes a location without deleting its bookmarks', async () => {
         mockActiveManager();
-        const deleteBookmarks = vi.spyOn(Bookmark, 'deleteMany').mockResolvedValue({ deletedCount: 2 } as never);
+        const deleteBookmarks = vi.spyOn(Bookmark, 'deleteMany');
         const updateSpy = vi.spyOn(Location, 'findOneAndUpdate').mockResolvedValue(
             locationDocument({ status: 'hidden', isDeleted: true, deletedBy: adminId }) as never,
         );
@@ -261,7 +261,7 @@ describe('admin location management', () => {
             { new: true, runValidators: true },
         );
         expect(result).toEqual({ deleted: true });
-        expect(deleteBookmarks).toHaveBeenCalledWith({ targetType: 'location', targetId: locationId });
+        expect(deleteBookmarks).not.toHaveBeenCalled();
     });
 
     it('does not soft delete a pending or approved location', async () => {

@@ -141,10 +141,10 @@ export const getUserBookmarks = async (userId: string, rawType?: string) => {
             availability: available ? 'available' as const : 'unavailable' as const,
             unavailableReason: available
                 ? null
-                : location?.status === 'hidden'
-                    ? 'hidden' as const
-                    : location?.isDeleted === true || !location
-                        ? 'removed' as const
+                : location?.isDeleted === true || !location
+                    ? 'removed' as const
+                    : location.status === 'hidden'
+                        ? 'hidden' as const
                         : 'not_public' as const,
         };
     });

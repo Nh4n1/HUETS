@@ -39,6 +39,21 @@ afterEach(() => {
 });
 
 describe('location bookmark availability', () => {
+    it('keeps a soft-deleted location bookmark but marks it removed', async () => {
+        mockBookmarkList();
+        mockLocationList('hidden', true);
+
+        const result = await getUserBookmarks(userId.toString());
+
+        expect(result.location).toEqual([
+            expect.objectContaining({
+                targetId: locationId.toString(),
+                availability: 'unavailable',
+                unavailableReason: 'removed',
+            }),
+        ]);
+    });
+
     it('keeps a hidden location bookmark but marks it unavailable', async () => {
         mockBookmarkList();
         mockLocationList('hidden');
