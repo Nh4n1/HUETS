@@ -45,7 +45,7 @@ export function BusinessLocationsPage() {
                 <Typography.Title level={4}>{location?.name}</Typography.Title>
                 <p>{location?.formattedAddress}</p>
                 <div className={styles.locationCardActions}>
-                  <Link to={`/locations/${item.locationId}`}><Button>Xem trên HueTrip</Button></Link>
+                  <Link to={`/locations/${item.locationId}`}><Button>Xem trên Trang cộng đồng</Button></Link>
                   <Link to={`/business/locations/${item.locationId}/vouchers`}><Button type="primary" disabled={!operational}>Quản lý Voucher</Button></Link>
                   <Link to={`/business/locations/${item.locationId}/devices`}><Button disabled={!operational}>Thiết bị quầy</Button></Link>
                 </div>

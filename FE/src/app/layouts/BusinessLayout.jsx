@@ -1,11 +1,14 @@
 import {
+  BarChartOutlined,
   DashboardOutlined,
   EnvironmentOutlined,
   FileProtectOutlined,
+  GiftOutlined,
   HomeOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  MobileOutlined,
   PlusCircleOutlined,
   ShopOutlined,
   UserOutlined,
@@ -47,7 +50,10 @@ export function BusinessLayout() {
   const menuItems = useMemo(() => hasVerifiedOwnership ? [
     { key: '/business', icon: <DashboardOutlined />, label: <Link to="/business">Tổng quan</Link> },
     { key: '/business/locations', icon: <EnvironmentOutlined />, label: <Link to="/business/locations">Địa điểm của tôi</Link> },
-    { key: '/business/ownerships', icon: <FileProtectOutlined />, label: <Link to="/business/ownerships">Hồ sơ xác minh</Link> },
+    { key: 'voucher-placeholder', icon: <GiftOutlined />, label: <a href="#" onClick={(event) => event.preventDefault()}>Voucher</a> },
+    { key: 'device-placeholder', icon: <MobileOutlined />, label: <a href="#" onClick={(event) => event.preventDefault()}>Thiết bị xác nhận</a> },
+    { key: '/business/ownerships', icon: <FileProtectOutlined />, label: <Link to="/business/ownerships">Quyền quản lý địa điểm</Link> },
+    { key: 'analytics-placeholder', icon: <BarChartOutlined />, label: <a href="#" onClick={(event) => event.preventDefault()}>Thống kê</a> },
   ] : [
     { key: '/business/ownerships', icon: <FileProtectOutlined />, label: <Link to="/business/ownerships">Trạng thái xác minh</Link> },
     { key: '/business/register', icon: <PlusCircleOutlined />, label: <Link to="/business/register">Đăng ký địa điểm kinh doanh</Link> },
