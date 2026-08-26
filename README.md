@@ -1,182 +1,112 @@
-# HUETS
+# HueTrip
 
-HUETS là ứng dụng hỗ trợ khám phá địa điểm và xây dựng lịch trình du lịch tại Huế. Dự án gồm:
+HueTrip là nền tảng web hỗ trợ **khám phá địa điểm và xây dựng lịch trình du lịch tại Thành phố Huế**.
 
-- `FE`: giao diện React, Vite và Ant Design.
-- `BE`: REST API Express, TypeScript và MongoDB.
-- `docs`: tài liệu bổ sung của dự án.
+Hệ thống tập trung thông tin địa điểm du lịch, cho phép người dùng khám phá, đóng góp và đánh giá địa điểm, xây dựng lịch trình cá nhân, lưu các nội dung quan tâm và sử dụng AI để hỗ trợ tìm kiếm cũng như lập kế hoạch chuyến đi.
+
+## Chức năng chính
+
+* Đăng ký, đăng nhập và quản lý tài khoản cá nhân.
+* Khám phá, tìm kiếm và lọc các địa điểm tại Huế.
+* Xem thông tin chi tiết và vị trí địa điểm trên bản đồ.
+* Đóng góp địa điểm mới và theo dõi trạng thái kiểm duyệt.
+* Đánh giá và xếp hạng địa điểm.
+* Lưu địa điểm và lịch trình yêu thích.
+* Tạo và quản lý lịch trình du lịch nhiều ngày.
+* Tìm kiếm địa điểm bằng ngôn ngữ tự nhiên với sự hỗ trợ của AI.
+* Hỗ trợ tạo lịch trình bằng AI.
+* Báo cáo và kiểm duyệt nội dung.
+* Hỗ trợ chủ sở hữu quản lý địa điểm.
+* Quản lý voucher, nhận voucher và xác nhận sử dụng ưu đãi.
+* Hệ thống thông báo cho người dùng.
+* Trang quản trị dành cho Moderator và Admin.
+
+## Công nghệ sử dụng
+
+### Frontend
+
+* React
+* Vite
+* JavaScript / JSX
+* Ant Design
+* React Router
+* Axios
+* Leaflet / React Leaflet
+* Vitest
+
+### Backend
+
+* Node.js
+* Express.js
+* TypeScript
+* MongoDB
+* Mongoose
+* Zod
+* Vitest
+
+### Dịch vụ tích hợp
+
+* Google GenAI
+* Cloudinary
+
+## Cấu trúc project
+
+```text
+HUETS/
+├── BE/             # Backend REST API
+├── FE/             # Frontend React
+└── README.md
+```
 
 ## Yêu cầu hệ thống
 
-Trước khi cài đặt, cần có:
+* Node.js 22 trở lên
+* npm
+* MongoDB hoặc MongoDB Atlas
 
-- [Node.js](https://nodejs.org/) 22 trở lên (khuyến nghị dùng bản LTS).
-- npm (được cài cùng Node.js).
-- [MongoDB](https://www.mongodb.com/docs/manual/installation/) chạy trên máy, hoặc một MongoDB connection string từ MongoDB Atlas.
-- Tài khoản [Cloudinary](https://cloudinary.com/) nếu cần sử dụng chức năng tải ảnh lên.
+## Cài đặt và chạy project
 
-Kiểm tra phiên bản đã cài:
-
-```bash
-node --version
-npm --version
-```
-
-## Cài đặt
-
-### 1. Tải mã nguồn
+Clone repository:
 
 ```bash
 git clone https://github.com/Nh4n1/HUETS.git
 cd HUETS
 ```
 
-### 2. Cài dependencies
-
-Cài riêng dependencies cho backend và frontend:
-
-```bash
-cd BE
-npm install
-cd ../FE
-npm install
-cd ..
-```
-
-Có thể dùng `npm ci` thay cho `npm install` để cài chính xác theo `package-lock.json`.
-
-### 3. Cấu hình backend
-
-Tạo file `BE/.env` từ file mẫu:
-
-```bash
-cd BE
-cp .env.example .env
-```
-
-Trên Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Cập nhật `BE/.env`:
-
-```dotenv
-PORT=3000
-NODE_ENV=development
-DEV_MONGO_URI=mongodb://localhost:27017/huetrip
-
-CLIENT_ORIGIN=http://localhost:5173
-
-CLOUDINARY_CLOUD_NAME=change_me
-CLOUDINARY_API_KEY=change_me
-CLOUDINARY_API_SECRET=change_me
-CLOUDINARY_UPLOAD_FOLDER=location-images
-
-JWT_ACCESS_SECRET=replace_with_a_long_random_secret
-JWT_REFRESH_SECRET=replace_with_another_long_random_secret
-JWT_ACCESS_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
-LOCATION_ASSET_TOKEN_SECRET=replace_with_a_long_random_secret
-```
-
-Lưu ý:
-
-- Thay các giá trị `change_me` và secret trước khi sử dụng.
-- Có thể bỏ qua thông tin Cloudinary khi chỉ chạy các chức năng không tải ảnh. Endpoint upload ảnh sẽ báo lỗi nếu thiếu cấu hình này.
-- Nếu dùng MongoDB Atlas, thay `DEV_MONGO_URI` bằng connection string của cluster.
-- `CLIENT_ORIGIN` hỗ trợ nhiều origin, phân tách bằng dấu phẩy.
-
-### 4. Cấu hình frontend
-
-Tạo file `FE/.env` từ file mẫu:
-
-```bash
-cd ../FE
-cp .env.example .env
-```
-
-Trên Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Nội dung mặc định:
-
-```dotenv
-VITE_API_BASE_URL=http://localhost:3000/api
-```
-
-## Chạy dự án
-
-Đảm bảo MongoDB đang hoạt động, sau đó mở hai terminal.
-
-Terminal 1 — backend:
-
-```bash
-cd BE
-npm run dev
-```
-
-Backend mặc định chạy tại `http://localhost:3000`.
-
-Terminal 2 — frontend:
-
-```bash
-cd FE
-npm run dev
-```
-
-Mở địa chỉ Vite hiển thị trong terminal, mặc định là `http://localhost:5173`.
-
-## Các lệnh hữu ích
-
 ### Backend
 
-Chạy test:
-
 ```bash
 cd BE
-npm test
+npm install
+cp .env.example .env
+npm run dev
 ```
 
-Build và chạy bản production:
+Backend mặc định chạy tại:
 
-```bash
-npm run build
-npm start
+```text
+http://localhost:3000
 ```
 
 ### Frontend
 
+Mở terminal khác:
+
 ```bash
 cd FE
-npm test
-npm run lint
-npm run build
-npm run preview
+npm install
+cp .env.example .env
+npm run dev
 ```
 
-## Cấu trúc thư mục
+Frontend mặc định chạy tại:
 
 ```text
-HUETS/
-├── BE/             # Express API, models, services và tests
-├── FE/             # React UI, pages, components và API clients
-├── docs/           # Tài liệu dự án
-└── README.md
+http://localhost:5173
 ```
 
-## Xử lý lỗi thường gặp
+> Cần cấu hình các biến môi trường trong `BE/.env` và `FE/.env` trước khi sử dụng đầy đủ các chức năng của hệ thống.
 
-- **Không kết nối được MongoDB:** kiểm tra MongoDB service và giá trị `DEV_MONGO_URI`.
-- **Frontend không gọi được API:** kiểm tra backend đang chạy, `VITE_API_BASE_URL` và `CLIENT_ORIGIN`.
-- **Lỗi CORS:** thêm đúng origin của frontend vào `CLIENT_ORIGIN`, không thêm đường dẫn phía sau origin.
-- **Không upload được ảnh:** kiểm tra ba biến `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` và `CLOUDINARY_API_SECRET`.
-- **Port đã được sử dụng:** đổi `PORT` của backend; nếu đổi port, cập nhật cả `VITE_API_BASE_URL`.
+## Mục đích dự án
 
-## Bảo mật
-
-Không commit file `.env`, JWT secret, MongoDB connection string có mật khẩu hoặc thông tin xác thực Cloudinary lên Git.
+HueTrip được phát triển phục vụ mục đích học tập và nghiên cứu về xây dựng nền tảng web du lịch cộng đồng, kết hợp các chức năng quản lý địa điểm, lập lịch trình và ứng dụng trí tuệ nhân tạo để hỗ trợ trải nghiệm du lịch tại Huế.
