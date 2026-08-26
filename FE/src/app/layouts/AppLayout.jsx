@@ -18,6 +18,7 @@ import { useAuth } from '../../features/auth/context/useAuth'
 import { FeedbackDrawer } from '../../features/feedback/components/FeedbackDrawer'
 import { NotificationBell } from '../../features/notifications/components/NotificationBell'
 import { getBusinessSummaryApi } from '../../features/business/api/businessApi'
+import { getBusinessNavigation } from '../../features/business/businessNavigation'
 import styles from './AppLayout.module.css'
 
 function Brand() {
@@ -64,6 +65,11 @@ export function AppLayout() {
     }
   }
 
+  const businessNavigation = useMemo(
+    () => getBusinessNavigation(businessSummary?.menuState),
+    [businessSummary?.menuState],
+  )
+
   const userMenuItems = useMemo(() => {
     const items = [
       {
@@ -89,18 +95,12 @@ export function AppLayout() {
     ]
 
     if (user?.role === 'user') {
-      const businessLabel = businessSummary?.menuState === 'active_owner'
-        ? 'Quản lý doanh nghiệp'
-        : businessSummary?.menuState === 'has_requests'
-          ? 'Trạng thái đăng ký kinh doanh'
-          : 'Đăng ký địa điểm kinh doanh'
       items.push({
         key: 'business',
         icon: <ShopOutlined />,
-        label: <Link to={businessSummary?.menuState === 'none' ? '/business/register' : '/business'}>{businessLabel}</Link>,
+        label: <Link to={businessNavigation.to}>{businessNavigation.label}</Link>,
       })
     }
-
     if (user?.role === 'admin' || user?.role === 'mod') {
       items.push({
         key: 'admin',
@@ -115,7 +115,7 @@ export function AppLayout() {
       { key: 'logout', danger: true, label: 'Đăng xuất' },
     )
     return items
-  }, [businessSummary?.menuState, user?.role])
+  }, [businessNavigation, user?.role])
 
   const handleUserMenu = ({ key }) => {
     if (key === 'logout') handleLogout()
@@ -201,7 +201,9 @@ export function AppLayout() {
                 <Link to="/itineraries/mine">Lịch trình của tôi</Link>
                 <Link to="/locations/contribute">Đóng góp địa điểm</Link>
                 <Link to="/vouchers/mine">Voucher của tôi</Link>
-                {user.role === 'user' ? <Link to="/business">Quản lý doanh nghiệp</Link> : null}
+                {user.role === 'user' ? (
+                  <Link to={businessNavigation.to}>{businessNavigation.label}</Link>
+                ) : null}
                 <Button type="text" onClick={openFeedback}>Góp ý cho HueTrip</Button>
                 {user.role === 'admin' || user.role === 'mod' ? <Link to="/admin">Trang quản trị</Link> : null}
                 <Button type="text" danger loading={loggingOut} onClick={handleLogout}>
@@ -247,7 +249,9 @@ export function AppLayout() {
           <div className={styles.footerColumn}>
             <h2>Tài khoản</h2>
             {user ? <Link to="/profile">Hồ sơ của tôi</Link> : <Link to="/login">Đăng nhập</Link>}
-            {user?.role === 'user' ? <Link to="/business">Quản lý doanh nghiệp</Link> : null}
+            {user?.role === 'user' ? (
+              <Link to={businessNavigation.to}>{businessNavigation.label}</Link>
+            ) : null}
             {user ? null : <Link to="/register">Tạo tài khoản</Link>}
             {user?.role === 'admin' || user?.role === 'mod' ? <Link to="/admin">Trang quản trị</Link> : null}
           </div>

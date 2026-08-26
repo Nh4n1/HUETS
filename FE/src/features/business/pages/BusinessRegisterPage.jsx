@@ -137,7 +137,7 @@ export function BusinessRegisterPage() {
     <main className={styles.page}>
       <header className={styles.hero}>
         <div><span className={styles.eyebrow}>HueTrip Business</span><Typography.Title level={2}>Đăng ký địa điểm kinh doanh</Typography.Title><p>Quyền Business được xác minh riêng cho từng địa điểm.</p></div>
-        <Link to="/business"><Button>Business Center</Button></Link>
+        <Link to="/business"><Button>Tổng quan Business</Button></Link>
       </header>
       <Steps current={current} responsive items={[
         { title: 'Tìm địa điểm' }, { title: 'Xác nhận địa điểm' }, { title: 'Bằng chứng' }, { title: 'Kiểm tra và gửi' },

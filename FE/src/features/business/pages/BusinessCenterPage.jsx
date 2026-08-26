@@ -27,7 +27,7 @@ export function BusinessCenterPage() {
       setItems(response.data ?? [])
       setErrorMessage('')
     } catch (error) {
-      setErrorMessage(error.response?.data?.message ?? 'Không thể tải Business Center.')
+      setErrorMessage(error.response?.data?.message ?? 'Không thể tải hồ sơ xác minh.')
     } finally {
       setLoading(false)
     }
@@ -86,7 +86,7 @@ export function BusinessCenterPage() {
   return (
     <main className={styles.page}>
       <header className={styles.hero}>
-        <div><span className={styles.eyebrow}>HueTrip Business</span><Typography.Title level={2}>Quản lý doanh nghiệp</Typography.Title><p>Quản lý yêu cầu và quyền Business theo từng Location.</p></div>
+        <div><span className={styles.eyebrow}>HueTrip Business</span><Typography.Title level={2}>Hồ sơ xác minh</Typography.Title><p>Theo dõi yêu cầu và trạng thái quyền quản lý theo từng địa điểm.</p></div>
         <Link to="/business/register"><Button type="primary" size="large" icon={<PlusOutlined />}>Thêm địa điểm kinh doanh</Button></Link>
       </header>
       {errorMessage ? <Alert type="error" showIcon message={errorMessage} action={<Button onClick={load}>Thử lại</Button>} /> : null}
