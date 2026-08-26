@@ -42,6 +42,7 @@ import { OwnerVoucherListPage } from '../features/vouchers/pages/OwnerVoucherLis
 import { OwnerVoucherCreatePage } from '../features/vouchers/pages/OwnerVoucherCreatePage'
 import { OwnerVoucherDetailPage } from '../features/vouchers/pages/OwnerVoucherDetailPage'
 import { PublicVoucherDetailPage } from '../features/vouchers/pages/PublicVoucherDetailPage'
+import { PublicVoucherListPage } from '../features/vouchers/pages/PublicVoucherListPage'
 import { VoucherWalletPage } from '../features/vouchers/pages/VoucherWalletPage'
 import { VoucherClaimDetailPage } from '../features/vouchers/pages/VoucherClaimDetailPage'
 import { OwnerDevicesPage } from '../features/redemption/pages/OwnerDevicesPage'
@@ -84,6 +85,11 @@ export const router = createBrowserRouter([
       {
         path: 'explore',
         Component: ExplorePage,
+      },
+
+      {
+        path: 'vouchers',
+        Component: PublicVoucherListPage,
       },
 
       {

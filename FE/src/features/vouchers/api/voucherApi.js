@@ -35,6 +35,11 @@ export async function getPublicLocationVouchersApi(locationId) {
   return response.data
 }
 
+export async function getPublicVouchersApi(params = {}) {
+  const response = await httpClient.get('/vouchers', { params })
+  return response.data
+}
+
 export async function getPublicVoucherApi(voucherId) {
   const response = await httpClient.get(`/vouchers/${voucherId}`)
   return response.data

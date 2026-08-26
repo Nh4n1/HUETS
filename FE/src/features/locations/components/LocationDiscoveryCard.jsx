@@ -1,4 +1,4 @@
-import { ArrowRightOutlined, EnvironmentOutlined, StarFilled } from '@ant-design/icons'
+import { ArrowRightOutlined, EnvironmentOutlined, StarFilled, TagOutlined } from '@ant-design/icons'
 import { Link } from 'react-router'
 import { getRatingLabel, getTagLabel } from '../locationPresentation'
 import styles from './LocationDiscoveryCard.module.css'
@@ -14,6 +14,9 @@ export function LocationDiscoveryCard({ location }) {
               onError={(event) => { event.currentTarget.style.display = 'none' }} />
           ) : null}
           <span className={styles.category}>{location.category?.name}</span>
+          {location.voucherSummary?.hasClaimableVoucher ? (
+            <span className={styles.voucherBadge}><TagOutlined aria-hidden="true" /><span>Có ưu đãi</span></span>
+          ) : null}
         </div>
         <div className={styles.body}>
           <div className={styles.heading}>

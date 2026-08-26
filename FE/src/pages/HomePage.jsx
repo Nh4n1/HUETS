@@ -25,7 +25,7 @@ export function HomePage() {
     let cancelled = false
 
     Promise.allSettled([
-      getPublicLocationsApi({ page: 1, pageSize: 8, sortBy: 'recommended' }),
+      getPublicLocationsApi({ page: 1, pageSize: 8, sortBy: 'recommended', includeVoucherSummary: true }),
       getCategoriesApi(),
     ])
       .then(([locationResult, categoryResult]) => {
