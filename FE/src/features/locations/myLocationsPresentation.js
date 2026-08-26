@@ -1,7 +1,7 @@
 export const LOCATION_STATUS = {
   pending: { label: 'Chờ kiểm duyệt', color: 'gold' },
   approved: { label: 'Đã duyệt', color: 'green' },
-  rejected: { label: 'Đã từ chối', color: 'red' },
+  rejected: { label: 'Cần bổ sung', color: 'red' },
   withdrawn: { label: 'Đã rút', color: 'default' },
   hidden: { label: 'Đã ẩn', color: 'volcano' },
 }

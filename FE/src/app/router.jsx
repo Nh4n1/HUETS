@@ -33,6 +33,8 @@ import { LocationDetailPage } from '../features/locations/pages/LocationDetailPa
 import { LocationsPage } from '../features/locations/pages/LocationsPage'
 import { ContributeLocationPage } from '../features/locations/pages/ContributeLocationPage'
 import { MyContributionsPage } from '../features/locations/pages/MyContributionsPage'
+import { MyContributionDetailPage } from '../features/locations/pages/MyContributionDetailPage'
+import { EditMyContributionPage } from '../features/locations/pages/EditMyContributionPage'
 
 import { ItinerariesPage } from '../features/itineraries/pages/ItinerariesPage'
 import { ItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
@@ -129,6 +131,16 @@ export const router = createBrowserRouter([
           {
             path: 'locations/mine',
             Component: MyContributionsPage,
+          },
+
+          {
+            path: 'locations/mine/:locationId',
+            Component: MyContributionDetailPage,
+          },
+
+          {
+            path: 'locations/mine/:locationId/edit',
+            Component: EditMyContributionPage,
           },
 
           {
