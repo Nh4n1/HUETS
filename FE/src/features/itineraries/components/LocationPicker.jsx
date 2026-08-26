@@ -24,6 +24,7 @@ export function LocationPicker({
   multiple = false,
   onConfirm,
   confirmLabel,
+  footerNote,
 }) {
   const { bookmarks } = useBookmarks()
   const [mode, setMode] = useState('search')
@@ -115,8 +116,8 @@ export function LocationPicker({
   return (
     <div className={styles.locationPicker}>
       <div className={styles.pickerTabs} role="tablist" aria-label="Nguồn địa điểm">
-        <button className={mode === 'search' ? styles.selectedPickerTab : ''} type="button" onClick={() => setMode('search')}><SearchOutlined /> Tất cả</button>
-        <button className={mode === 'saved' ? styles.selectedPickerTab : ''} type="button" onClick={() => setMode('saved')}><BookOutlined /> Đã lưu ({savedLocations.length})</button>
+        <button role="tab" aria-selected={mode === 'search'} className={mode === 'search' ? styles.selectedPickerTab : ''} type="button" onClick={() => setMode('search')}><SearchOutlined /> Tất cả</button>
+        <button role="tab" aria-selected={mode === 'saved'} className={mode === 'saved' ? styles.selectedPickerTab : ''} type="button" onClick={() => setMode('saved')}><BookOutlined /> Đã lưu ({savedLocations.length})</button>
       </div>
       {mode === 'search' ? (
         <div className={styles.pickerFilters}>
@@ -146,9 +147,15 @@ export function LocationPicker({
         })}
       </div>
       {multiple ? (
-        <Button block type="primary" disabled={!selectedLocations.size} loading={confirming} onClick={confirm}>
-          {confirmLabel ?? `Thêm ${selectedLocations.size} địa điểm`}
-        </Button>
+        <>
+          {footerNote ? <p className={styles.distributionNote}>{footerNote}</p> : null}
+          <div className={styles.pickerConfirmation}>
+            <strong>Đã chọn {selectedLocations.size} địa điểm</strong>
+            <Button type="primary" disabled={!selectedLocations.size} loading={confirming} onClick={confirm}>
+              {confirmLabel ?? `Tiếp tục với ${selectedLocations.size} địa điểm →`}
+            </Button>
+          </div>
+        </>
       ) : null}
       {error ? <p className={styles.fieldError}>{error}</p> : null}
     </div>
