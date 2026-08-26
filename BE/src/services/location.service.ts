@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import type { ClientSession } from 'mongoose';
 import { verifyLocationImageAssetToken } from '../helpers/locationAssetToken.helper.ts';
 import { normalizeSearchText } from '../helpers/text.helper.ts';
 import Category from '../models/category.model.ts';
@@ -631,7 +632,11 @@ const toAdminLocationDetail = async (location: ILocation) => {
     };
 };
 
-export const createLocation = async (input: CreateLocationInput, actor: Actor) => {
+export const createLocation = async (
+    input: CreateLocationInput,
+    actor: Actor,
+    options: { session?: ClientSession } = {},
+) => {
     if (!mongoose.isValidObjectId(actor.id)) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Tài khoản không hợp lệ.');
     }
@@ -679,7 +684,7 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
         description,
     ].join(' '));
 
-    const location = await Location.create({
+    const location = new Location({
         createdBy: user._id,
         name,
         normalizedName,
@@ -717,6 +722,7 @@ export const createLocation = async (input: CreateLocationInput, actor: Actor) =
         deletedFromStatus: null,
         searchText,
     });
+    await location.save(options.session ? { session: options.session } : undefined);
 
     return {
         ...toLocationDetail(location, category.name),

@@ -34,6 +34,15 @@ export const confirmReportImages = asyncHandler(async (req: Request, res: Respon
     return sendSuccess(res, 201, await uploadService.confirmReportImageUploads(req.body?.results, req.user.id));
 });
 
+export const confirmOwnershipEvidence = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    return sendSuccess(
+        res,
+        201,
+        await uploadService.confirmOwnershipEvidenceUploads(req.body?.results, req.user.id),
+    );
+});
+
 export const deleteReportImage = asyncHandler(async (req: Request, res: Response) => {
     if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
     await uploadService.deleteUploadedImage(req.body?.publicId);

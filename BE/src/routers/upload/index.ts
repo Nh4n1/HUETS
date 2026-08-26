@@ -68,6 +68,20 @@ router.post(
     uploadController.deleteReportImage,
 );
 
+router.get(
+    '/ownership-evidence/signature',
+    authenticate,
+    authorize('user'),
+    uploadController.getUploadSignature,
+);
+
+router.post(
+    '/ownership-evidence',
+    authenticate,
+    authorize('user'),
+    uploadController.confirmOwnershipEvidence,
+);
+
 router.post(
     '/location-images/delete',
     authenticate,
