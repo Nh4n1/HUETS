@@ -24,3 +24,8 @@ export async function withdrawMyLocationApi(locationId, payload) {
   const response = await httpClient.post(`/me/locations/${locationId}/withdraw`, payload)
   return response.data
 }
+
+export async function deleteMyWithdrawnLocationApi(locationId, payload) {
+  const response = await httpClient.delete(`/me/locations/${locationId}`, { data: payload })
+  return response.data
+}

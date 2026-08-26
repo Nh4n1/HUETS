@@ -2,8 +2,15 @@ import mongoose from 'mongoose';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Category from '../models/category.model.ts';
 import Location from '../models/location.model.ts';
+import Notification from '../models/notification.model.ts';
 import TagGroup from '../models/tagGroup.model.ts';
-import { resubmitMyLocation, updateMyLocation, withdrawMyLocation } from './location.service.ts';
+import Bookmark from '../models/bookmark.model.ts';
+import {
+    deleteMyWithdrawnLocation,
+    resubmitMyLocation,
+    updateMyLocation,
+    withdrawMyLocation,
+} from './location.service.ts';
 
 const ownerId = new mongoose.Types.ObjectId();
 const locationId = new mongoose.Types.ObjectId();
@@ -157,5 +164,46 @@ describe('owner location workflow', () => {
             expectedStatus: 'rejected',
             expectedUpdatedAt: expectedUpdatedAt.toISOString(),
         }, actor)).rejects.toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
+    });
+
+    it('permanently deletes only an owned withdrawn contribution and its related records', async () => {
+        const withdrawn = locationDocument({
+            status: 'withdrawn',
+            images: [{
+                _id: imageId,
+                url: 'https://example.com/image.jpg',
+                publicId: 'locations/owner/image',
+                position: 0,
+            }],
+        });
+        const deleteLocationSpy = vi.spyOn(Location, 'findOneAndDelete').mockResolvedValue(withdrawn as never);
+        const deleteBookmarksSpy = vi.spyOn(Bookmark, 'deleteMany').mockResolvedValue({ deletedCount: 0 } as never);
+        const deleteNotificationsSpy = vi.spyOn(Notification, 'deleteMany').mockResolvedValue({ deletedCount: 1 } as never);
+
+        const result = await deleteMyWithdrawnLocation(locationId.toString(), {
+            expectedStatus: 'withdrawn',
+            expectedUpdatedAt: expectedUpdatedAt.toISOString(),
+        }, actor);
+
+        expect(deleteLocationSpy).toHaveBeenCalledWith({
+            _id: locationId.toString(),
+            createdBy: actor.id,
+            isDeleted: { $ne: true },
+            status: 'withdrawn',
+            updatedAt: expectedUpdatedAt,
+        });
+        expect(deleteBookmarksSpy).toHaveBeenCalledWith({ targetType: 'location', targetId: locationId });
+        expect(deleteNotificationsSpy).toHaveBeenCalledWith({ locationId });
+        expect(result).toEqual({ deleted: true, removedPublicIds: ['locations/owner/image'] });
+    });
+
+    it('does not permanently delete a contribution before it is withdrawn', async () => {
+        const deleteSpy = vi.spyOn(Location, 'findOneAndDelete');
+
+        await expect(deleteMyWithdrawnLocation(locationId.toString(), {
+            expectedStatus: 'rejected',
+            expectedUpdatedAt: expectedUpdatedAt.toISOString(),
+        }, actor)).rejects.toMatchObject({ statusCode: 400, code: 'INVALID_STATUS_TRANSITION' });
+        expect(deleteSpy).not.toHaveBeenCalled();
     });
 });

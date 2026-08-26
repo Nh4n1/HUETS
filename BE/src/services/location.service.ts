@@ -4,6 +4,7 @@ import { normalizeSearchText } from '../helpers/text.helper.ts';
 import Category from '../models/category.model.ts';
 import Bookmark from '../models/bookmark.model.ts';
 import Location from '../models/location.model.ts';
+import Notification from '../models/notification.model.ts';
 import type {
     ILocation,
     ILocationEditSnapshot,
@@ -1299,6 +1300,44 @@ export const withdrawMyLocation = async (
     );
     if (!location) return throwOwnerLocationConflict(locationId, actor);
     return toMyLocationDetail(location);
+};
+
+export const deleteMyWithdrawnLocation = async (
+    locationId: string,
+    input: DeleteLocationInput,
+    actor: Actor,
+) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm đã đóng góp.');
+    }
+    if (input.expectedStatus !== 'withdrawn') {
+        throw new ApiError(
+            400,
+            'INVALID_STATUS_TRANSITION',
+            'Chỉ có thể xóa vĩnh viễn địa điểm đã rút.',
+        );
+    }
+    const expectedUpdatedAt = parseExpectedUpdatedAt(input.expectedUpdatedAt);
+    const location = await Location.findOneAndDelete({
+        _id: locationId,
+        createdBy: actor.id,
+        isDeleted: { $ne: true },
+        status: 'withdrawn',
+        updatedAt: expectedUpdatedAt,
+    });
+    if (!location) return throwOwnerLocationConflict(locationId, actor);
+
+    await Promise.allSettled([
+        Bookmark.deleteMany({ targetType: 'location', targetId: location._id }),
+        Notification.deleteMany({ locationId: location._id }),
+    ]);
+
+    return {
+        deleted: true,
+        removedPublicIds: location.images
+            .map(({ publicId }) => publicId)
+            .filter((publicId): publicId is string => Boolean(publicId)),
+    };
 };
 
 export const deleteAdminLocation = async (

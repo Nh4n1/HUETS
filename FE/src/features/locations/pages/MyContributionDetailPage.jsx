@@ -1,6 +1,7 @@
 import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
+  DeleteOutlined,
   EditOutlined,
   EnvironmentOutlined,
   EyeOutlined,
@@ -10,11 +11,12 @@ import {
 } from '@ant-design/icons'
 import { Alert, App, Button, Image, Skeleton, Tag, Timeline, Typography } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { LocationMap } from '../components/LocationMap'
 import { LocationOpeningHours } from '../components/LocationOpeningHours'
 import {
   getMyLocationApi,
+  deleteMyWithdrawnLocationApi,
   resubmitMyLocationApi,
   withdrawMyLocationApi,
 } from '../api/myLocationsApi'
@@ -41,7 +43,7 @@ const STATUS_COPY = {
   withdrawn: {
     type: 'info',
     title: 'Bạn đã rút đóng góp này',
-    description: 'Thông tin vẫn được lưu trong lịch sử đóng góp của bạn.',
+    description: 'Bạn có thể xem lại hồ sơ hoặc xóa vĩnh viễn nếu không còn cần lưu thông tin.',
   },
   hidden: {
     type: 'warning',
@@ -56,6 +58,7 @@ function DetailSkeleton() {
 
 export function MyContributionDetailPage() {
   const { locationId } = useParams()
+  const navigate = useNavigate()
   const { message, modal } = App.useApp()
   const [location, setLocation] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -131,6 +134,32 @@ export function MyContributionDetailPage() {
     })
   }
 
+  function confirmDelete() {
+    modal.confirm({
+      title: 'Xóa vĩnh viễn địa điểm này?',
+      content: 'Toàn bộ hồ sơ đóng góp và hình ảnh liên quan sẽ bị xóa. Thao tác này không thể hoàn tác.',
+      okText: 'Xóa vĩnh viễn',
+      okButtonProps: { danger: true },
+      cancelText: 'Hủy',
+      onOk: async () => {
+        setActionLoading('delete')
+        try {
+          await deleteMyWithdrawnLocationApi(locationId, {
+            expectedStatus: location.status,
+            expectedUpdatedAt: location.updatedAt,
+          })
+          message.success('Đã xóa vĩnh viễn địa điểm đã đóng góp.')
+          navigate('/locations/mine', { replace: true })
+        } catch (error) {
+          message.error(error.response?.data?.message ?? 'Không thể xóa địa điểm. Vui lòng thử lại.')
+          if (error.response?.data?.code === 'STALE_RESOURCE') await loadLocation()
+          setActionLoading('')
+          throw error
+        }
+      },
+    })
+  }
+
   if (loading) return <DetailSkeleton />
   if (!location) {
     return (
@@ -179,6 +208,11 @@ export function MyContributionDetailPage() {
           {canWithdraw ? (
             <Button danger icon={<StopOutlined />} loading={actionLoading === 'withdraw'} onClick={confirmWithdraw}>
               Rút đóng góp
+            </Button>
+          ) : null}
+          {location.status === 'withdrawn' ? (
+            <Button danger icon={<DeleteOutlined />} loading={actionLoading === 'delete'} onClick={confirmDelete}>
+              Xóa vĩnh viễn
             </Button>
           ) : null}
         </div>

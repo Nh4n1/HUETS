@@ -54,6 +54,12 @@ ownerLocationRouter.patch(
   authorize("user", "mod", "admin"),
   locationController.updateMyLocation,
 );
+ownerLocationRouter.delete(
+  "/:locationId",
+  authenticate,
+  authorize("user", "mod", "admin"),
+  locationController.deleteMyWithdrawnLocation,
+);
 ownerLocationRouter.post(
   "/:locationId/resubmit",
   authenticate,

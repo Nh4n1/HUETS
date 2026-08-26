@@ -123,6 +123,19 @@ export const withdrawMyLocation = asyncHandler(async (req: Request, res: Respons
     return sendSuccess(res, 200, location);
 });
 
+// [DELETE] /api/me/locations/:locationId
+export const deleteMyWithdrawnLocation = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw new ApiError(401, 'UNAUTHORIZED', 'Chưa đăng nhập.');
+    const locationId = req.params.locationId;
+    const result = await locationService.deleteMyWithdrawnLocation(
+        Array.isArray(locationId) ? (locationId[0] ?? '') : (locationId ?? ''),
+        req.body ?? {},
+        req.user,
+    );
+    await Promise.allSettled(result.removedPublicIds.map((publicId) => deleteLocationImage(publicId)));
+    return sendSuccess(res, 200, { deleted: result.deleted });
+});
+
 // [GET] /api/admin/locations/moderation
 export const getAdminLocations = asyncHandler(async (req: Request, res: Response) => {
     const query: locationService.AdminLocationQuery = {};

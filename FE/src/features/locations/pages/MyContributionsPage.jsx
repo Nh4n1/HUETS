@@ -31,7 +31,7 @@ const CARD_COPY = {
   pending: { text: 'Hồ sơ đang được kiểm duyệt. Bạn vẫn có thể chỉnh sửa khi cần.', action: 'Xem hồ sơ', icon: <ClockCircleOutlined /> },
   approved: { text: 'Địa điểm đã được công khai trên Huế Trip.', action: 'Xem chi tiết', icon: <CheckCircleOutlined /> },
   rejected: { text: 'Địa điểm cần được cập nhật trước khi gửi duyệt lại.', action: 'Xem và chỉnh sửa', icon: <EditOutlined /> },
-  withdrawn: { text: 'Bạn đã rút hồ sơ này khỏi hàng chờ kiểm duyệt.', action: 'Xem thông tin', icon: <FileSearchOutlined /> },
+  withdrawn: { text: 'Hồ sơ đã được rút. Bạn có thể xem lại hoặc xóa vĩnh viễn.', action: 'Xem thông tin', icon: <FileSearchOutlined /> },
   hidden: { text: 'Địa điểm đã bị ẩn khỏi nội dung công khai.', action: 'Xem thông tin', icon: <EyeOutlined /> },
 }
 
