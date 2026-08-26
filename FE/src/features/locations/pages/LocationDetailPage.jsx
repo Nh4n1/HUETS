@@ -243,14 +243,6 @@ export function LocationDetailPage() {
             <div className={styles.sideRow}><span>Đánh giá</span><strong>{getRatingLabel(location)}</strong></div>
           </div>
           <div className={styles.sideCard}>
-            <h2>Lên kế hoạch</h2>
-            <p className={styles.sideNote}>Bắt đầu một lịch trình mới với địa điểm này được điền sẵn ở ngày đầu tiên.</p>
-            <Button block type="primary" icon={<CalendarOutlined />} onClick={() => {
-              const destination = `/itineraries/new?locationId=${encodeURIComponent(location.id)}`
-              navigate(isAuthenticated ? destination : '/login', isAuthenticated ? undefined : { state: { from: { pathname: destination } } })
-            }}>Thêm vào lịch trình</Button>
-          </div>
-          <div className={styles.sideCard}>
             <h2>Thông tin chưa chính xác?</h2>
             <p className={styles.sideNote}>Báo cáo nội dung sai, spam hoặc không phù hợp. Góp ý về website dùng kênh Feedback riêng.</p>
             <Button block icon={<FlagOutlined />} disabled={hasReported || reportUnavailable} onClick={handleReportClick}>
