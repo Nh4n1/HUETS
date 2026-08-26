@@ -126,6 +126,7 @@ export interface ModerateLocationVisibilityInput {
 }
 
 export interface UpdateLocationInput extends CreateLocationInput {
+    expectedStatus?: unknown;
     expectedUpdatedAt?: unknown;
     reason?: unknown;
 }
@@ -583,6 +584,30 @@ const toMyLocationSummary = (location: ILocation, categoryNames: Map<string, str
     updatedAt: location.updatedAt,
 });
 
+const toMyLocationDetail = async (location: ILocation) => {
+    const categoryNames = await categoryMapFor([location]);
+    return {
+        ...toLocationDetail(location, categoryNames.get(location.categoryCode) ?? location.categoryCode),
+        moderation: {
+            reviewedAt: location.moderation.reviewedAt,
+            rejectionReason: location.moderation.rejectionReason,
+            submittedAt: location.moderation.submittedAt,
+            withdrawnAt: location.moderation.withdrawnAt,
+            hiddenAt: location.moderation.hiddenAt,
+            hiddenReason: location.moderation.hiddenReason,
+            restoredAt: location.moderation.restoredAt,
+        },
+        editHistory: [...(location.editHistory ?? [])]
+            .sort((left, right) => right.editedAt.getTime() - left.editedAt.getTime())
+            .map((entry) => ({
+                id: entry._id.toString(),
+                editedAt: entry.editedAt,
+                reason: entry.reason,
+                changedFields: entry.changedFields,
+            })),
+    };
+};
+
 const toAdminLocationDetail = async (location: ILocation) => {
     const editHistory = location.editHistory ?? [];
     const [categoryNames, users, duplicateCandidates] = await Promise.all([
@@ -829,7 +854,7 @@ export const getPublicLocationById = async (locationId: string) => {
 };
 
 const LOCATION_STATUSES: LocationStatus[] = ['pending', 'approved', 'rejected', 'withdrawn', 'hidden'];
-const MY_LOCATION_STATUSES: LocationStatus[] = ['pending', 'approved', 'rejected', 'withdrawn'];
+const MY_LOCATION_STATUSES: LocationStatus[] = ['pending', 'approved', 'rejected', 'withdrawn', 'hidden'];
 
 export const getAdminLocations = async (query: AdminLocationQuery) => {
     const page = positiveInteger(query.page, 1);
@@ -872,7 +897,6 @@ export const getMyLocations = async (actor: Actor, query: MyLocationQuery) => {
     const filter: Record<string, unknown> = {
         createdBy: actor.id,
         isDeleted: { $ne: true },
-        status: { $ne: 'hidden' },
     };
 
     if (query.status) {
@@ -898,6 +922,21 @@ export const getMyLocations = async (actor: Actor, query: MyLocationQuery) => {
             totalPages: total === 0 ? 0 : Math.ceil(total / pageSize),
         },
     };
+};
+
+export const getMyLocationById = async (locationId: string, actor: Actor) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm đã đóng góp.');
+    }
+    const location = await Location.findOne({
+        _id: locationId,
+        createdBy: actor.id,
+        isDeleted: { $ne: true },
+    });
+    if (!location) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm đã đóng góp.');
+    }
+    return toMyLocationDetail(location);
 };
 
 export const getAdminLocationById = async (locationId: string) => {
@@ -962,31 +1001,46 @@ const throwAdminLocationConflict = async (locationId: string): Promise<never> =>
     );
 };
 
-export const updateAdminLocation = async (
-    locationId: string,
-    input: UpdateLocationInput,
-    actor: Actor,
+const parseOwnerLocationPrecondition = (
+    input: Pick<UpdateLocationInput, 'expectedStatus' | 'expectedUpdatedAt'>,
+    allowedStatuses: LocationStatus[],
 ) => {
-    if (!mongoose.isValidObjectId(locationId)) {
-        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    if (typeof input.expectedStatus !== 'string' || !allowedStatuses.includes(input.expectedStatus as LocationStatus)) {
+        throw new ApiError(400, 'INVALID_STATUS_TRANSITION', 'Trạng thái địa điểm không phù hợp với thao tác này.');
     }
-    const [manager, current, expectedUpdatedAt] = await Promise.all([
-        assertActiveModerator(actor),
-        Location.findOne({ _id: locationId, isDeleted: { $ne: true } }),
-        Promise.resolve(parseExpectedUpdatedAt(input.expectedUpdatedAt)),
-    ]);
-    if (!current) {
-        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
-    }
-    if (manager.role === 'mod' && current.status !== 'pending') {
-        throw new ApiError(
-            403,
-            'MODERATOR_CAN_ONLY_EDIT_PENDING',
-            'Kiểm duyệt viên chỉ được chỉnh sửa địa điểm đang chờ duyệt.',
-        );
-    }
+    return {
+        expectedStatus: input.expectedStatus as LocationStatus,
+        expectedUpdatedAt: parseExpectedUpdatedAt(input.expectedUpdatedAt),
+    };
+};
 
-    const reason = requiredString(input.reason, 'Lý do chỉnh sửa', 1000);
+const throwOwnerLocationConflict = async (locationId: string, actor: Actor): Promise<never> => {
+    const current = await Location.findOne({
+        _id: locationId,
+        createdBy: actor.id,
+        isDeleted: { $ne: true },
+    }).select({ status: 1, updatedAt: 1 }).lean();
+    if (!current) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm đã đóng góp.');
+    }
+    throw new ApiError(
+        409,
+        'STALE_RESOURCE',
+        'Dữ liệu đã được thay đổi. Vui lòng tải lại trước khi tiếp tục.',
+        { currentStatus: current.status, currentUpdatedAt: current.updatedAt },
+    );
+};
+
+const prepareLocationUpdate = async (
+    current: ILocation,
+    input: UpdateLocationInput,
+    editorId: string,
+    requireReason: boolean,
+) => {
+    const optionalReason = optionalString(input.reason, 'Lý do chỉnh sửa', 1000);
+    const reason = requireReason
+        ? requiredString(input.reason, 'Lý do chỉnh sửa', 1000)
+        : optionalReason ?? 'Người đóng góp cập nhật thông tin.';
     const name = requiredString(input.name, 'Tên địa điểm', 200);
     const normalizedName = normalizeSearchText(name);
     const description = requiredString(input.description, 'Mô tả', 5000);
@@ -1010,7 +1064,7 @@ export const updateAdminLocation = async (
     const openingHours = parseOpeningHours(input.openingHours);
     const images = input.images === undefined
         ? current.images
-        : parseLocationImages(input.images, manager._id.toString(), current.images);
+        : parseLocationImages(input.images, editorId, current.images);
     const searchText = normalizeSearchText([
         name,
         ...aliases.map(({ value }) => value),
@@ -1043,7 +1097,68 @@ export const updateAdminLocation = async (
     if (changedFields.length === 0) {
         throw new ApiError(400, 'NO_CHANGES', 'Không có nội dung nào được thay đổi.');
     }
-    const editedAt = new Date();
+    const keptPublicIds = new Set(images.map(({ publicId }) => publicId).filter(Boolean));
+    const removedPublicIds = current.images
+        .map(({ publicId }) => publicId)
+        .filter((publicId): publicId is string => Boolean(publicId) && !keptPublicIds.has(publicId));
+
+    return {
+        fields: {
+            isDeleted: false,
+            name,
+            normalizedName,
+            description,
+            categoryCode,
+            tagCodes,
+            aliases,
+            address: {
+                wardCode,
+                wardNameSnapshot: ward.name,
+                addressLine,
+                locationNote,
+            },
+            geo: { type: 'Point' as const, coordinates: [longitude, latitude] },
+            images,
+            openingHours,
+            searchText,
+        },
+        history: {
+            editedBy: new mongoose.Types.ObjectId(editorId),
+            editedAt: new Date(),
+            reason,
+            changedFields,
+            before,
+            after,
+        },
+        removedPublicIds,
+    };
+};
+
+export const updateAdminLocation = async (
+    locationId: string,
+    input: UpdateLocationInput,
+    actor: Actor,
+) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    const [manager, current, expectedUpdatedAt] = await Promise.all([
+        assertActiveModerator(actor),
+        Location.findOne({ _id: locationId, isDeleted: { $ne: true } }),
+        Promise.resolve(parseExpectedUpdatedAt(input.expectedUpdatedAt)),
+    ]);
+    if (!current) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm.');
+    }
+    if (manager.role === 'mod' && current.status !== 'pending') {
+        throw new ApiError(
+            403,
+            'MODERATOR_CAN_ONLY_EDIT_PENDING',
+            'Kiểm duyệt viên chỉ được chỉnh sửa địa điểm đang chờ duyệt.',
+        );
+    }
+
+    const prepared = await prepareLocationUpdate(current, input, manager._id.toString(), true);
 
     const location = await Location.findOneAndUpdate(
         {
@@ -1053,49 +1168,137 @@ export const updateAdminLocation = async (
             ...(manager.role === 'mod' ? { status: 'pending' } : {}),
         },
         {
-            $set: {
-                isDeleted: false,
-                name,
-                normalizedName,
-                description,
-                categoryCode,
-                tagCodes,
-                aliases,
-                address: {
-                    wardCode,
-                    wardNameSnapshot: ward.name,
-                    addressLine,
-                    locationNote,
-                },
-                geo: { type: 'Point', coordinates: [longitude, latitude] },
-                images,
-                openingHours,
-                searchText,
-            },
-            $push: {
-                editHistory: {
-                    editedBy: manager._id,
-                    editedAt,
-                    reason,
-                    changedFields,
-                    before,
-                    after,
-                },
-            },
+            $set: prepared.fields,
+            $push: { editHistory: prepared.history },
         },
         { new: true, runValidators: true },
     );
     if (!location) return throwAdminLocationConflict(locationId);
 
-    const keptPublicIds = new Set(location.images.map(({ publicId }) => publicId).filter(Boolean));
-    const removedPublicIds = current.images
-        .map(({ publicId }) => publicId)
-        .filter((publicId): publicId is string => Boolean(publicId) && !keptPublicIds.has(publicId));
-
     return {
         location: await toAdminLocationDetail(location),
-        removedPublicIds,
+        removedPublicIds: prepared.removedPublicIds,
     };
+};
+
+export const updateMyLocation = async (
+    locationId: string,
+    input: UpdateLocationInput,
+    actor: Actor,
+) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm đã đóng góp.');
+    }
+    const { expectedStatus, expectedUpdatedAt } = parseOwnerLocationPrecondition(
+        input,
+        ['pending', 'rejected'],
+    );
+    const current = await Location.findOne({
+        _id: locationId,
+        createdBy: actor.id,
+        isDeleted: { $ne: true },
+    });
+    if (!current) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm đã đóng góp.');
+    }
+    if (current.status !== 'pending' && current.status !== 'rejected') {
+        throw new ApiError(
+            409,
+            'INVALID_STATUS_TRANSITION',
+            'Chỉ có thể chỉnh sửa địa điểm đang chờ duyệt hoặc đã bị từ chối.',
+        );
+    }
+
+    const prepared = await prepareLocationUpdate(current, input, actor.id, false);
+    const location = await Location.findOneAndUpdate(
+        {
+            _id: locationId,
+            createdBy: actor.id,
+            isDeleted: { $ne: true },
+            status: expectedStatus,
+            updatedAt: expectedUpdatedAt,
+        },
+        {
+            $set: prepared.fields,
+            $push: { editHistory: prepared.history },
+        },
+        { new: true, runValidators: true },
+    );
+    if (!location) return throwOwnerLocationConflict(locationId, actor);
+
+    return {
+        location: await toMyLocationDetail(location),
+        removedPublicIds: prepared.removedPublicIds,
+    };
+};
+
+export const resubmitMyLocation = async (
+    locationId: string,
+    input: UpdateLocationInput,
+    actor: Actor,
+) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm đã đóng góp.');
+    }
+    const { expectedUpdatedAt } = parseOwnerLocationPrecondition(input, ['rejected']);
+    const submittedAt = new Date();
+    const location = await Location.findOneAndUpdate(
+        {
+            _id: locationId,
+            createdBy: actor.id,
+            isDeleted: { $ne: true },
+            status: 'rejected',
+            updatedAt: expectedUpdatedAt,
+        },
+        {
+            $set: {
+                status: 'pending',
+                'moderation.reviewedBy': null,
+                'moderation.reviewedAt': null,
+                'moderation.rejectionReason': null,
+                'moderation.submittedAt': submittedAt,
+                'moderation.withdrawnAt': null,
+                updatedAt: submittedAt,
+            },
+        },
+        { new: true, runValidators: true },
+    );
+    if (!location) return throwOwnerLocationConflict(locationId, actor);
+    return toMyLocationDetail(location);
+};
+
+export const withdrawMyLocation = async (
+    locationId: string,
+    input: UpdateLocationInput,
+    actor: Actor,
+) => {
+    if (!mongoose.isValidObjectId(locationId)) {
+        throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy địa điểm đã đóng góp.');
+    }
+    const { expectedStatus, expectedUpdatedAt } = parseOwnerLocationPrecondition(
+        input,
+        ['pending', 'rejected'],
+    );
+    const withdrawnAt = new Date();
+    const location = await Location.findOneAndUpdate(
+        {
+            _id: locationId,
+            createdBy: actor.id,
+            isDeleted: { $ne: true },
+            status: expectedStatus,
+            updatedAt: expectedUpdatedAt,
+        },
+        {
+            $set: {
+                status: 'withdrawn',
+                'moderation.withdrawnAt': withdrawnAt,
+                updatedAt: withdrawnAt,
+            },
+        },
+        { new: true, runValidators: true },
+    );
+    if (!location) return throwOwnerLocationConflict(locationId, actor);
+    return toMyLocationDetail(location);
 };
 
 export const deleteAdminLocation = async (
