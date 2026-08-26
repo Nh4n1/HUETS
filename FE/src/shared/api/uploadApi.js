@@ -6,6 +6,11 @@ export async function getUploadSignatureApi() {
   return response.data
 }
 
+export async function getOwnershipEvidenceSignatureApi() {
+  const response = await httpClient.get('/uploads/ownership-evidence/signature')
+  return response.data
+}
+
 // Uploads directly to Cloudinary using a signed payload minted by the BE.
 // Uses a bare axios call (not httpClient) so no auth cookies/headers leak to Cloudinary.
 export async function uploadFileToCloudinary(file, signatureData) {
@@ -28,6 +33,11 @@ export async function uploadFileToCloudinary(file, signatureData) {
 
 export async function confirmUploadApi(results) {
   const response = await httpClient.post('/uploads/location-images', { results })
+  return response.data
+}
+
+export async function confirmOwnershipEvidenceUploadApi(results) {
+  const response = await httpClient.post('/uploads/ownership-evidence', { results })
   return response.data
 }
 

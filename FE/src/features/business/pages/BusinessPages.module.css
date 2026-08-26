@@ -1,0 +1,24 @@
+.page { display: grid; width: min(100% - 2rem, 62rem); margin-inline: auto; padding-block: clamp(1.25rem, 4vw, 3rem) 5rem; gap: 1.25rem; }
+.hero { display: flex; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--color-border-light); border-radius: var(--radius-xl); align-items: center; justify-content: space-between; gap: 1.5rem; background: radial-gradient(circle at 90% 10%, rgb(214 168 75 / 20%), transparent 32%), linear-gradient(135deg, var(--color-surface), var(--color-surface-muted)); box-shadow: var(--shadow-sm); }
+.hero h2 { margin: .35rem 0 .4rem !important; }
+.hero p { margin: 0; color: var(--color-text-muted); }
+.eyebrow { color: var(--color-primary); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.contentCard { border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.searchStep, .stepStack { display: grid; gap: 1rem; }
+.searchStep h3, .stepStack h3 { margin: 0 !important; }
+.locationSummary { display: grid; min-width: 0; grid-template-columns: 4.5rem minmax(0, 1fr); gap: .85rem; align-items: center; }
+.locationSummary img, .imageFallback { width: 4.5rem; height: 4.5rem; border-radius: .75rem; object-fit: cover; }
+.imageFallback { display: grid; place-items: center; color: var(--color-primary); background: var(--color-primary-soft); }
+.locationSummary > div { display: grid; min-width: 0; gap: .25rem; }
+.locationSummary span { color: var(--color-text-muted); }
+.actions { display: flex; padding-top: .75rem; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; }
+.tabs { min-height: 20rem; }
+.cardList { display: grid; gap: .8rem; }
+.ownershipCard { border-color: var(--color-border-light); }
+.cardRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.meta { display: grid; gap: .25rem; color: var(--color-text-muted); }
+.detailGrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem); gap: 1rem; align-items: start; }
+.timeline { display: grid; gap: .75rem; }
+.evidenceGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: .75rem; }
+.evidenceGrid img { width: 100%; aspect-ratio: 4/3; border-radius: .6rem; object-fit: cover; }
+@media (max-width: 48rem) { .page { width: calc(100% - 1rem); padding-top: .75rem; } .hero, .cardRow { align-items: stretch; flex-direction: column; } .hero a, .hero button { width: 100%; } .detailGrid { grid-template-columns: 1fr; } .actions { display: grid; grid-template-columns: 1fr; } }

@@ -12,6 +12,7 @@ import {
   MenuUnfoldOutlined,
   MessageOutlined,
   SettingOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { Button, Layout, Menu, Space, Typography } from 'antd'
 import { useMemo, useState } from 'react'
@@ -21,7 +22,7 @@ import styles from './AdminLayout.module.css'
 
 const LOCATIONS_GROUP_KEY = 'locations'
 const REFERENCE_GROUP_KEY = 'reference'
-const ADMIN_ONLY_MENU_KEYS = new Set(['/admin/users', '/admin/settings', '/admin/feedback', REFERENCE_GROUP_KEY])
+const ADMIN_ONLY_MENU_KEYS = new Set(['/admin/users', '/admin/settings', '/admin/feedback', '/admin/location-ownerships', REFERENCE_GROUP_KEY])
 
 // Sidebar items without a real page yet link nowhere ('#') until their feature is built.
 function placeholderLink(label) {
@@ -52,6 +53,11 @@ const menuItems = [
     key: '/admin/reviews',
     icon: <StarOutlined />,
     label: <Link to="/admin/reviews">Quản lý đánh giá</Link>,
+  },
+  {
+    key: '/admin/location-ownerships',
+    icon: <SafetyCertificateOutlined />,
+    label: <Link to="/admin/location-ownerships">Xác minh doanh nghiệp</Link>,
   },
   {
     key: '/admin/itineraries',
@@ -96,6 +102,7 @@ function getSelectedKey(pathname) {
   if (pathname === '/admin/locations') return '/admin/locations'
   if (pathname.startsWith('/admin/itineraries')) return '/admin/itineraries'
   if (pathname === '/admin/reviews') return '/admin/reviews'
+  if (pathname.startsWith('/admin/location-ownerships')) return '/admin/location-ownerships'
   if (pathname.startsWith('/admin/reports')) return '/admin/reports'
   if (pathname === '/admin/users') return '/admin/users'
   if (pathname === '/admin/feedback') return '/admin/feedback'

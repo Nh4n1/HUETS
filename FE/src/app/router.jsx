@@ -33,6 +33,20 @@ import { LocationDetailPage } from '../features/locations/pages/LocationDetailPa
 import { LocationsPage } from '../features/locations/pages/LocationsPage'
 import { ContributeLocationPage } from '../features/locations/pages/ContributeLocationPage'
 import { MyContributionsPage } from '../features/locations/pages/MyContributionsPage'
+import { BusinessRegisterPage } from '../features/business/pages/BusinessRegisterPage'
+import { BusinessCenterPage } from '../features/business/pages/BusinessCenterPage'
+import { OwnershipDetailPage } from '../features/business/pages/OwnershipDetailPage'
+import { AdminOwnershipsPage } from '../features/business/pages/AdminOwnershipsPage'
+import { AdminOwnershipDetailPage } from '../features/business/pages/AdminOwnershipDetailPage'
+import { OwnerVoucherListPage } from '../features/vouchers/pages/OwnerVoucherListPage'
+import { OwnerVoucherCreatePage } from '../features/vouchers/pages/OwnerVoucherCreatePage'
+import { OwnerVoucherDetailPage } from '../features/vouchers/pages/OwnerVoucherDetailPage'
+import { PublicVoucherDetailPage } from '../features/vouchers/pages/PublicVoucherDetailPage'
+import { VoucherWalletPage } from '../features/vouchers/pages/VoucherWalletPage'
+import { VoucherClaimDetailPage } from '../features/vouchers/pages/VoucherClaimDetailPage'
+import { OwnerDevicesPage } from '../features/redemption/pages/OwnerDevicesPage'
+import { RedemptionSetupPage } from '../features/redemption/pages/RedemptionSetupPage'
+import { RedemptionOperatorPage } from '../features/redemption/pages/RedemptionOperatorPage'
 
 import { ItinerariesPage } from '../features/itineraries/pages/ItinerariesPage'
 import { ItineraryDetailPage } from '../features/itineraries/pages/ItineraryDetailPage'
@@ -44,6 +58,7 @@ import { CommunityItineraryDetailPage } from '../features/itineraries/pages/Itin
 
 import { AdminLayout } from './layouts/AdminLayout'
 import { AppLayout } from './layouts/AppLayout'
+import { RedemptionLayout } from './layouts/RedemptionLayout'
 
 export const router = createBrowserRouter([
   {
@@ -69,6 +84,11 @@ export const router = createBrowserRouter([
       {
         path: 'explore',
         Component: ExplorePage,
+      },
+
+      {
+        path: 'vouchers/:voucherId',
+        Component: PublicVoucherDetailPage,
       },
 
       {
@@ -132,6 +152,51 @@ export const router = createBrowserRouter([
           },
 
           {
+            path: 'business/register',
+            Component: BusinessRegisterPage,
+          },
+
+          {
+            path: 'business',
+            Component: BusinessCenterPage,
+          },
+
+          {
+            path: 'business/ownerships/:ownershipId',
+            Component: OwnershipDetailPage,
+          },
+
+          {
+            path: 'business/locations/:locationId/vouchers',
+            Component: OwnerVoucherListPage,
+          },
+
+          {
+            path: 'business/locations/:locationId/vouchers/new',
+            Component: OwnerVoucherCreatePage,
+          },
+
+          {
+            path: 'business/locations/:locationId/vouchers/:voucherId',
+            Component: OwnerVoucherDetailPage,
+          },
+
+          {
+            path: 'business/locations/:locationId/devices',
+            Component: OwnerDevicesPage,
+          },
+
+          {
+            path: 'vouchers/mine',
+            Component: VoucherWalletPage,
+          },
+
+          {
+            path: 'vouchers/mine/:claimId',
+            Component: VoucherClaimDetailPage,
+          },
+
+          {
             path: 'itineraries/mine',
             Component: ItinerariesPage,
           },
@@ -167,6 +232,15 @@ export const router = createBrowserRouter([
           },
         ],
       },
+    ],
+  },
+
+  {
+    path: 'redeem',
+    Component: RedemptionLayout,
+    children: [
+      { path: 'setup', Component: RedemptionSetupPage },
+      { index: true, Component: RedemptionOperatorPage },
     ],
   },
 
@@ -226,6 +300,8 @@ export const router = createBrowserRouter([
               { path: 'reference/categories', Component: AdminCategoriesPage },
               { path: 'reference/tag-groups', Component: AdminTagGroupsPage },
               { path: 'feedback', Component: AdminFeedbackPage },
+              { path: 'location-ownerships', Component: AdminOwnershipsPage },
+              { path: 'location-ownerships/:ownershipId', Component: AdminOwnershipDetailPage },
             ],
           },
 

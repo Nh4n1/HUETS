@@ -20,7 +20,9 @@ import { LocationReviews } from '../components/LocationReviews'
 import { LocationOpeningHours } from '../components/LocationOpeningHours'
 import { LocationDiscoveryCard } from '../components/LocationDiscoveryCard'
 import { getRatingLabel, getTagLabel } from '../locationPresentation'
+import { getLocationOwnershipContextApi } from '../../business/api/businessApi'
 import styles from './LocationDetailPage.module.css'
+import { PublicVouchersSection } from '../../vouchers/components/PublicVouchersSection'
 
 function DetailSkeleton() {
   return (
@@ -47,6 +49,7 @@ export function LocationDetailPage() {
   const [relatedLocations, setRelatedLocations] = useState([])
   const [relatedLoading, setRelatedLoading] = useState(false)
   const [relatedError, setRelatedError] = useState('')
+  const [ownershipContext, setOwnershipContext] = useState(null)
   const requestKey = `${locationId}|${reloadKey}`
   const hasReported = reportedLocationIds.has(locationId)
   const reportUnavailable = unavailableReportIds.has(locationId)
@@ -97,6 +100,14 @@ export function LocationDetailPage() {
       .finally(() => active && setRelatedLoading(false))
     return () => { active = false }
   }, [location?.category?.code, locationId])
+
+  useEffect(() => {
+    let active = true
+    getLocationOwnershipContextApi(locationId)
+      .then((context) => active && setOwnershipContext(context))
+      .catch(() => active && setOwnershipContext(null))
+    return () => { active = false }
+  }, [locationId, isAuthenticated])
 
   const loading = loadedRequestKey !== requestKey
   if (loading) return <DetailSkeleton />
@@ -234,6 +245,7 @@ export function LocationDetailPage() {
               ratingDistribution: summary.distribution,
             }))}
           />
+          <PublicVouchersSection locationId={locationId} />
         </article>
 
         <aside className={styles.infoCard}>
@@ -249,6 +261,22 @@ export function LocationDetailPage() {
               {hasReported ? 'Đã báo cáo' : 'Báo cáo địa điểm'}
             </Button>
           </div>
+          {ownershipContext?.myOwnership ? (
+            <div className={styles.sideCard}>
+              <h2>Quyền quản lý địa điểm</h2>
+              <p className={styles.sideNote}>Bạn đã có yêu cầu ownership cho địa điểm này.</p>
+              <Link to={`/business/ownerships/${ownershipContext.myOwnership.id}`}><Button block type="primary">{ownershipContext.myOwnership.status === 'rejected' ? 'Bổ sung bằng chứng' : ownershipContext.myOwnership.status === 'verified' ? 'Mở quản lý doanh nghiệp' : 'Xem yêu cầu đang xử lý'}</Button></Link>
+            </div>
+          ) : ownershipContext?.claimable ? (
+            <div className={styles.sideCard}>
+              <h2>Bạn là chủ hoặc người đại diện?</h2>
+              <p className={styles.sideNote}>Gửi bằng chứng để xác minh quyền quản lý địa điểm này trên HueTrip.</p>
+              <Button block type="primary" onClick={() => {
+                const destination = `/business/register?locationId=${encodeURIComponent(location.id)}`
+                navigate(isAuthenticated ? destination : '/login', isAuthenticated ? undefined : { state: { from: { pathname: destination } } })
+              }}>Xác minh quyền quản lý</Button>
+            </div>
+          ) : null}
         </aside>
       </div>
 
