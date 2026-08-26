@@ -42,5 +42,35 @@ ownerLocationRouter.get(
   authorize("user", "mod", "admin"),
   locationController.getMyLocations,
 );
+ownerLocationRouter.get(
+  "/:locationId",
+  authenticate,
+  authorize("user", "mod", "admin"),
+  locationController.getMyLocationById,
+);
+ownerLocationRouter.patch(
+  "/:locationId",
+  authenticate,
+  authorize("user", "mod", "admin"),
+  locationController.updateMyLocation,
+);
+ownerLocationRouter.delete(
+  "/:locationId",
+  authenticate,
+  authorize("user", "mod", "admin"),
+  locationController.deleteMyWithdrawnLocation,
+);
+ownerLocationRouter.post(
+  "/:locationId/resubmit",
+  authenticate,
+  authorize("user", "mod", "admin"),
+  locationController.resubmitMyLocation,
+);
+ownerLocationRouter.post(
+  "/:locationId/withdraw",
+  authenticate,
+  authorize("user", "mod", "admin"),
+  locationController.withdrawMyLocation,
+);
 
 export default router;

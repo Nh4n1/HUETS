@@ -97,6 +97,7 @@ export function LocationSubmitForm({
   mode = 'create',
   initialLocation = null,
   submitLabel = 'Tạo địa điểm',
+  reasonRequired = true,
   onSubmit,
   onSuccess,
 }) {
@@ -943,10 +944,12 @@ export function LocationSubmitForm({
               name="reason"
               label="Nội dung giải trình"
               rules={[
-                { required: true, whitespace: true, message: 'Vui lòng nhập lý do chỉnh sửa.' },
+                { required: reasonRequired, whitespace: true, message: 'Vui lòng nhập lý do chỉnh sửa.' },
                 { max: 1000, message: 'Lý do không được vượt quá 1000 ký tự.' },
               ]}
-              extra="Lý do và nội dung thay đổi sẽ được lưu trong lịch sử kiểm duyệt."
+              extra={reasonRequired
+                ? 'Lý do và nội dung thay đổi sẽ được lưu trong lịch sử kiểm duyệt.'
+                : 'Không bắt buộc. Nội dung thay đổi vẫn được lưu để bạn theo dõi lịch sử.'}
             >
               <Input.TextArea
                 rows={4}
