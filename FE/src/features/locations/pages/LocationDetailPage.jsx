@@ -231,6 +231,7 @@ export function LocationDetailPage() {
               Mở trên OpenStreetMap
             </a>
           </section>
+
           <LocationReviews
             locationId={locationId}
             ratingSummary={{
@@ -245,7 +246,6 @@ export function LocationDetailPage() {
               ratingDistribution: summary.distribution,
             }))}
           />
-          <PublicVouchersSection locationId={locationId} />
         </article>
 
         <aside className={styles.infoCard}>
@@ -254,6 +254,7 @@ export function LocationDetailPage() {
             <div className={styles.sideRow}><span>Danh mục</span><strong>{location.category?.name}</strong></div>
             <div className={styles.sideRow}><span>Đánh giá</span><strong>{getRatingLabel(location)}</strong></div>
           </div>
+          <PublicVouchersSection locationId={locationId} />
           <div className={styles.sideCard}>
             <h2>Thông tin chưa chính xác?</h2>
             <p className={styles.sideNote}>Báo cáo nội dung sai, spam hoặc không phù hợp. Góp ý về website dùng kênh Feedback riêng.</p>

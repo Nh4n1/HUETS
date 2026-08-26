@@ -10,6 +10,7 @@
 .sessionSheet { display: grid; justify-items: center; gap: 1rem; text-align: center; }
 .qrWrap { padding: .75rem; border: 1px solid var(--color-border-light); border-radius: .75rem; background: white; }
 .verifyCard { display: grid; gap: 1rem; }
+.verifyActions { display: flex; flex-direction: column; gap: .75rem; margin-top: .5rem; }
 .benefit { color: var(--color-success); font-size: 1.35rem; font-weight: 850; }
 .success { text-align: center; }
 @media (max-width: 30rem) { .layout { padding: .5rem; } .largeActions { grid-template-columns: 1fr; } }

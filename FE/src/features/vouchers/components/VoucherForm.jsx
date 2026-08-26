@@ -35,7 +35,6 @@ export function VoucherForm({ initialVoucher, loading, onSave }) {
           <Card title="Nội dung Voucher">
             <Form.Item name="title" label="Tên Voucher" rules={[{ required: true, whitespace: true }, { min: 5, max: 120 }]}><Input /></Form.Item>
             <Form.Item name="description" label="Mô tả ngắn" rules={[{ required: true, whitespace: true }, { max: 300 }]}><Input.TextArea rows={3} /></Form.Item>
-            <Form.Item name="imageUrl" label="URL ảnh (tùy chọn)" rules={[{ type: 'url', warningOnly: true }]}><Input placeholder="Để trống để dùng ảnh Location" /></Form.Item>
             <Form.Item name={['benefit', 'type']} label="Loại ưu đãi" rules={[{ required: true }]}><Radio.Group options={[{ value: 'percentage', label: 'Phần trăm' }, { value: 'fixed_amount', label: 'Số tiền cố định' }]} /></Form.Item>
             <Form.Item name={['benefit', 'value']} label="Giá trị ưu đãi" rules={[{ required: true }]}><InputNumber min={1} max={benefit?.type === 'percentage' ? 100 : undefined} addonAfter={benefit?.type === 'percentage' ? '%' : 'VND'} style={{ width: '100%' }} /></Form.Item>
             {benefit?.type === 'percentage' ? <Form.Item name={['benefit', 'maxDiscountAmount']} label="Giảm tối đa"><InputNumber min={0} addonAfter="VND" style={{ width: '100%' }} /></Form.Item> : null}
