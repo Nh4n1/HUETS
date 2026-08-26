@@ -5,7 +5,6 @@ const optionalMoney = z.number().min(0).nullable().optional().transform((value) 
 export const voucherInputSchema = z.object({
     title: z.string().trim().min(5).max(120),
     description: z.string().trim().min(1).max(300),
-    imageUrl: z.union([z.url(), z.literal('')]).nullable().optional().transform((value) => value || null),
     benefit: z.object({
         type: z.enum(['percentage', 'fixed_amount']),
         value: z.number().positive(),
@@ -17,7 +16,7 @@ export const voucherInputSchema = z.object({
     claimEndAt: z.coerce.date(),
     redeemUntil: z.coerce.date(),
     totalQuantity: z.number().int().positive(),
-}).superRefine((voucher, context) => {
+}).strict().superRefine((voucher, context) => {
     if (voucher.benefit.type === 'percentage' && voucher.benefit.value > 100) {
         context.addIssue({ code: 'custom', path: ['benefit', 'value'], message: 'Mức giảm phần trăm không được vượt quá 100.' });
     }
@@ -32,7 +31,6 @@ export const voucherInputSchema = z.object({
 const voucherPatchFields = {
     title: z.string().trim().min(5).max(120),
     description: z.string().trim().min(1).max(300),
-    imageUrl: z.union([z.url(), z.literal(''), z.null()]).transform((value) => value || null),
     benefit: z.object({
         type: z.enum(['percentage', 'fixed_amount']),
         value: z.number().positive(),
@@ -46,7 +44,7 @@ const voucherPatchFields = {
     totalQuantity: z.number().int().positive(),
 };
 
-export const voucherPatchSchema = z.object(voucherPatchFields).partial().refine(
+export const voucherPatchSchema = z.object(voucherPatchFields).strict().partial().refine(
     (value) => Object.keys(value).length > 0,
     { message: 'Cần cung cấp ít nhất một nội dung cập nhật.' },
 );

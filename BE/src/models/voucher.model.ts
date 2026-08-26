@@ -18,7 +18,6 @@ export interface IVoucher extends Document {
     createdByUserId: Types.ObjectId;
     title: string;
     description: string;
-    imageUrl: string | null;
     benefit: IVoucherBenefit;
     terms: string;
     claimStartAt: Date;
@@ -52,7 +51,6 @@ const voucherSchema = new Schema<IVoucher>(
         createdByUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         title: { type: String, required: true, trim: true, minlength: 5, maxlength: 120 },
         description: { type: String, required: true, trim: true, maxlength: 300 },
-        imageUrl: { type: String, default: null },
         benefit: { type: benefitSchema, required: true },
         terms: { type: String, required: true, trim: true, minlength: 20, maxlength: 2000 },
         claimStartAt: { type: Date, required: true },

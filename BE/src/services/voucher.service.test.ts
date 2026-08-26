@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import VoucherClaim from '../models/voucherClaim.model.ts';
-import { isVoucherClaimable } from './voucher.service.ts';
+import { diversifyVouchersByLocation, getPublicVoucherSort, isVoucherClaimable } from './voucher.service.ts';
 
 const now = new Date('2026-09-05T00:00:00.000Z');
 const voucher = {
@@ -24,5 +24,24 @@ describe('voucher invariants', () => {
         expect(VoucherClaim.schema.indexes()).toEqual(expect.arrayContaining([
             [{ voucherId: 1, userId: 1 }, expect.objectContaining({ unique: true })],
         ]));
+    });
+
+    it('diversifies an Explore preview before filling repeated Locations', () => {
+        const candidates = [
+            { id: 'a1', locationId: 'a' },
+            { id: 'a2', locationId: 'a' },
+            { id: 'b1', locationId: 'b' },
+            { id: 'c1', locationId: 'c' },
+            { id: 'd1', locationId: 'd' },
+        ];
+        expect(diversifyVouchersByLocation(candidates, 4).map(({ id }) => id)).toEqual(['a1', 'b1', 'c1', 'd1']);
+        expect(diversifyVouchersByLocation(candidates.slice(0, 3), 3).map(({ id }) => id)).toEqual(['a1', 'b1', 'a2']);
+    });
+
+    it('uses deterministic sort orders for catalog and Explore', () => {
+        expect(getPublicVoucherSort('newest')).toEqual({ createdAt: -1, _id: 1 });
+        expect(getPublicVoucherSort('ending_soon')).toEqual({
+            claimEndAt: 1, claimedCount: -1, createdAt: -1, _id: 1,
+        });
     });
 });

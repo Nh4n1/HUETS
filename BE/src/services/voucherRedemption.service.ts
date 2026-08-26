@@ -33,7 +33,13 @@ const validId = (id: string, message: string) => {
 const claimContext = async (claim: any, session?: mongoose.ClientSession) => {
     const locationQuery = Location.findById(claim.locationId).select({ status: 1, isDeleted: 1 });
     const ownershipQuery = LocationOwnership.findById(claim.issuedByOwnershipId).select({ status: 1 });
-    if (session) { locationQuery.session(session); ownershipQuery.session(session); }
+    if (session) {
+        // The MongoDB driver does not support parallel operations in one transaction.
+        // Run these reads sequentially when they share a ClientSession.
+        const location = await locationQuery.session(session).lean();
+        const ownership = await ownershipQuery.session(session).lean();
+        return { location, ownership };
+    }
     const [location, ownership] = await Promise.all([locationQuery.lean(), ownershipQuery.lean()]);
     return { location, ownership };
 };
@@ -137,10 +143,12 @@ export const confirmRedemption = async (rawToken: unknown, device: DeviceActor) 
     let result: { transactionCode: string; redeemedAt: Date } | null = null;
     try {
         await mongoSession.withTransaction(async () => {
-            const [redemptionSession, currentDevice] = await Promise.all([
-                RedemptionSession.findById(verification.sessionId).session(mongoSession),
-                RedemptionDevice.findOne({ _id: device.id, status: 'active', sessionExpiresAt: { $gt: new Date() } }).session(mongoSession).lean(),
-            ]);
+            const redemptionSession = await RedemptionSession.findById(verification.sessionId).session(mongoSession);
+            const currentDevice = await RedemptionDevice.findOne({
+                _id: device.id,
+                status: 'active',
+                sessionExpiresAt: { $gt: new Date() },
+            }).session(mongoSession).lean();
             if (!currentDevice) throw new ApiError(403, 'DEVICE_REVOKED', 'Thiết bị đã bị thu hồi.');
             if (!redemptionSession) throw new ApiError(404, 'INVALID_REDEMPTION_CODE', 'Không tìm thấy Redemption Session.');
             if (redemptionSession.consumedAt) throw new ApiError(409, 'ALREADY_USED', 'Phiên redemption đã được sử dụng.');

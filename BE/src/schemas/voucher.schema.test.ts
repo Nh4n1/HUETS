@@ -17,6 +17,13 @@ describe('voucher schema', () => {
         expect(voucherInputSchema.safeParse(validVoucher).success).toBe(true);
     });
 
+    it('does not accept a voucher-specific image field', () => {
+        expect(voucherInputSchema.safeParse({
+            ...validVoucher,
+            imageUrl: 'https://example.com/voucher.jpg',
+        }).success).toBe(false);
+    });
+
     it('rejects percentage above 100', () => {
         expect(voucherInputSchema.safeParse({
             ...validVoucher,

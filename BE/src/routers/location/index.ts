@@ -16,7 +16,7 @@ router.post(
 );
 router.get("/", locationController.getPublicLocations);
 router.get("/search", locationController.searchPublicLocations);
-router.get("/:locationId/vouchers", voucherController.getPublicLocationVouchers);
+router.get("/:locationId/vouchers", optionalAuthenticate, voucherController.getPublicLocationVouchers);
 router.get(
   "/:locationId/ownership-context",
   optionalAuthenticate,
