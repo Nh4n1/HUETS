@@ -47,6 +47,8 @@ const NEWEST_LOCATION_SORT: Record<string, 1 | -1> = {
     _id: -1,
 };
 
+type LocationSort = Record<string, 1 | -1 | { $meta: 'textScore' }>;
+
 interface Actor {
     id: string;
     role: 'user' | 'mod' | 'admin';
@@ -117,8 +119,10 @@ export interface ModerateLocationInput {
     reason?: unknown;
 }
 
-export const getPublicLocationSort = (sortBy?: PublicLocationSortBy): Record<string, 1 | -1> =>
-    sortBy === 'rating_desc'
+export const getPublicLocationSort = (sortBy?: PublicLocationSortBy, hasSearch = false): LocationSort =>
+    hasSearch && (!sortBy || sortBy === 'recommended')
+        ? { score: { $meta: 'textScore' }, ...RECOMMENDED_LOCATION_SORT }
+        : sortBy === 'rating_desc'
         ? RATING_DESC_LOCATION_SORT
         : sortBy === 'newest'
             ? NEWEST_LOCATION_SORT
@@ -769,8 +773,6 @@ const positiveInteger = (value: string | undefined, fallback: number, maximum?: 
     return maximum ? Math.min(number, maximum) : number;
 };
 
-const escapeRegularExpression = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 export const buildPublicLocationFilter = (query: PublicLocationQuery): Record<string, unknown> => {
     const filter: Record<string, unknown> = { status: 'approved', isDeleted: { $ne: true } };
 
@@ -788,7 +790,11 @@ export const buildPublicLocationFilter = (query: PublicLocationQuery): Record<st
             );
         }
         if (normalizedQuery) {
-            filter.searchText = { $regex: escapeRegularExpression(normalizedQuery), $options: 'i' };
+            filter.$text = {
+                $search: normalizedQuery,
+                $caseSensitive: false,
+                $diacriticSensitive: false,
+            };
         }
     }
 
@@ -820,10 +826,11 @@ export const getPublicLocations = async (query: PublicLocationQuery) => {
      * - ưu tiên Location được đánh giá tốt;
      * - nếu cùng rating thì ưu tiên Location có nhiều review hơn;
      * - createdAt chỉ là tiêu chí phụ;
+     * Khi có từ khóa, ưu tiên textScore trước rồi mới dùng các tiêu chí trên.
      *
      * Khi client chủ động chọn rating_desc thì dùng sort đánh giá thuần.
      */
-    const sort = getPublicLocationSort(query.sortBy);
+    const sort = getPublicLocationSort(query.sortBy, '$text' in filter);
 
     const [locations, total] = await Promise.all([
         Location.find(filter)

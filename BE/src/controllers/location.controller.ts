@@ -4,6 +4,7 @@ import { ApiError } from '../utils/apiError.ts';
 import { asyncHandler } from '../utils/asyncHandler.ts';
 import { sendSuccess } from '../utils/response.ts';
 import { deleteLocationImage } from '../services/upload.service.ts';
+import { searchPlaces } from '../services/geocoding.service.ts';
 
 const queryString = (value: unknown) => typeof value === 'string' ? value : undefined;
 
@@ -53,6 +54,12 @@ export const getPublicLocations = asyncHandler(async (req: Request, res: Respons
 
 // [GET] /api/locations/search
 export const searchPublicLocations = getPublicLocations;
+
+// [GET] /api/locations/geocode/search?q=...
+export const searchGeocodingPlaces = asyncHandler(async (req: Request, res: Response) => {
+    const results = await searchPlaces(req.query.q);
+    return sendSuccess(res, 200, results);
+});
 
 
 // [GET] /api/locations/:locationId

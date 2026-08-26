@@ -232,6 +232,12 @@ export function LocationSubmitForm({
     setMapPositionError('')
   }
 
+  function handlePlaceSelect(place) {
+    if (place.addressLine && !form.getFieldValue('addressLine')?.trim()) {
+      form.setFieldValue('addressLine', place.addressLine)
+    }
+  }
+
   function handleFinishFailed({ errorFields }) {
     const hasPositionError = errorFields.some(
       (field) => field.name.includes('latitude') || field.name.includes('longitude'),
@@ -713,6 +719,7 @@ export function LocationSubmitForm({
             <LocationMapPicker
               value={{ lat: mapLatitude, lng: mapLongitude }}
               onChange={handleMapPositionChange}
+              onPlaceSelect={handlePlaceSelect}
             />
             <Typography.Text type="secondary">
               {typeof mapLatitude === 'number' && typeof mapLongitude === 'number'

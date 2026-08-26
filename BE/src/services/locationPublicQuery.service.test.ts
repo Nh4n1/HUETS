@@ -15,16 +15,20 @@ describe('public location filters', () => {
         })).toEqual({
             status: 'approved',
             isDeleted: { $ne: true },
-            searchText: { $regex: 'ca phe yen tinh', $options: 'i' },
+            $text: {
+                $search: 'ca phe yen tinh',
+                $caseSensitive: false,
+                $diacriticSensitive: false,
+            },
             categoryCode: 'cafe',
             'address.wardCode': '001',
             tagCodes: { $all: ['wifi', 'quiet'] },
         });
     });
 
-    it('removes regular expression characters from the normalized search query', () => {
+    it('normalizes punctuation before building a text search', () => {
         expect(buildPublicLocationFilter({ q: 'cafe (view)' })).toMatchObject({
-            searchText: { $regex: 'cafe view', $options: 'i' },
+            $text: { $search: 'cafe view' },
         });
     });
 
@@ -59,6 +63,13 @@ describe('public location sorting', () => {
         });
         expect(getPublicLocationSort('newest')).toEqual({
             'moderation.reviewedAt': -1,
+            createdAt: -1,
+            _id: -1,
+        });
+        expect(getPublicLocationSort('recommended', true)).toEqual({
+            score: { $meta: 'textScore' },
+            'ratingSummary.average': -1,
+            'ratingSummary.count': -1,
             createdAt: -1,
             _id: -1,
         });

@@ -4,9 +4,11 @@ import { authenticate, authorize, optionalAuthenticate } from "../../middlewares
 import * as locationReviewController from "../../controllers/locationReview.controller.ts";
 import * as locationOwnershipController from "../../controllers/locationOwnership.controller.ts";
 import * as voucherController from "../../controllers/voucher.controller.ts";
+import { createRateLimit } from "../../middlewares/rateLimit.middleware.ts";
 
 const router = Router();
 export const ownerLocationRouter = Router();
+const geocodingRateLimit = createRateLimit({ windowMs: 60_000, maxRequests: 15 });
 
 router.post(
   "/",
@@ -16,6 +18,13 @@ router.post(
 );
 router.get("/", locationController.getPublicLocations);
 router.get("/search", locationController.searchPublicLocations);
+router.get(
+  "/geocode/search",
+  authenticate,
+  authorize("user", "mod", "admin"),
+  geocodingRateLimit,
+  locationController.searchGeocodingPlaces,
+);
 router.get("/:locationId/vouchers", optionalAuthenticate, voucherController.getPublicLocationVouchers);
 router.get(
   "/:locationId/ownership-context",

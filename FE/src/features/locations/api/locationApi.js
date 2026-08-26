@@ -38,12 +38,21 @@ export async function getPublicLocationsApi(params = {}) {
   return response.data
 }
 
-export async function searchPublicLocationsApi(params = {}) {
+export async function searchPublicLocationsApi(params = {}, options = {}) {
   // Public list accepts the same basic search filters. Using the canonical
   // collection endpoint also keeps the page compatible with a backend
   // process started before the optional /locations/search alias was added.
   const response = await httpClient.get('/locations', {
-    params
+    params,
+    signal: options.signal,
+  })
+  return response.data
+}
+
+export async function searchGeocodingPlacesApi(query, options = {}) {
+  const response = await httpClient.get('/locations/geocode/search', {
+    params: { q: query },
+    signal: options.signal,
   })
   return response.data
 }

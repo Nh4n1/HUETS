@@ -846,33 +846,45 @@
 /* Desktop mockup v1.6 alignment */
 .hero {
   width: min(100% - 3.5rem, var(--container-width));
-  min-height: 26.25rem;
+  min-height: 29rem;
   margin-top: 1.75rem;
   border-radius: 2rem;
   background:
-    radial-gradient(circle at 82% 18%, rgb(255 255 255 / 35%), transparent 22%),
-    radial-gradient(circle at 78% 78%, rgb(255 255 255 / 20%), transparent 28%),
-    linear-gradient(135deg, #6d4726, #9d6e3e 50%, #d3ae69);
-  box-shadow: var(--shadow-card);
+    linear-gradient(90deg, #3c2719 0%, rgb(58 37 23 / 96%) 28%, rgb(58 37 23 / 76%) 48%, rgb(39 26 18 / 18%) 76%, transparent 100%),
+    url('../assets/home/hue-gate-hero-v2.jpg') center / cover no-repeat;
+  box-shadow: 0 24px 60px rgb(66 41 22 / 20%);
 }
 
 .hero::after {
   position: absolute;
-  right: -3rem;
-  bottom: -5rem;
-  width: 27rem;
-  height: 27rem;
-  border: 1px solid rgb(255 255 255 / 18%);
-  border-radius: 50%;
-  box-shadow: 0 0 0 3.5rem rgb(255 255 255 / 6%), 0 0 0 7rem rgb(255 255 255 / 4%);
+  z-index: 3;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgb(65 37 20 / 10%), inset 0 -5rem 8rem rgb(25 16 11 / 12%);
   content: '';
+  inset: 0;
+  pointer-events: none;
 }
 
-.heroOverlay,
-.heroCaption { display: none; }
+.heroOverlay {
+  display: block;
+  background:
+    linear-gradient(0deg, rgb(25 16 10 / 42%) 0%, transparent 45%),
+    radial-gradient(circle at 73% 44%, transparent 0%, transparent 26%, rgb(37 23 14 / 10%) 62%);
+}
+
+.heroCaption {
+  z-index: 2;
+  display: flex;
+  border-color: rgb(255 255 255 / 24%);
+  background: rgb(35 23 15 / 58%);
+  box-shadow: 0 12px 34px rgb(20 13 8 / 24%);
+}
 .eyebrow::before, .sectionEyebrow::before { display: none; }
 
 .heroContent {
+  position: relative;
+  z-index: 1;
   width: 100%;
   padding: 4.25rem;
 }
@@ -884,9 +896,10 @@
   font-size: clamp(2.8rem, 4.5vw, 3.25rem);
   font-weight: 800;
   letter-spacing: -.035em;
+  text-shadow: 0 3px 20px rgb(22 14 9 / 28%);
 }
 
-.heroLead { max-width: 44rem; font-size: 1.1rem; line-height: 1.75; }
+.heroLead { max-width: 42rem; color: rgb(255 255 255 / 86%); font-size: 1.1rem; line-height: 1.75; text-shadow: 0 2px 14px rgb(22 14 9 / 24%); }
 .searchBox { width: min(100%, 44rem); margin-top: 1.75rem; border-radius: 1rem; box-shadow: 0 16px 40px rgb(51 33 18 / 18%); }
 .discoverSection { padding-top: 4.5rem; }
 .sectionHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; }
@@ -924,14 +937,28 @@
 .communitySection > div { min-width: 0; }
 
 @media (max-width: 55rem) {
-  .hero { width: calc(100% - 2rem); min-height: 25rem; }
+  .hero {
+    width: calc(100% - 2rem);
+    min-height: 28rem;
+    background:
+      linear-gradient(90deg, rgb(52 33 20 / 96%) 0%, rgb(52 33 20 / 84%) 55%, rgb(35 23 15 / 38%) 100%),
+      url('../assets/home/hue-gate-hero-v2.jpg') 66% center / cover no-repeat;
+  }
   .heroContent { padding: 3rem; }
+  .heroCaption { display: none; }
   .sectionHeading { align-items: flex-start; flex-direction: column; }
   .journeySection, .communitySection { width: calc(100% - 2rem); align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 40rem) {
-  .hero { width: calc(100% - 1rem); min-height: 35rem; border-radius: 1.4rem; }
+  .hero {
+    width: calc(100% - 1rem);
+    min-height: 35rem;
+    border-radius: 1.4rem;
+    background:
+      linear-gradient(90deg, rgb(48 30 19 / 96%), rgb(48 30 19 / 74%)),
+      url('../assets/home/hue-gate-hero-v2.jpg') 72% center / cover no-repeat;
+  }
   .heroContent { padding: 2rem 1rem; }
   .hero h1 { font-size: 2.65rem; }
   .journeySection, .communitySection { padding: 1.5rem; }
